@@ -13,6 +13,7 @@ RUN apt-get update && apt-get install -y curl unzip
 RUN curl -o- https://fnm.vercel.app/install | bash
 # Download and install Node.js:
 RUN fnm install 24
+RUN source /root/.bashrc
 # Verify the Node.js version:
 RUN node -v # Should print "v24.11.1".
 # Download and install pnpm:
