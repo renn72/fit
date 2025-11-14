@@ -17,7 +17,7 @@ COPY packages packages
 
 # Install dependencies
 WORKDIR /app/apps/web
-RUN bun install
+RUN pnpm install --frozen-lockfile
 
 ENV VITE_SERVER_URL=${VITE_SERVER_URL}
 
@@ -25,7 +25,7 @@ ENV VITE_SERVER_URL=${VITE_SERVER_URL}
 ENV NODE_ENV=production
 
 # Build the application
-RUN bun run -F web build
+RUN pnpm run -F web build
 
 # Use a lightweight web server to serve the static files
 FROM nginx:alpine
