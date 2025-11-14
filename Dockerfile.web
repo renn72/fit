@@ -6,6 +6,9 @@ ARG VITE_SERVER_URL
 # Set the working directory
 WORKDIR /app
 
+# install curl
+RUN apt-get update && apt-get install -y curl
+
 # Download and install nvm:
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
 
