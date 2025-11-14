@@ -6,19 +6,13 @@ ARG VITE_SERVER_URL
 # Set the working directory
 WORKDIR /app
 
-# install curl
-RUN apt-get update && apt-get install -y curl unzip
-
-# Download and install fnm:
-RUN curl -o- https://fnm.vercel.app/install | bash
-# Download and install Node.js:
-RUN source /root/.bashrc
-RUN fnm install 24
-# Verify the Node.js version:
-RUN node -v # Should print "v24.11.1".
-# Download and install pnpm:
+RUN apt update -y && apt install curl unzip -y \
+    && curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir=/opt/fnm \
+    && ln -s /opt/fnm/fnm /usr/bin/fnm \
+    && fnm install 24 \
+    && fnm use 24
 RUN corepack enable pnpm
-# Verify pnpm version:
+RUN node -v # Should print "v24.11.1".
 RUN npm -v
 RUN pnpm -v
 
