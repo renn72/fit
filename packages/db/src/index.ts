@@ -1,5 +1,5 @@
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/libsql'
+import Database from 'bun:sqlite'
+import { drizzle } from 'drizzle-orm/bun-sqlite'
 
 const client = new Database(process.env.DATABASE_URL || '')
 

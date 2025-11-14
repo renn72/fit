@@ -22,15 +22,13 @@
   "devDependencies": {
     "@fit/config": "workspace:*",
     "drizzle-kit": "^0.31.7",
-    "tsdown": "catalog:",
-    "@types/better-sqlite3": "^7.6.13"
+    "tsdown": "catalog:"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "dotenv": "catalog:",
-    "better-sqlite3": "^12.4.1",
     "drizzle-orm": "^0.44.7",
     "zod": "catalog:"
   }
