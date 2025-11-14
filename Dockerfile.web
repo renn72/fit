@@ -7,7 +7,7 @@ ARG VITE_SERVER_URL
 WORKDIR /app
 
 RUN apt update -y && apt install curl unzip -y
-RUN curl -fsSL https://fnm.vercel.app/install | bash -s -- --install-dir=/opt/fnm
+RUN curl -fsSL https://fnm.vercel.app/install | bash -s --install-dir=/opt/fnm
 RUN ln -s /opt/fnm/fnm /usr/bin/fnm
 RUN fnm install 24
 RUN fnm use 24
