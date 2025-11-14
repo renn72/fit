@@ -18,6 +18,7 @@ RUN node -v # Should print "v24.11.1".
 # Download and install pnpm:
 RUN corepack enable pnpm
 # Verify pnpm version:
+RUN npm -v
 RUN pnpm -v
 
 # Copy package.json and bun.lockb
