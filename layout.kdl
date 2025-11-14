@@ -1,0 +1,39 @@
+layout {
+  tab {
+    pane size=1 borderless=true {
+      plugin location="zellij:compact-bar"
+    }
+    pane {
+      command "nvim"
+      args "-O" "apps/server/src/index.ts" "apps/web/src/routes/index.tsx"
+    }
+  }
+tab {
+    pane size=1 borderless=true {
+      plugin location="zellij:compact-bar"
+    }
+    pane split_direction="vertical" {
+      pane split_direction="horizontal" size="40%" {
+        pane
+        pane size="20%" cwd="./apps/server"
+        pane size="20%" cwd="./apps/web"
+      }
+      pane split_direction="horizontal" {
+        pane  {
+          command "bun"
+          args "db:studio"
+          size "20%"
+          start_suspended true
+        }
+        pane  {
+          command "bun"
+          args "run" "dev"
+          start_suspended true
+        }
+      }
+    }
+    pane size=1 borderless=true {
+      plugin location="zellij:status-bar"
+    }
+  }
+}
