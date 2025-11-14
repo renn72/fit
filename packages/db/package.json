@@ -21,17 +21,17 @@
   },
   "devDependencies": {
     "@fit/config": "workspace:*",
-    "drizzle-kit": "^0.31.2",
-    "tsdown": "catalog:"
+    "drizzle-kit": "^0.31.7",
+    "tsdown": "catalog:",
+    "@types/better-sqlite3": "^7.6.13"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@libsql/client": "^0.14.0",
-    "@libsql/linux-x64-gnu": "^0.5.22",
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.44.2",
+    "better-sqlite3": "^12.4.1",
+    "drizzle-orm": "^0.44.7",
     "zod": "catalog:"
   }
 }
