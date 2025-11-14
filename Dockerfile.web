@@ -9,7 +9,7 @@ WORKDIR /app
 RUN apt update -y && apt install curl unzip -y
 RUN curl -fsSL https://fnm.vercel.app/install | bash
 RUN ~/.local/share/fnm/fnm install 24
-RUN node -v # Should print "v24.11.1".
+RUN ~/.local/share/fnm/fnm  24
 RUN npm -v
 RUN npm install -g pnpm@latest-10
 RUN pnpm -v
