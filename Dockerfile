@@ -34,6 +34,8 @@ FROM oven/bun:1.3
 # Set the working directory
 WORKDIR /app
 
+RUN mkdir db
+
 # Copy the compiled server from the builder stage
 COPY --from=builder /app/apps/server/server .
 
