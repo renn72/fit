@@ -7,7 +7,7 @@ ARG VITE_SERVER_URL
 WORKDIR /app
 
 # install curl
-RUN apt-get update && apt-get install -y curl
+RUN apt-get update && apt-get install -y curl unzip
 
 # Download and install fnm:
 RUN curl -o- https://fnm.vercel.app/install | bash
