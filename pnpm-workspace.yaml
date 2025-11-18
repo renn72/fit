@@ -12,7 +12,7 @@ catalog:
   hono: ^4.8.2
   tsdown: ^0.15.5
   typescript: ^5.8.2
-  zod: ^4.1.11
+  zod: 4.1.12
 
 onlyBuiltDependencies:
   - better-sqlite3
