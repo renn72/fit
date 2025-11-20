@@ -28,6 +28,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.44.7",
     "zod": "catalog:"

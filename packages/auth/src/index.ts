@@ -2,13 +2,16 @@ import { db } from '@fit/db'
 import * as schema from '@fit/db/schema/auth'
 import { type BetterAuthOptions, betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { admin } from "better-auth/plugins"
+
+const origin = process.env.CORS_ORIGIN?.split(',') || ['']
 
 export const auth = betterAuth<BetterAuthOptions>({
 	database: drizzleAdapter(db, {
 		provider: 'sqlite',
 		schema: schema,
 	}),
-	trustedOrigins: [process.env.CORS_ORIGIN || ''],
+	trustedOrigins: origin,
 	emailAndPassword: {
 		enabled: true,
 	},
@@ -19,4 +22,5 @@ export const auth = betterAuth<BetterAuthOptions>({
 			httpOnly: true,
 		},
 	},
+  plugins: [admin()]
 })
