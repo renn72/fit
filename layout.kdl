@@ -5,7 +5,7 @@ layout {
     }
     pane {
       command "nvim"
-      args "-O" "apps/server/src/index.ts"
+      args "apps/server/src/index.ts"
     }
   }
 tab {
