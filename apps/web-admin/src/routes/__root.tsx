@@ -1,24 +1,26 @@
-import Header from "@/components/header";
-import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "@/components/ui/sonner";
-import { link, orpc } from "@/utils/orpc";
-import type { QueryClient } from "@tanstack/react-query";
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { useState } from "react";
-import { createTanstackQueryUtils } from "@orpc/tanstack-query";
-import type { AppRouterClient } from "@fit/api/routers/index";
-import { createORPCClient } from "@orpc/client";
+import { useState } from 'react'
+
+import Header from '@/components/header'
+import { ThemeProvider } from '@/components/theme-provider'
+import { Toaster } from '@/components/ui/sonner'
+import { link, type orpc } from '@/utils/orpc'
+
+import type { AppRouterClient } from '@fit/api/routers/index'
+import { createORPCClient } from '@orpc/client'
+import { createTanstackQueryUtils } from '@orpc/tanstack-query'
+import type { QueryClient } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import {
+	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
-	createRootRouteWithContext,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools";
-import "../index.css";
+} from '@tanstack/react-router'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import '../index.css'
 
 export interface RouterAppContext {
-	orpc: typeof orpc;
-	queryClient: QueryClient;
+	orpc: typeof orpc
+	queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
@@ -26,43 +28,43 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 	head: () => ({
 		meta: [
 			{
-				title: "fit",
+				title: 'fit',
 			},
 			{
-				name: "description",
-				content: "fit is a web application",
+				name: 'description',
+				content: 'fit is a web application',
 			},
 		],
 		links: [
 			{
-				rel: "icon",
-				href: "/favicon.ico",
+				rel: 'icon',
+				href: '/favicon.ico',
 			},
 		],
 	}),
-});
+})
 
 function RootComponent() {
-	const [client] = useState<AppRouterClient>(() => createORPCClient(link));
-	const [orpcUtils] = useState(() => createTanstackQueryUtils(client));
+	const [client] = useState<AppRouterClient>(() => createORPCClient(link))
+	const [_orpcUtils] = useState(() => createTanstackQueryUtils(client))
 
 	return (
 		<>
 			<HeadContent />
 			<ThemeProvider
-				attribute="class"
-				defaultTheme="dark"
+				attribute='class'
+				defaultTheme='dark'
 				disableTransitionOnChange
-				storageKey="vite-ui-theme"
+				storageKey='vite-ui-theme'
 			>
-				<div className="grid grid-rows-[auto_1fr] h-svh">
+				<div className='grid grid-rows-[auto_1fr] h-svh'>
 					<Header />
 					<Outlet />
 				</div>
 				<Toaster richColors />
 			</ThemeProvider>
-			<TanStackRouterDevtools position="bottom-left" />
-			<ReactQueryDevtools position="bottom" buttonPosition="bottom-right" />
+			<TanStackRouterDevtools position='bottom-left' />
+			<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
 		</>
-	);
+	)
 }
