@@ -15,6 +15,13 @@
       "when": 1763428970642,
       "tag": "0001_noisy_luckman",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1764740668887,
+      "tag": "0002_panoramic_shatterstar",
+      "breakpoints": true
     }
   ]
 }

@@ -23,7 +23,7 @@ function HomeComponent() {
 					) : (
 						<div className='flex flex-col gap-4 items-center'>
 							<p className='text-lg'>You are not logged in.</p>
-							<Button asChild>
+							<Button>
 								<Link to='/login'>Sign In</Link>
 							</Button>
 						</div>
