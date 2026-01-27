@@ -1,0 +1,36 @@
+{
+  "name": "fit",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "type": "module",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "check-types": "turbo check-types",
+    "dev:native": "turbo -F native dev",
+    "dev:web": "turbo -F web dev",
+    "dev:server": "turbo -F server dev",
+    "db:push": "turbo -F @fit/db db:push",
+    "db:studio": "turbo -F @fit/db db:studio",
+    "db:generate": "turbo -F @fit/db db:generate",
+    "db:migrate": "turbo -F @fit/db db:migrate",
+    "db:local": "turbo -F @fit/db db:local",
+    "check": "biome check --write ."
+  },
+  "dependencies": {
+    "@fit/env": "workspace:*",
+    "dotenv": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@fit/config": "workspace:*",
+    "@types/node": "^22.13.14",
+    "turbo": "^2.6.3",
+    "typescript": "catalog:"
+  },
+  "packageManager": "pnpm@10.26.0"
+}
