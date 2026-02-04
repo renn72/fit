@@ -35,7 +35,23 @@
   "assist": {
     "actions": {
       "source": {
-        "organizeImports": "on"
+        "organizeImports": {
+          "level": "on",
+          "options": {
+            "groups": [
+              "react",
+              ":BLANK_LINE:",
+              "@fit/**",
+              ":BLANK_LINE:",
+              "@/**",
+              ":BLANK_LINE:",
+              "@tanstack/**",
+              ":BLANK_LINE:",
+              "@/components/ui/**",
+              ":BLANK_LINE:"
+            ]
+          }
+        }
       }
     }
   },
@@ -45,19 +61,6 @@
       "recommended": true,
       "correctness": {
         "useExhaustiveDependencies": "info"
-      },
-      "nursery": {
-        "useSortedClasses": {
-          "level": "warn",
-          "fix": "safe",
-          "options": {
-            "functions": [
-              "clsx",
-              "cva",
-              "cn"
-            ]
-          }
-        }
       },
       "suspicious": {
         "noAssignInExpressions": "off",

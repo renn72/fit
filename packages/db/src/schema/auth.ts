@@ -1,22 +1,30 @@
-import { relations, sql } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-export const user = sqliteTable('user', {
-	id: text('id').primaryKey(),
-	name: text('name').notNull(),
-	email: text('email').notNull().unique(),
-	emailVerified: integer('email_verified', { mode: 'boolean' })
-		.default(false)
-		.notNull(),
-	image: text('image'),
-	createdAt: integer('created_at', { mode: 'timestamp_ms' })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-		.notNull(),
-	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
-		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
-		.$onUpdate(() => /* @__PURE__ */ new Date())
-		.notNull(),
-})
+export const user = sqliteTable(
+	'user',
+	{
+		id: text('id').primaryKey(),
+		name: text('name').notNull(),
+		email: text('email').notNull().unique(),
+		emailVerified: integer('email_verified', { mode: 'boolean' })
+			.default(false)
+			.notNull(),
+		image: text('image'),
+		roles: text('roles'),
+		isRoot: integer('is_root', { mode: 'boolean' }).default(false).notNull(),
+		organisationId: text('organisation_id'),
+		organisationCreatorId: text('organisation_creator_id'),
+		createdAt: integer('created_at', { mode: 'timestamp_ms' })
+			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+			.notNull(),
+		updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+			.$onUpdate(() => /* @__PURE__ */ new Date())
+			.notNull(),
+	},
+	(table) => [index('user_organisationId_idx').on(table.organisationId)],
+)
 
 export const session = sqliteTable(
 	'session',
@@ -86,22 +94,3 @@ export const verification = sqliteTable(
 	},
 	(table) => [index('verification_identifier_idx').on(table.identifier)],
 )
-
-export const userRelations = relations(user, ({ many }) => ({
-	sessions: many(session),
-	accounts: many(account),
-}))
-
-export const sessionRelations = relations(session, ({ one }) => ({
-	user: one(user, {
-		fields: [session.userId],
-		references: [user.id],
-	}),
-}))
-
-export const accountRelations = relations(account, ({ one }) => ({
-	user: one(user, {
-		fields: [account.userId],
-		references: [user.id],
-	}),
-}))

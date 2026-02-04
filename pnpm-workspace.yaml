@@ -16,6 +16,7 @@ catalog:
   libsql: 0.5.22
   typescript: ^5
   zod: ^4.1.13
+  uuid: ^13.0.0
 
 onlyBuiltDependencies:
   - msw

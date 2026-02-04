@@ -1,6 +1,7 @@
-import { env } from "@fit/env/web";
-import { createAuthClient } from "better-auth/react";
+import { env } from '@fit/env/web'
+
+import { createAuthClient } from 'better-auth/react'
 
 export const authClient = createAuthClient({
-  baseURL: env.VITE_SERVER_URL,
-});
+	baseURL: env.VITE_SERVER_URL,
+})
