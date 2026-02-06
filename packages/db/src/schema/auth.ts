@@ -12,7 +12,6 @@ export const user = sqliteTable(
 			.notNull(),
 		image: text('image'),
 		roles: text('roles'),
-		isRoot: integer('is_root', { mode: 'boolean' }).default(false).notNull(),
 		organisationId: text('organisation_id'),
 		organisationCreatorId: text('organisation_creator_id'),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' })
@@ -25,6 +24,44 @@ export const user = sqliteTable(
 	},
 	(table) => [index('user_organisationId_idx').on(table.organisationId)],
 )
+
+export const userToggles = sqliteTable('user_toggles', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.references(() => user.id)
+		.notNull(),
+	isRoot: integer('is_root', { mode: 'boolean' }).default(false).notNull(),
+	isCreator: integer('is_creator', { mode: 'boolean' })
+		.default(false)
+		.notNull(),
+	isTrainer: integer('is_trainer', { mode: 'boolean' })
+		.default(false)
+		.notNull(),
+	isClient: integer('is_client', { mode: 'boolean' }).default(false).notNull(),
+	isActive: integer('is_active', { mode: 'boolean' }).default(false).notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+})
+
+export const userSettings = sqliteTable('user_settings', {
+	id: text('id').primaryKey(),
+	userId: text('user_id')
+		.references(() => user.id)
+		.notNull(),
+	theme: text('theme').notNull(),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
+})
 
 export const session = sqliteTable(
 	'session',

@@ -22,20 +22,16 @@ export const organisation = sqliteTable('organisation', {
 		.notNull(),
 })
 
-export const subscription = sqliteTable(
-	'subscription',
-	{
-		id: text('id').primaryKey(),
-		organisationId: text('organisation_id')
-			.references(() => organisation.id)
-			.notNull(),
-		stripeId: text('stripe_id').unique(),
-		planId: text('plan_id').notNull(),
-		status: text('status').notNull(),
-		currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }),
-	},
-	(table) => [index('session_userId_idx').on(table.organisationId)],
-)
+export const subscription = sqliteTable('subscription', {
+	id: text('id').primaryKey(),
+	organisationId: text('organisation_id')
+		.references(() => organisation.id)
+		.notNull(),
+	stripeId: text('stripe_id').unique(),
+	planId: text('plan_id').notNull(),
+	status: text('status').notNull(),
+	currentPeriodEnd: integer('current_period_end', { mode: 'timestamp' }),
+})
 
 export const plan = sqliteTable('plan', {
 	id: text('id').primaryKey(),
