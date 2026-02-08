@@ -52,7 +52,7 @@ const apiHandler = new OpenAPIHandler(appRouter, {
 })
 
 const fastify = Fastify({
-	logger: env.NODE_ENV === 'development' ? true : true,
+	logger: true,
 	serverFactory: (fastifyHandler) => {
 		const server = createServer(async (req, res) => {
 			const { matched } = await rpcHandler.handle(req, res, {

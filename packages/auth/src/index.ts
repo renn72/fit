@@ -21,12 +21,11 @@ export const auth = betterAuth({
 				url,
 			})
 		},
-		sendOnSignIn: true,
 		autoSignInAfterVerification: true,
+		sendOnSignUp: true,
 	},
 	emailAndPassword: {
 		enabled: true,
-		requireEmailVerification: true,
 		minPasswordLength: 4,
 		maxPasswordLength: 64,
 	},

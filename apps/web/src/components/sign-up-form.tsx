@@ -1,11 +1,12 @@
+import { env } from '@fit/env/web'
+
 import { authClient } from '@/lib/auth-client'
 
 import { useForm } from '@tanstack/react-form'
-import { useNavigate, useRouteContext } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
 import { toast } from 'sonner'
 import z from 'zod'
-import Loader from './loader'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -31,13 +32,12 @@ export default function SignUpForm({
 					email: value.email,
 					password: value.password,
 					name: value.name,
+					callbackURL: `${env.VITE_WEB_URL}/admin`,
 				},
 				{
-					onSuccess: () => {
-						navigate({
-							to: '/dashboard',
-						})
+					onSuccess: async () => {
 						toast.success('Sign up successful')
+						navigate({ to: '/admin/onboard' })
 					},
 					onError: (error) => {
 						toast.error(error.error.message || error.error.statusText)
