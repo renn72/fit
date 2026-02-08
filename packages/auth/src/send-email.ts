@@ -5,7 +5,7 @@ import { Resend } from 'resend'
 const resend = new Resend(env.RESEND_API_KEY)
 
 export const sendEmail = async ({ to, url }: { to: string; url: string }) => {
-	console.log('Sending email to', to)
+	console.log('----------- Sending email to', to)
 	await resend.emails.send({
 		from: 'Fit Support <fit@fit.wsys.au>', // Added a 'Friendly Name'
 		to,

@@ -22,7 +22,7 @@ export const auth = betterAuth({
 			})
 		},
 		autoSignInAfterVerification: true,
-		sendOnSignUp: true,
+		// sendOnSignUp: true,
 	},
 	emailAndPassword: {
 		enabled: true,
