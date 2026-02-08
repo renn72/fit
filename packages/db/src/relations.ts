@@ -6,8 +6,14 @@ export const relations = defineRelations(schema, (r) => ({
 	user: {
 		sessions: r.many.session(),
 		accounts: r.many.account(),
-		settings: r.one.userSettings(),
-		toggles: r.one.userToggles(),
+		settings: r.one.userSettings({
+			from: r.user.id,
+			to: r.userSettings.userId,
+		}),
+		toggles: r.one.userToggles({
+			from: r.user.id,
+			to: r.userToggles.userId,
+		}),
 		organisationCreator: r.one.organisation({
 			from: r.user.organisationCreatorId,
 			to: r.organisation.id,
@@ -17,6 +23,22 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.user.organisationId,
 			to: r.organisation.id,
 			alias: 'member',
+		}),
+	},
+
+	// ***************** User Settings *******************
+	userSettings: {
+		user: r.one.user({
+			from: r.userSettings.userId,
+			to: r.user.id,
+		}),
+	},
+
+	// ***************** User Toggles *******************
+	userToggles: {
+		user: r.one.user({
+			from: r.userToggles.userId,
+			to: r.user.id,
 		}),
 	},
 

@@ -1,7 +1,7 @@
 import { authClient } from '@/lib/auth-client'
 
 import { useForm } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useNavigate, useRouteContext } from '@tanstack/react-router'
 
 import { toast } from 'sonner'
 import z from 'zod'
@@ -18,7 +18,6 @@ export default function SignUpForm({
 	const navigate = useNavigate({
 		from: '/',
 	})
-	const { isPending } = authClient.useSession()
 
 	const form = useForm({
 		defaultValues: {
@@ -50,14 +49,14 @@ export default function SignUpForm({
 			onSubmit: z.object({
 				name: z.string().min(2, 'Name must be at least 2 characters'),
 				email: z.email('Invalid email address'),
-				password: z.string().min(8, 'Password must be at least 8 characters'),
+				password: z.string().min(4, 'Password must be at least 8 characters'),
 			}),
 		},
 	})
 
-	if (isPending) {
-		return <Loader />
-	}
+	// if (isPending) {
+	// 	return <Loader />
+	// }
 
 	return (
 		<div className='p-6 mx-auto mt-10 w-full max-w-md'>
@@ -84,7 +83,7 @@ export default function SignUpForm({
 									onChange={(e) => field.handleChange(e.target.value)}
 								/>
 								{field.state.meta.errors.map((error) => (
-									<p key={error?.message} className='text-red-500'>
+									<p key={error?.message} className='text-destructive'>
 										{error?.message}
 									</p>
 								))}
@@ -107,7 +106,7 @@ export default function SignUpForm({
 									onChange={(e) => field.handleChange(e.target.value)}
 								/>
 								{field.state.meta.errors.map((error) => (
-									<p key={error?.message} className='text-red-500'>
+									<p key={error?.message} className='text-destructive'>
 										{error?.message}
 									</p>
 								))}
@@ -130,7 +129,7 @@ export default function SignUpForm({
 									onChange={(e) => field.handleChange(e.target.value)}
 								/>
 								{field.state.meta.errors.map((error) => (
-									<p key={error?.message} className='text-red-500'>
+									<p key={error?.message} className='text-destructive'>
 										{error?.message}
 									</p>
 								))}
@@ -156,7 +155,7 @@ export default function SignUpForm({
 				<Button
 					variant='link'
 					onClick={onSwitchToSignIn}
-					className='text-indigo-600 hover:text-indigo-800'
+					className='text-accent'
 				>
 					Already have an account? Sign In
 				</Button>

@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { Menu as MenuPrimitive } from "@base-ui/react/menu"
 import { Menubar as MenubarPrimitive } from "@base-ui/react/menubar"
@@ -26,7 +24,7 @@ function Menubar({ className, ...props }: MenubarPrimitive.Props) {
   return (
     <MenubarPrimitive
       data-slot="menubar"
-      className={cn("bg-background h-8 gap-0.5 rounded-lg border p-1 flex items-center", className)}
+      className={cn("bg-background h-8 gap-0.5 rounded-lg border p-[3px] flex items-center", className)}
       {...props}
     />
   )
@@ -56,7 +54,7 @@ function MenubarTrigger({
     <DropdownMenuTrigger
       data-slot="menubar-trigger"
       className={cn(
-        "hover:bg-muted aria-expanded:bg-muted rounded-sm px-1.5 py-px text-sm font-medium flex items-center outline-hidden select-none",
+        "hover:bg-muted aria-expanded:bg-muted rounded-sm px-1.5 py-[2px] text-sm font-medium flex items-center outline-hidden select-none",
         className
       )}
       {...props}
@@ -77,7 +75,7 @@ function MenubarContent({
       align={align}
       alignOffset={alignOffset}
       sideOffset={sideOffset}
-      className={cn("bg-popover text-popover-foreground data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 min-w-36 rounded-lg p-1 shadow-md ring-1 duration-100", className)}
+      className={cn("bg-popover text-popover-foreground data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 min-w-36 rounded-lg p-1 shadow-md ring-1 duration-100 data-[side=inline-start]:slide-in-from-right-2 data-[side=inline-end]:slide-in-from-left-2", className )}
       {...props}
     />
   )
@@ -94,7 +92,7 @@ function MenubarItem({
       data-slot="menubar-item"
       data-inset={inset}
       data-variant={variant}
-      className={cn("focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:!text-destructive not-data-[variant=destructive]:focus:**:text-accent-foreground gap-1.5 rounded-md px-1.5 py-1 text-sm data-[disabled]:opacity-50 data-[inset]:pl-8 [&_svg:not([class*='size-'])]:size-4 group/menubar-item", className)}
+      className={cn("focus:bg-accent focus:text-accent-foreground data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 dark:data-[variant=destructive]:focus:bg-destructive/20 data-[variant=destructive]:focus:text-destructive data-[variant=destructive]:*:[svg]:text-destructive! not-data-[variant=destructive]:focus:**:text-accent-foreground gap-1.5 rounded-md px-1.5 py-1 text-sm data-disabled:opacity-50 data-inset:pl-7 [&_svg:not([class*='size-'])]:size-4 group/menubar-item", className)}
       {...props}
     />
   )
@@ -104,13 +102,17 @@ function MenubarCheckboxItem({
   className,
   children,
   checked,
+  inset,
   ...props
-}: MenuPrimitive.CheckboxItem.Props) {
+}: MenuPrimitive.CheckboxItem.Props & {
+  inset?: boolean
+}) {
   return (
     <MenuPrimitive.CheckboxItem
       data-slot="menubar-checkbox-item"
+      data-inset={inset}
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm data-disabled:opacity-50 relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm data-inset:pl-7 relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       checked={checked}
@@ -136,13 +138,17 @@ function MenubarRadioGroup({
 function MenubarRadioItem({
   className,
   children,
+  inset,
   ...props
-}: MenuPrimitive.RadioItem.Props) {
+}: MenuPrimitive.RadioItem.Props & {
+  inset?: boolean
+}) {
   return (
     <MenuPrimitive.RadioItem
       data-slot="menubar-radio-item"
+      data-inset={inset}
       className={cn(
-        "focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm data-disabled:opacity-50 [&_svg:not([class*='size-'])]:size-4 relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground gap-1.5 rounded-md py-1 pr-1.5 pl-7 text-sm data-disabled:opacity-50 data-inset:pl-7 [&_svg:not([class*='size-'])]:size-4 relative flex cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className
       )}
       {...props}
@@ -162,12 +168,14 @@ function MenubarLabel({
   className,
   inset,
   ...props
-}: React.ComponentProps<typeof DropdownMenuLabel>) {
+}: React.ComponentProps<typeof DropdownMenuLabel> & {
+  inset?: boolean
+}) {
   return (
     <DropdownMenuLabel
       data-slot="menubar-label"
       data-inset={inset}
-      className={cn("px-1.5 py-1 text-sm font-medium data-[inset]:pl-8", className)}
+      className={cn("px-1.5 py-1 text-sm font-medium data-inset:pl-7", className)}
       {...props}
     />
   )
@@ -216,7 +224,7 @@ function MenubarSubTrigger({
     <DropdownMenuSubTrigger
       data-slot="menubar-sub-trigger"
       data-inset={inset}
-      className={cn("focus:bg-accent focus:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground gap-1.5 rounded-md px-1.5 py-1 text-sm data-[inset]:pl-8 [&_svg:not([class*='size-'])]:size-4", className)}
+      className={cn("focus:bg-accent focus:text-accent-foreground data-open:bg-accent data-open:text-accent-foreground gap-1.5 rounded-md px-1.5 py-1 text-sm data-inset:pl-7 [&_svg:not([class*='size-'])]:size-4", className)}
       {...props}
     />
   )

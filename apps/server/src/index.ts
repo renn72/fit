@@ -1,9 +1,12 @@
-import { createServer } from 'node:http'
-import fastifyCors from '@fastify/cors'
 import { createContext } from '@fit/api/context'
 import { appRouter } from '@fit/api/routers/index'
 import { auth } from '@fit/auth'
 import { env } from '@fit/env/server'
+
+// import { loggerStream } from '@/utils/logger-stream'
+
+import { createServer } from 'node:http'
+import fastifyCors from '@fastify/cors'
 import { OpenAPIHandler } from '@orpc/openapi/node'
 import { OpenAPIReferencePlugin } from '@orpc/openapi/plugins'
 import { onError } from '@orpc/server'
@@ -11,7 +14,6 @@ import { RPCHandler } from '@orpc/server/node'
 import { CORSPlugin } from '@orpc/server/plugins'
 import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
 import Fastify from 'fastify'
-import { loggerStream } from '@/utils/logger-stream'
 
 const baseCorsConfig = {
 	origin: env.CORS_ORIGIN,
@@ -50,13 +52,7 @@ const apiHandler = new OpenAPIHandler(appRouter, {
 })
 
 const fastify = Fastify({
-	logger:
-		env.NODE_ENV === 'development'
-			? true
-			: {
-					level: 'debug',
-					stream: loggerStream,
-				},
+	logger: env.NODE_ENV === 'development' ? true : true,
 	serverFactory: (fastifyHandler) => {
 		const server = createServer(async (req, res) => {
 			const { matched } = await rpcHandler.handle(req, res, {

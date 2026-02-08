@@ -1,10 +1,11 @@
-import type { AppRouterClient } from '@fit/api/routers/index'
+import type { AppRouter } from '@fit/api/routers/index'
 import { env } from '@fit/env/web'
 
 import { QueryCache, QueryClient } from '@tanstack/react-query'
 
 import { createORPCClient } from '@orpc/client'
 import { RPCLink } from '@orpc/client/fetch'
+import type { RouterClient } from '@orpc/server'
 import { createTanstackQueryUtils } from '@orpc/tanstack-query'
 import { toast } from 'sonner'
 
@@ -21,7 +22,7 @@ export const queryClient = new QueryClient({
 	}),
 })
 
-export const link = new RPCLink({
+const link = new RPCLink({
 	url: `${env.VITE_SERVER_URL}/rpc`,
 	fetch(url, options) {
 		return fetch(url, {
@@ -31,6 +32,10 @@ export const link = new RPCLink({
 	},
 })
 
-export const client: AppRouterClient = createORPCClient(link)
+const getORPCClient = () => {
+	return createORPCClient(link) as RouterClient<AppRouter>
+}
+
+export const client: RouterClient<AppRouter> = getORPCClient()
 
 export const orpc = createTanstackQueryUtils(client)

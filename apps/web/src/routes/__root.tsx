@@ -1,11 +1,6 @@
-import { useState } from 'react'
-
-import type { AppRouterClient } from '@fit/api/routers/index'
-
-import Header from '@/components/header'
-import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
-import { link, type orpc } from '@/utils/orpc'
+import { authClient } from '@/lib/auth-client'
+import type { orpc } from '@/utils/orpc'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -13,61 +8,64 @@ import {
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
+	Scripts,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
-import { createORPCClient } from '@orpc/client'
-import { createTanstackQueryUtils } from '@orpc/tanstack-query'
-
-import '../index.css'
-
+import Header from '../components/header'
+import appCss from '../index.css?url'
 export interface RouterAppContext {
 	orpc: typeof orpc
 	queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-	component: RootComponent,
+	beforeLoad: async () => {
+		const session = await authClient.getSession()
+		return {
+			session,
+		}
+	},
 	head: () => ({
 		meta: [
 			{
-				title: 'fit',
+				charSet: 'utf-8',
 			},
 			{
-				name: 'description',
-				content: 'fit is a web application',
+				name: 'viewport',
+				content: 'width=device-width, initial-scale=1',
+			},
+			{
+				title: 'My App',
 			},
 		],
 		links: [
 			{
-				rel: 'icon',
-				href: '/favicon.ico',
+				rel: 'stylesheet',
+				href: appCss,
 			},
 		],
 	}),
+
+	component: RootDocument,
 })
 
-function RootComponent() {
-	const [client] = useState<AppRouterClient>(() => createORPCClient(link))
-	const [_orpcUtils] = useState(() => createTanstackQueryUtils(client))
-
+function RootDocument() {
 	return (
-		<>
-			<HeadContent />
-			<ThemeProvider
-				attribute='class'
-				defaultTheme='dark'
-				disableTransitionOnChange
-				storageKey='vite-ui-theme'
-			>
-				<div className='grid grid-rows-[auto_1fr] h-svh'>
+		<html lang='en' className='dark'>
+			<head>
+				<HeadContent />
+			</head>
+			<body>
+				<div className='grid h-svh grid-rows-[auto_1fr]'>
 					<Header />
 					<Outlet />
 				</div>
 				<Toaster richColors />
-			</ThemeProvider>
-			<TanStackRouterDevtools position='bottom-left' />
-			<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
-		</>
+				<TanStackRouterDevtools position='bottom-left' />
+				<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
+				<Scripts />
+			</body>
+		</html>
 	)
 }

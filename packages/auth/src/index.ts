@@ -1,26 +1,41 @@
-import { expo } from "@better-auth/expo";
-import { db } from "@fit/db";
-import * as schema from "@fit/db/schema/auth";
-import { env } from "@fit/env/server";
-import { betterAuth } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { db } from '@fit/db'
+import * as schema from '@fit/db/schema/auth'
+import { env } from '@fit/env/server'
+
+import { expo } from '@better-auth/expo'
+import { betterAuth } from 'better-auth'
+import { drizzleAdapter } from 'better-auth/adapters/drizzle'
+import { sendEmail } from './send-email'
 
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "sqlite",
+	database: drizzleAdapter(db, {
+		provider: 'sqlite',
 
-    schema: schema,
-  }),
-  trustedOrigins: [env.CORS_ORIGIN, "mybettertapp://", "exp://"],
-  emailAndPassword: {
-    enabled: true,
-  },
-  advanced: {
-    defaultCookieAttributes: {
-      sameSite: "none",
-      secure: true,
-      httpOnly: true,
-    },
-  },
-  plugins: [expo()],
-});
+		schema: schema,
+	}),
+	trustedOrigins: [env.CORS_ORIGIN, 'mybettertapp://', 'exp://'],
+	emailVerification: {
+		sendVerificationEmail: async ({ user, url }) => {
+			void sendEmail({
+				to: user.email,
+				url,
+			})
+		},
+		sendOnSignIn: true,
+		autoSignInAfterVerification: true,
+	},
+	emailAndPassword: {
+		enabled: true,
+		requireEmailVerification: true,
+		minPasswordLength: 4,
+		maxPasswordLength: 64,
+	},
+	advanced: {
+		defaultCookieAttributes: {
+			sameSite: 'none',
+			secure: true,
+			httpOnly: true,
+		},
+	},
+	plugins: [expo()],
+})
