@@ -46,10 +46,13 @@ export const plan = s.sqliteTable('plan', {
 		.primaryKey()
 		.$defaultFn(() => uuid()),
 	name: s.text('name').notNull(),
-	description: s.text('description'),
-	price: s.integer('price').notNull(),
-	interval: s.text('interval').notNull(),
+	description: s.text('description').notNull(),
+	features: s.text('features').default('').notNull(),
+	cta: s.text('cta').notNull(),
+	priceMonthly: s.integer('price_monthly').notNull(),
+	priceYearly: s.integer('price_yearly').notNull(),
 	stripePriceId: s.text('stripe_price_id'),
 	maxMembers: s.integer('max_members').default(1).notNull(),
-	features: s.text('features').default('').notNull(),
+	maxTrainers: s.integer('max_trainers').default(1).notNull(),
+	tags: s.text('tags').default('').notNull(),
 })
