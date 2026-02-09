@@ -73,6 +73,10 @@ export const relations = defineRelations(schema, (r) => ({
 			to: r.user.id,
 			alias: 'member',
 		}),
+		subscriptions: r.many.subscription({
+			from: r.organisation.id,
+			to: r.subscription.organisationId,
+		}),
 	},
 
 	// ***************** Subscription *******************
@@ -92,18 +96,6 @@ export const relations = defineRelations(schema, (r) => ({
 		subscriptions: r.many.subscription({
 			from: r.plan.id,
 			to: r.subscription.planId,
-		}),
-		limits: r.many.planLimit({
-			from: r.plan.id,
-			to: r.planLimit.planId,
-		}),
-	},
-
-	// ***************** PlanLimit *******************
-	planLimit: {
-		plan: r.one.plan({
-			from: r.planLimit.planId,
-			to: r.plan.id,
 		}),
 	},
 }))
