@@ -48,6 +48,8 @@
               "@tanstack/**",
               ":BLANK_LINE:",
               "@/components/ui/**",
+              ":BLANK_LINE:",
+              "./**",
               ":BLANK_LINE:"
             ]
           }

@@ -11,7 +11,12 @@ export const user = sqliteTable(
 			.default(false)
 			.notNull(),
 		image: text('image'),
-		roles: text('roles'),
+		role: text('role'),
+		metaTags: text('meta_tags'),
+		banned: integer('banned', { mode: 'boolean' }),
+		banReason: text('ban_reason'),
+		banExpires: integer('ban_expires', { mode: 'timestamp_ms' }),
+		organisationSlug: text('organisation_slug'),
 		organisationId: text('organisation_id'),
 		organisationCreatorId: text('organisation_creator_id'),
 		createdAt: integer('created_at', { mode: 'timestamp_ms' })
@@ -77,6 +82,7 @@ export const session = sqliteTable(
 			.notNull(),
 		ipAddress: text('ip_address'),
 		userAgent: text('user_agent'),
+		impersonatedBy: text('impersonated_by'),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),

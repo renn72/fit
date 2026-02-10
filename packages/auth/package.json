@@ -1,26 +1,26 @@
 {
-  "name": "@fit/auth",
-  "type": "module",
-  "exports": {
-    ".": {
-      "default": "./src/index.ts"
-    },
-    "./*": {
-      "default": "./src/*.ts"
-    }
-  },
-  "scripts": {},
-  "dependencies": {
-    "@better-auth/expo": "catalog:",
-    "@fit/db": "workspace:*",
-    "@fit/env": "workspace:*",
-    "better-auth": "catalog:",
-    "dotenv": "catalog:",
-    "resend": "^6.9.1",
-    "zod": "catalog:"
-  },
-  "devDependencies": {
-    "@fit/config": "workspace:*",
-    "typescript": "catalog:"
-  }
+	"name": "@fit/auth",
+	"type": "module",
+	"exports": {
+		".": {
+			"default": "./src/index.ts"
+		},
+		"./*": {
+			"default": "./src/*.ts"
+		}
+	},
+	"scripts": {},
+	"dependencies": {
+		"@better-auth/expo": "catalog:",
+		"@fit/db": "workspace:*",
+		"@fit/env": "workspace:*",
+		"better-auth": "catalog:",
+		"dotenv": "catalog:",
+		"resend": "^6.9.1",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@fit/config": "workspace:*",
+		"typescript": "catalog:"
+	}
 }

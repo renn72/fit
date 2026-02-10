@@ -15,7 +15,7 @@ function HomeComponent() {
 			<div className='grid gap-6'>
 				<section className='p-4 rounded-lg border'>
 					<h2 className='mb-2 font-medium'>API Status</h2>
-					<div className='flex gap-4 items-center'>
+					<div className='flex gap-2 items-center'>
 						<div
 							className={`h-2 w-2 rounded-full ${healthCheck.data ? 'bg-green-500' : 'bg-red-500'}`}
 						/>

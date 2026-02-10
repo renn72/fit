@@ -20,7 +20,8 @@
     "@orpc/zod": "catalog:",
     "better-auth": "catalog:",
     "dotenv": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "@fit/config": "workspace:*",

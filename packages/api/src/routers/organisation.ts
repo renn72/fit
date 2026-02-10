@@ -1,7 +1,9 @@
 import { db } from '@fit/db'
-import { organisation, plan, subscription } from '@fit/db/schema/org'
+import { user } from '@fit/db/schema/auth'
+import { organisation, subscription } from '@fit/db/schema/org'
 
 import { ORPCError } from '@orpc/server'
+import { eq } from 'drizzle-orm'
 import z from 'zod'
 import { protectedProcedure } from '../index'
 
@@ -55,6 +57,14 @@ export const orgRouter = {
 						message: 'Failed to create organisation',
 					})
 				}
+
+				await tx
+					.update(user)
+					.set({
+						organisationId: newOrg.id,
+						organisationCreatorId: newOrg.id,
+					})
+					.where(eq(user.id, context.session.user.id))
 
 				const oneYearFromNow = new Date()
 				oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)

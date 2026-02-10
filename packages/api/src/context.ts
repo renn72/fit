@@ -1,6 +1,6 @@
-import type { IncomingHttpHeaders } from 'node:http'
-
 import { auth } from '@fit/auth'
+
+import type { IncomingHttpHeaders } from 'node:http'
 import { fromNodeHeaders } from 'better-auth/node'
 
 export async function createContext(req: IncomingHttpHeaders) {

@@ -5,11 +5,12 @@ import { authClient } from '@/lib/auth-client'
 import { useForm } from '@tanstack/react-form'
 import { useNavigate } from '@tanstack/react-router'
 
-import { toast } from 'sonner'
-import z from 'zod'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+
+import { toast } from 'sonner'
+import z from 'zod'
 
 export default function SignUpForm({
 	onSwitchToSignIn,
@@ -37,7 +38,7 @@ export default function SignUpForm({
 				{
 					onSuccess: async () => {
 						toast.success('Sign up successful')
-						navigate({ to: '/admin/onboard' })
+						navigate({ to: '/onboard' })
 					},
 					onError: (error) => {
 						toast.error(error.error.message || error.error.statusText)

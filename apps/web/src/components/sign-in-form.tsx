@@ -3,12 +3,13 @@ import { authClient } from '@/lib/auth-client'
 import { useForm } from '@tanstack/react-form'
 import { useNavigate } from '@tanstack/react-router'
 
-import { toast } from 'sonner'
-import z from 'zod'
-import Loader from './loader'
+import { Loader } from './loader'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+
+import { toast } from 'sonner'
+import z from 'zod'
 
 export default function SignInForm({
 	onSwitchToSignUp,
@@ -47,7 +48,7 @@ export default function SignInForm({
 		validators: {
 			onSubmit: z.object({
 				email: z.email('Invalid email address'),
-				password: z.string().min(4, 'Password must be at least 8 characters'),
+				password: z.string().min(8, 'Password must be at least 8 characters'),
 			}),
 		},
 	})
