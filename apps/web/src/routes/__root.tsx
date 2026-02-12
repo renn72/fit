@@ -1,4 +1,4 @@
-import { ThemeProvider } from '@/components/theme-provider'
+import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import type { orpc } from '@/utils/orpc'
@@ -41,37 +41,37 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 		],
 	}),
 
-	component: RootDocument,
+	component: RootComponent,
 })
-
-function RootDocument() {
+function RootComponent() {
 	return (
-		<html lang='en' className='dark'>
+		// TODO fix ssr hydration shit
+		<ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
+			<InnerRoot />
+		</ThemeProvider>
+	)
+}
+
+function InnerRoot() {
+	// Now we can safely use useTheme because we are inside the Provider
+	const { theme } = useTheme()
+
+	return (
+		<html lang='en' className={theme === 'system' ? '' : theme}>
 			<head>
 				<HeadContent />
 			</head>
-
-			<ThemeProvider
-				attribute='class'
-				defaultTheme='dark'
-				disableTransitionOnChange
-				storageKey='vite-ui-theme'
-			>
+			<body>
 				<TooltipProvider>
-					<body>
-						<div className='grid h-svh grid-rows-[auto_1fr]'>
-							<Outlet />
-						</div>
-						<Toaster richColors />
-						<TanStackRouterDevtools position='bottom-left' />
-						<ReactQueryDevtools
-							position='bottom'
-							buttonPosition='bottom-right'
-						/>
-						<Scripts />
-					</body>
+					<div className='grid h-svh grid-rows-[auto_1fr]'>
+						<Outlet />
+					</div>
+					<Toaster richColors />
+					<TanStackRouterDevtools position='bottom-left' />
+					<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
+					<Scripts />
 				</TooltipProvider>
-			</ThemeProvider>
+			</body>
 		</html>
 	)
 }
