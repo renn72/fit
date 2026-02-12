@@ -65,7 +65,8 @@
         "useExhaustiveDependencies": "info"
       },
       "a11y": {
-        "noStaticElementInteractions": "off"
+        "noStaticElementInteractions": "off",
+        "useAnchorContent": "off"
       },
       "suspicious": {
         "noAssignInExpressions": "off",

@@ -71,7 +71,7 @@ export function OnboardingForm() {
 		orpc.organisation.create.mutationOptions({
 			onSuccess: () => {
 				toast.success('Organisation created successfully')
-				navigate({ to: '/admin' })
+				navigate({ to: `/admin/${organisationSlug}/s/dashboard` })
 			},
 			onError: (error) => {
 				toast.error(error.message || 'Failed to create organisation')
@@ -102,6 +102,7 @@ export function OnboardingForm() {
 
 	const organisationName = useStore(form.store, (state) => state.values.name)
 	const planId = useStore(form.store, (state) => state.values.planId)
+	const organisationSlug = useStore(form.store, (state) => state.values.slug)
 
 	useEffect(() => {
 		if (!isSlugManual && organisationName) {

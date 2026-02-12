@@ -40,7 +40,7 @@ export const auth = betterAuth({
 	session: {
 		cookieCache: {
 			enabled: true,
-			maxAge: 10 * 60,
+			maxAge: 1 * 60,
 			strategy: 'jwe',
 		},
 	},

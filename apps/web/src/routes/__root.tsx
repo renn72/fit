@@ -1,11 +1,7 @@
-import { useState } from 'react'
-
-import type { AppRouterClient } from '@fit/api/routers/index'
-
-import Header from '@/components/header'
 import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
-import { link, type orpc } from '@/utils/orpc'
+import { TooltipProvider } from '@/components/ui/tooltip'
+import type { orpc } from '@/utils/orpc'
 
 import type { QueryClient } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
@@ -13,61 +9,69 @@ import {
 	createRootRouteWithContext,
 	HeadContent,
 	Outlet,
+	Scripts,
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
-import { createORPCClient } from '@orpc/client'
-import { createTanstackQueryUtils } from '@orpc/tanstack-query'
-
-import '../index.css'
-
+import appCss from '../index.css?url'
 export interface RouterAppContext {
 	orpc: typeof orpc
 	queryClient: QueryClient
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
-	component: RootComponent,
 	head: () => ({
 		meta: [
 			{
-				title: 'fit-router',
+				charSet: 'utf-8',
 			},
 			{
-				name: 'description',
-				content: 'fit-router is a web application',
+				name: 'viewport',
+				content: 'width=device-width, initial-scale=1',
+			},
+			{
+				title: 'Fit wsys',
 			},
 		],
 		links: [
 			{
-				rel: 'icon',
-				href: '/favicon.ico',
+				rel: 'stylesheet',
+				href: appCss,
 			},
 		],
 	}),
+
+	component: RootDocument,
 })
 
-function RootComponent() {
-	const [client] = useState<AppRouterClient>(() => createORPCClient(link))
-	const [orpcUtils] = useState(() => createTanstackQueryUtils(client))
-
+function RootDocument() {
 	return (
-		<>
-			<HeadContent />
+		<html lang='en' className='dark'>
+			<head>
+				<HeadContent />
+			</head>
+
 			<ThemeProvider
 				attribute='class'
 				defaultTheme='dark'
 				disableTransitionOnChange
 				storageKey='vite-ui-theme'
 			>
-				<div className='grid grid-rows-[auto_1fr] h-svh'>
-					<Header />
-					<Outlet />
-				</div>
-				<Toaster richColors />
+				<TooltipProvider>
+					<body>
+						<div className='grid h-svh grid-rows-[auto_1fr]'>
+							<Outlet />
+						</div>
+						<Toaster richColors />
+						<TanStackRouterDevtools position='bottom-left' />
+						<ReactQueryDevtools
+							position='bottom'
+							buttonPosition='bottom-right'
+						/>
+						<Scripts />
+					</body>
+				</TooltipProvider>
 			</ThemeProvider>
-			<TanStackRouterDevtools position='bottom-left' />
-			<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
-		</>
+		</html>
 	)
 }
