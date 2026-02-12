@@ -6,5 +6,5 @@ export const Route = createFileRoute('/admin/$orgSlug/s/dashboard')({
 
 function RouteComponent() {
 	const { orgSlug } = Route.useParams()
-	return <div>Hello sjkd "/admin/{orgSlug}/dashboard"!</div>
+	return <div>Hello "/admin/{orgSlug}/dashboard"!</div>
 }

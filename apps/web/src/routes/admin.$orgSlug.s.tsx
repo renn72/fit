@@ -18,7 +18,7 @@ function LayoutRouteComponent() {
 					<AppSidebar />
 					<SidebarInset>
 						<ScrollArea className='h-[calc(100svh-60px)]'>
-							hiaasds
+							hi
 							<div className='h-screen' />
 							<Outlet />
 							hi

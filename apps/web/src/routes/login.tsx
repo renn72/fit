@@ -13,12 +13,11 @@ export const Route = createFileRoute('/login')({
 		return { session }
 	},
 	loader: async ({ context }) => {
-		if (context.session && context.session.user.organisationSlug) {
+		if (context?.session?.user?.organisationSlug) {
 			const slug = context.session.user.organisationSlug as string
 			redirect({
-				// TODO
-				// @ts-ignore
 				to: `/admin/${slug}/s`,
+				throw: true,
 			})
 		}
 	},

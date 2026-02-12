@@ -13,8 +13,8 @@ import { Route as OnboardRouteImport } from './routes/onboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AdminOrgSlugSRouteImport } from './routes/admin/$orgSlug.s'
-import { Route as AdminOrgSlugSDashboardRouteImport } from './routes/admin/$orgSlug.s.dashboard'
+import { Route as AdminOrgSlugSRouteImport } from './routes/admin.$orgSlug.s'
+import { Route as AdminOrgSlugSDashboardRouteImport } from './routes/admin.$orgSlug.s.dashboard'
 
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',

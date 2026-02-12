@@ -1,63 +1,63 @@
-import { Link, useNavigate } from "@tanstack/react-router";
-
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuGroup,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { authClient } from "@/lib/auth-client";
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuGroup,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
+import { authClient } from '@/lib/auth-client'
 
-import { Button } from "./ui/button";
-import { Skeleton } from "./ui/skeleton";
+import { Link, useNavigate } from '@tanstack/react-router'
 
-export default function UserMenu() {
-  const navigate = useNavigate();
-  const { data: session, isPending } = authClient.useSession();
+import { Button } from './ui/button'
+import { Skeleton } from './ui/skeleton'
 
-  if (isPending) {
-    return <Skeleton className="h-9 w-24" />;
-  }
+export function UserMenu() {
+	const navigate = useNavigate()
+	const { data: session, isPending } = authClient.useSession()
 
-  if (!session) {
-    return (
-      <Link to="/login">
-        <Button variant="outline">Sign In</Button>
-      </Link>
-    );
-  }
+	if (isPending) {
+		return <Skeleton className='w-24 h-9' />
+	}
 
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button variant="outline" />}>
-        {session.user.name}
-      </DropdownMenuTrigger>
-      <DropdownMenuContent className="bg-card">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>My Account</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem>{session.user.email}</DropdownMenuItem>
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => {
-              authClient.signOut({
-                fetchOptions: {
-                  onSuccess: () => {
-                    navigate({
-                      to: "/",
-                    });
-                  },
-                },
-              });
-            }}
-          >
-            Sign Out
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
+	if (!session) {
+		return (
+			<Link to='/login'>
+				<Button variant='outline'>Sign In</Button>
+			</Link>
+		)
+	}
+
+	return (
+		<DropdownMenu>
+			<DropdownMenuTrigger render={<Button variant='outline' />}>
+				{session.user.name}
+			</DropdownMenuTrigger>
+			<DropdownMenuContent className='bg-card'>
+				<DropdownMenuGroup>
+					<DropdownMenuLabel>My Account</DropdownMenuLabel>
+					<DropdownMenuSeparator />
+					<DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+					<DropdownMenuItem
+						variant='destructive'
+						onClick={() => {
+							authClient.signOut({
+								fetchOptions: {
+									onSuccess: () => {
+										navigate({
+											to: '/',
+										})
+									},
+								},
+							})
+						}}
+					>
+						Sign Out
+					</DropdownMenuItem>
+				</DropdownMenuGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	)
 }
