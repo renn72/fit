@@ -1,3 +1,4 @@
+import { UserMenu } from '@/components/user-menu'
 import { orpc } from '@/utils/orpc'
 
 import { useQuery } from '@tanstack/react-query'
@@ -27,6 +28,9 @@ function HomeComponent() {
 									: 'Disconnected'}
 						</span>
 					</div>
+				</section>
+				<section className='flex gap-4 items-center p-4 rounded-lg border'>
+					<UserMenu />
 				</section>
 			</div>
 		</div>

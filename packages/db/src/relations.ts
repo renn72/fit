@@ -1,8 +1,9 @@
 import { defineRelations } from 'drizzle-orm'
 import * as auth from './schema/auth'
+import * as exercise from './schema/exercise'
 import * as org from './schema/org'
 
-const schema = { ...org, ...auth }
+const schema = { ...org, ...auth, ...exercise }
 
 export const relations = defineRelations(schema, (r) => ({
 	// ***************** User *******************
@@ -96,6 +97,18 @@ export const relations = defineRelations(schema, (r) => ({
 		subscriptions: r.many.subscription({
 			from: r.plan.id,
 			to: r.subscription.planId,
+		}),
+		codes: r.many.planCode({
+			from: r.plan.id,
+			to: r.planCode.planId,
+		}),
+	},
+
+	// ***************** Plan Code *******************
+	planCode: {
+		plan: r.one.plan({
+			from: r.planCode.planId,
+			to: r.plan.id,
 		}),
 	},
 }))

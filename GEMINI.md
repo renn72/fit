@@ -7,3 +7,5 @@
 - @/ROADMAP.md
 
 Use Shadcn where possible
+
+NEVER run any build or linting commands.

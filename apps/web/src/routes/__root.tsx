@@ -66,11 +66,11 @@ function InnerRoot() {
 					<div className='grid h-svh grid-rows-[auto_1fr]'>
 						<Outlet />
 					</div>
-					<Toaster richColors />
-					<TanStackRouterDevtools position='bottom-left' />
-					<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
-					<Scripts />
 				</TooltipProvider>
+				<Toaster richColors />
+				<TanStackRouterDevtools position='bottom-left' />
+				<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
+				<Scripts />
 			</body>
 		</html>
 	)

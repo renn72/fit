@@ -35,29 +35,29 @@ const data = {
 	},
 	navMain: [
 		{
-			title: 'Playground',
+			title: 'Nutrition',
 			url: '#',
 			icon: <TerminalIcon />,
 			isActive: true,
 			items: [
 				{
-					title: 'History',
+					title: 'Meal Plans',
 					url: '#',
 				},
 				{
-					title: 'Starred',
+					title: 'Recipes',
 					url: '#',
 				},
 				{
-					title: 'Settings',
+					title: 'Ingredients',
 					url: '#',
 				},
 			],
 		},
 		{
-			title: 'Models',
+			title: 'Fitness',
 			url: '#',
-			icon: <RobotIcon />,
+			icon: <RobotIcon weight='duotone' />,
 			items: [
 				{
 					title: 'Genesis',
@@ -68,36 +68,13 @@ const data = {
 					url: '#',
 				},
 				{
-					title: 'Quantum',
+					title: 'Exercises',
 					url: '#',
 				},
 			],
 		},
 		{
-			title: 'Documentation',
-			url: '#',
-			icon: <BookOpenIcon />,
-			items: [
-				{
-					title: 'Introduction',
-					url: '#',
-				},
-				{
-					title: 'Get Started',
-					url: '#',
-				},
-				{
-					title: 'Tutorials',
-					url: '#',
-				},
-				{
-					title: 'Changelog',
-					url: '#',
-				},
-			],
-		},
-		{
-			title: 'Settings',
+			title: 'Root',
 			url: '#',
 			icon: <GearIcon />,
 			items: [

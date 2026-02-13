@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Loader } from '@/components/loader'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Button, LoadingButton } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -24,6 +24,13 @@ import {
 	InputGroupAddon,
 	InputGroupText,
 } from '@/components/ui/input-group'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { cn } from '@/lib/utils'
 import { orpc } from '@/utils/orpc'
 
@@ -44,6 +51,33 @@ function slugify(text: string) {
 		.substring(0, 12)
 }
 
+const timezones = Intl.supportedValuesOf('timeZone')
+	.map((tz) => {
+		const formatter = new Intl.DateTimeFormat('en-US', {
+			timeZone: tz,
+			timeZoneName: 'longOffset',
+		})
+		const parts = formatter.formatToParts(new Date())
+		const offset = parts.find((p) => p.type === 'timeZoneName')?.value || ''
+
+		// Extract numeric offset for sorting (e.g., "GMT+10:30" -> 10.5)
+		let numericOffset = 0
+		const match = offset.match(/([+-])(\d{1,2}):(\d{2})/)
+		if (match) {
+			const sign = match[1] === '+' ? 1 : -1
+			const hours = Number.parseInt(match[2], 10)
+			const minutes = Number.parseInt(match[3], 10)
+			numericOffset = sign * (hours + minutes / 60)
+		}
+
+		return {
+			id: tz,
+			label: `(${offset}) ${tz.replace(/_/g, ' ')}`,
+			offset: numericOffset,
+		}
+	})
+	.sort((a, b) => a.offset - b.offset || a.id.localeCompare(b.id))
+
 const formSchema = z.object({
 	name: z
 		.string()
@@ -53,19 +87,40 @@ const formSchema = z.object({
 		.string()
 		.min(4, 'Description must be at least 4 characters.')
 		.max(12, 'Description must be at most 12 characters.'),
+	timezone: z.string().min(1, 'Please select a timezone'),
 	planId: z.string().min(1),
+	code: z.string().optional(),
 })
 
 export function OnboardingForm() {
 	const [isSubmitting, setIsSubmitting] = useState(false)
 	const [step, setStep] = useState(1)
 	const [isSlugManual, setIsSlugManual] = useState(false)
+	const [accessCode, setAccessCode] = useState('')
+	const [hiddenPlan, setHiddenPlan] = useState<any>(null)
 	const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
 		'monthly',
 	)
 	const navigate = useNavigate()
 
-	const { data: plans } = useQuery(orpc.organisation.getAllPlans.queryOptions())
+	const { data: publicPlans } = useQuery(
+		orpc.organisation.getAllPlans.queryOptions(),
+	)
+
+	const validateCode = useMutation(
+		orpc.organisation.getPlanByCode.mutationOptions({
+			onSuccess: (plan) => {
+				setHiddenPlan(plan)
+				form.setFieldValue('planId', plan?.id || '')
+				form.setFieldValue('code', accessCode)
+				toast.success(`Access code accepted: ${plan?.name} plan unlocked`)
+			},
+			onError: (error) => {
+				toast.error(error.message || 'Invalid access code')
+				setHiddenPlan(null)
+			},
+		}),
+	)
 
 	const createOrg = useMutation(
 		orpc.organisation.create.mutationOptions({
@@ -84,7 +139,9 @@ export function OnboardingForm() {
 		defaultValues: {
 			name: '',
 			slug: '',
+			timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 			planId: '',
+			code: '',
 		},
 		validators: {
 			onSubmit: formSchema,
@@ -104,6 +161,15 @@ export function OnboardingForm() {
 	const planId = useStore(form.store, (state) => state.values.planId)
 	const organisationSlug = useStore(form.store, (state) => state.values.slug)
 
+	const plans = useMemo(() => {
+		if (!publicPlans) return []
+		const all = [...publicPlans]
+		if (hiddenPlan && !all.find((p) => p.id === hiddenPlan.id)) {
+			all.push(hiddenPlan)
+		}
+		return all
+	}, [publicPlans, hiddenPlan])
+
 	useEffect(() => {
 		if (!isSlugManual && organisationName) {
 			const suggestedSlug = slugify(organisationName)
@@ -113,7 +179,7 @@ export function OnboardingForm() {
 		}
 	}, [organisationName, isSlugManual, form])
 
-	if (!plans) {
+	if (!publicPlans) {
 		return <Loader />
 	}
 
@@ -236,6 +302,40 @@ export function OnboardingForm() {
 											)
 										}}
 									</form.Field>
+
+									<form.Field name='timezone'>
+										{(field) => {
+											const isInvalid =
+												field.state.meta.isTouched &&
+												field.state.meta.errors.length > 0
+											return (
+												<Field data-invalid={isInvalid}>
+													<FieldLabel htmlFor={field.name}>Timezone</FieldLabel>
+													<Select
+														value={field.state.value}
+														onValueChange={(value) => field.handleChange(value)}
+													>
+														<SelectTrigger className='w-full'>
+															<SelectValue placeholder='Select a timezone' />
+														</SelectTrigger>
+														<SelectContent>
+															{timezones.map((tz) => (
+																<SelectItem key={tz.id} value={tz.id}>
+																	{tz.label}
+																</SelectItem>
+															))}
+														</SelectContent>
+													</Select>
+													<FieldDescription>
+														The default timezone for your organisation.
+													</FieldDescription>
+													{isInvalid && (
+														<FieldError errors={field.state.meta.errors} />
+													)}
+												</Field>
+											)
+										}}
+									</form.Field>
 								</FieldGroup>
 							</CardContent>
 							<CardFooter>
@@ -263,6 +363,25 @@ export function OnboardingForm() {
 								<p className='text-muted-foreground'>
 									Select the best plan for your organisation's needs.
 								</p>
+
+								<div className='mx-auto mt-6 max-w-sm'>
+									<InputGroup>
+										<Input
+											placeholder='Access code (optional)'
+											value={accessCode}
+											onChange={(e) => setAccessCode(e.target.value)}
+										/>
+										<LoadingButton
+											type='button'
+											variant='secondary'
+											onClick={() => validateCode.mutate({ code: accessCode })}
+											disabled={!accessCode}
+											loading={validateCode.isPending}
+										>
+											Apply
+										</LoadingButton>
+									</InputGroup>
+								</div>
 
 								<div className='flex justify-center items-center mt-6 space-x-4'>
 									<button
@@ -406,18 +525,14 @@ export function OnboardingForm() {
 								<Button variant='ghost' onClick={() => setStep(1)}>
 									<ChevronLeft className='mr-2 w-4 h-4' /> Back to details
 								</Button>
-								<Button
+								<LoadingButton
 									type='submit'
-									disabled={isSubmitting || planId === ''}
-									className={cn(
-										'px-8',
-										isSubmitting || planId === ''
-											? 'cursor-not-allowed'
-											: 'cursor-pointer',
-									)}
+									loading={isSubmitting}
+									disabled={planId === ''}
+									className='px-8'
 								>
-									{isSubmitting ? 'Creating...' : 'Create'}
-								</Button>
+									Create
+								</LoadingButton>
 							</div>
 						</div>
 					)}

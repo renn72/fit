@@ -1,5 +1,5 @@
 import { OnboardingForm } from '@/components/onboarding-form'
-import { authClient } from '@/lib/auth-client'
+import { getUserForce } from '@/functions/get-user-force'
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
@@ -7,15 +7,21 @@ import * as _ from 'lodash'
 
 export const Route = createFileRoute('/onboard')({
 	beforeLoad: async () => {
-		const session = await authClient.getSession()
-		console.log(session)
-		if (!session.data || _.isString(session.data.user.organisationCreatorId)) {
+		const session = await getUserForce()
+		return { session }
+	},
+	loader: async ({ context }) => {
+		if (context.session.user?.organisationSlug) {
+			const slug = context.session.user.organisationSlug
 			redirect({
-				to: '/login',
+				to: '/admin/$orgSlug/s',
+				params: { orgSlug: slug },
 				throw: true,
 			})
 		}
-		return { session }
+		if (!context.session) {
+			redirect({ to: '/login', throw: true })
+		}
 	},
 	component: OnboardComponent,
 })

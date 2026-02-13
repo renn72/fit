@@ -1,7 +1,8 @@
+import { user } from './auth'
+
 import { sql } from 'drizzle-orm'
 import * as s from 'drizzle-orm/sqlite-core'
 import { v4 as uuid } from 'uuid'
-import { user } from './auth'
 
 export const organisation = s.sqliteTable('organisation', {
 	id: s
@@ -10,6 +11,7 @@ export const organisation = s.sqliteTable('organisation', {
 		.$defaultFn(() => uuid()),
 	name: s.text('name').notNull(),
 	slug: s.text('slug').notNull().unique(),
+	timezone: s.text('timezone').notNull().default('UTC'),
 	state: s.text('state').notNull(),
 	creatorId: s.text('creator_id').references(() => user.id, {
 		onDelete: 'set null',
@@ -55,4 +57,27 @@ export const plan = s.sqliteTable('plan', {
 	maxMembers: s.integer('max_members').default(1).notNull(),
 	maxTrainers: s.integer('max_trainers').default(1).notNull(),
 	tags: s.text('tags').default('').notNull(),
+	hidden: s.integer('hidden', { mode: 'boolean' }).default(false).notNull(),
+})
+
+export const planCode = s.sqliteTable('plan_code', {
+	id: s
+		.text('id')
+		.primaryKey()
+		.$defaultFn(() => uuid()),
+	code: s.text('code').notNull().unique(),
+	planId: s
+		.text('plan_id')
+		.references(() => plan.id, { onDelete: 'cascade' })
+		.notNull(),
+	isUsed: s.integer('is_used', { mode: 'boolean' }).default(false).notNull(),
+	createdAt: s
+		.integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: s
+		.integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
 })

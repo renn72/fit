@@ -15,3 +15,18 @@ export const authMiddleware = createMiddleware().server(
 		})
 	},
 )
+
+export const authRefreshMiddleware = createMiddleware().server(
+	async ({ next, request }) => {
+		const session = await authClient.getSession({
+			fetchOptions: {
+				headers: request.headers,
+				throw: true,
+				asResponse: true,
+			},
+		})
+		return next({
+			context: { session },
+		})
+	},
+)

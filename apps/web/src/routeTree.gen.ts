@@ -13,6 +13,7 @@ import { Route as OnboardRouteImport } from './routes/onboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RootIndexRouteImport } from './routes/root/index'
 import { Route as AdminOrgSlugSRouteImport } from './routes/admin/$orgSlug.s'
 import { Route as AdminOrgSlugSDashboardRouteImport } from './routes/admin/$orgSlug.s.dashboard'
 
@@ -36,6 +37,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RootIndexRoute = RootIndexRouteImport.update({
+  id: '/root/',
+  path: '/root/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminOrgSlugSRoute = AdminOrgSlugSRouteImport.update({
   id: '/admin/$orgSlug/s',
   path: '/admin/$orgSlug/s',
@@ -52,6 +58,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/root/': typeof RootIndexRoute
   '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
   '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
 }
@@ -60,6 +67,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/root': typeof RootIndexRoute
   '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
   '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
 }
@@ -69,6 +77,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/root/': typeof RootIndexRoute
   '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
   '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
 }
@@ -79,6 +88,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/onboard'
+    | '/root/'
     | '/admin/$orgSlug/s'
     | '/admin/$orgSlug/s/dashboard'
   fileRoutesByTo: FileRoutesByTo
@@ -87,6 +97,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/onboard'
+    | '/root'
     | '/admin/$orgSlug/s'
     | '/admin/$orgSlug/s/dashboard'
   id:
@@ -95,6 +106,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/onboard'
+    | '/root/'
     | '/admin/$orgSlug/s'
     | '/admin/$orgSlug/s/dashboard'
   fileRoutesById: FileRoutesById
@@ -104,6 +116,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   OnboardRoute: typeof OnboardRoute
+  RootIndexRoute: typeof RootIndexRoute
   AdminOrgSlugSRoute: typeof AdminOrgSlugSRouteWithChildren
 }
 
@@ -135,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/root/': {
+      id: '/root/'
+      path: '/root'
+      fullPath: '/root/'
+      preLoaderRoute: typeof RootIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/$orgSlug/s': {
@@ -171,6 +191,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   OnboardRoute: OnboardRoute,
+  RootIndexRoute: RootIndexRoute,
   AdminOrgSlugSRoute: AdminOrgSlugSRouteWithChildren,
 }
 export const routeTree = rootRouteImport

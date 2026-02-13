@@ -2,14 +2,14 @@ import { useState } from 'react'
 
 import SignInForm from '@/components/sign-in-form'
 import SignUpForm from '@/components/sign-up-form'
-import { getUser } from '@/functions/get-user'
+import { getUserForce } from '@/functions/get-user-force'
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/login')({
 	component: RouteComponent,
 	beforeLoad: async () => {
-		const session = await getUser()
+		const session = await getUserForce()
 		return { session }
 	},
 	loader: async ({ context }) => {
