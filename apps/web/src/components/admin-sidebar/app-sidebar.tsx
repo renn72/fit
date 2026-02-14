@@ -13,6 +13,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar'
+import { FitByWsysLogo } from '@/components/wsysIcon'
 
 import {
 	BookOpenIcon,
@@ -136,15 +137,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<SidebarMenuButton size='lg' render={<a href='#' />}>
-							<div className='flex justify-center items-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground aspect-square size-8'>
-								<CommandIcon className='size-4' />
-							</div>
-							<div className='grid flex-1 text-sm leading-tight text-left'>
-								<span className='font-medium truncate'>Acme Inc</span>
-								<span className='text-xs truncate'>Enterprise</span>
-							</div>
-						</SidebarMenuButton>
+						<img alt='Fit by wsys' src='/logo.webp' width='40' height='40' />
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
