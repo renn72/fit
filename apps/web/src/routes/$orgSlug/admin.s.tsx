@@ -5,7 +5,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/admin/$orgSlug/s')({
+export const Route = createFileRoute('/$orgSlug/admin/s')({
 	component: LayoutRouteComponent,
 })
 

@@ -9,6 +9,12 @@ import { protectedProcedure } from '../index'
 
 export const orgRouter = {
 	create: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/organisation',
+			summary: 'Create organisation',
+			tags: ['Organisation'],
+		})
 		.input(
 			z.object({
 				name: z.string().min(1).max(32),
@@ -111,19 +117,39 @@ export const orgRouter = {
 			})
 		}),
 
-	getAllSlugs: protectedProcedure.handler(async () => {
-		const res = await db.select({ slug: organisation.slug }).from(organisation)
-		return res.map((r) => r.slug)
-	}),
-
-	getAllPlans: protectedProcedure.handler(async () => {
-		const res = await db.query.plan.findMany({
-			where: { hidden: false },
+	getAllSlugs: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/organisation/slugs',
+			summary: 'Get all slugs',
+			tags: ['Organisation'],
 		})
-		return res
-	}),
+		.handler(async () => {
+			const res = await db.select({ slug: organisation.slug }).from(organisation)
+			return res.map((r) => r.slug)
+		}),
+
+	getAllPlans: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/organisation/plans',
+			summary: 'Get all plans',
+			tags: ['Organisation'],
+		})
+		.handler(async () => {
+			const res = await db.query.plan.findMany({
+				where: { hidden: false },
+			})
+			return res
+		}),
 
 	getPlanByCode: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/organisation/plan-by-code/{code}',
+			summary: 'Get plan by code',
+			tags: ['Organisation'],
+		})
 		.input(z.object({ code: z.string().min(1) }))
 		.handler(async ({ input }) => {
 			const codeRecord = await db.query.planCode.findFirst({

@@ -5,6 +5,12 @@ import { protectedProcedure } from '../index'
 
 export const userRouter = {
 	getWithOrg: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/user/{id}',
+			summary: 'Get user with organization',
+			tags: ['User'],
+		})
 		.input(
 			z.object({
 				id: z.string(),

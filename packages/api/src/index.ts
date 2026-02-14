@@ -6,6 +6,15 @@ export const o = os.$context<Context>()
 
 export const publicProcedure = o
 
+const timingMiddleware = os.middleware(async ({ next, path }) => {
+	const start = Date.now()
+	try {
+		return await next()
+	} finally {
+		console.log(`***** [oRPC] ${path} took ${Date.now() - start}ms to execute`)
+	}
+})
+
 const requireAuth = o.middleware(async ({ context, next }) => {
 	if (!context.session?.user) {
 		throw new ORPCError('UNAUTHORIZED')
@@ -17,4 +26,6 @@ const requireAuth = o.middleware(async ({ context, next }) => {
 	})
 })
 
-export const protectedProcedure = publicProcedure.use(requireAuth)
+export const protectedProcedure = publicProcedure
+	.use(timingMiddleware)
+	.use(requireAuth)

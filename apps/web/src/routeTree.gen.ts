@@ -14,8 +14,8 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RootIndexRouteImport } from './routes/root/index'
-import { Route as AdminOrgSlugSRouteImport } from './routes/admin/$orgSlug.s'
-import { Route as AdminOrgSlugSDashboardRouteImport } from './routes/admin/$orgSlug.s.dashboard'
+import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
+import { Route as OrgSlugAdminSDashboardRouteImport } from './routes/$orgSlug/admin.s.dashboard'
 
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',
@@ -42,15 +42,15 @@ const RootIndexRoute = RootIndexRouteImport.update({
   path: '/root/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminOrgSlugSRoute = AdminOrgSlugSRouteImport.update({
-  id: '/admin/$orgSlug/s',
-  path: '/admin/$orgSlug/s',
+const OrgSlugAdminSRoute = OrgSlugAdminSRouteImport.update({
+  id: '/$orgSlug/admin/s',
+  path: '/$orgSlug/admin/s',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminOrgSlugSDashboardRoute = AdminOrgSlugSDashboardRouteImport.update({
+const OrgSlugAdminSDashboardRoute = OrgSlugAdminSDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
-  getParentRoute: () => AdminOrgSlugSRoute,
+  getParentRoute: () => OrgSlugAdminSRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -59,8 +59,8 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
   '/root/': typeof RootIndexRoute
-  '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
-  '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
+  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
+  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -68,8 +68,8 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
   '/root': typeof RootIndexRoute
-  '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
-  '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
+  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
+  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -78,8 +78,8 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
   '/root/': typeof RootIndexRoute
-  '/admin/$orgSlug/s': typeof AdminOrgSlugSRouteWithChildren
-  '/admin/$orgSlug/s/dashboard': typeof AdminOrgSlugSDashboardRoute
+  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
+  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -89,8 +89,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboard'
     | '/root/'
-    | '/admin/$orgSlug/s'
-    | '/admin/$orgSlug/s/dashboard'
+    | '/$orgSlug/admin/s'
+    | '/$orgSlug/admin/s/dashboard'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -98,8 +98,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboard'
     | '/root'
-    | '/admin/$orgSlug/s'
-    | '/admin/$orgSlug/s/dashboard'
+    | '/$orgSlug/admin/s'
+    | '/$orgSlug/admin/s/dashboard'
   id:
     | '__root__'
     | '/'
@@ -107,8 +107,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/onboard'
     | '/root/'
-    | '/admin/$orgSlug/s'
-    | '/admin/$orgSlug/s/dashboard'
+    | '/$orgSlug/admin/s'
+    | '/$orgSlug/admin/s/dashboard'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -117,7 +117,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   OnboardRoute: typeof OnboardRoute
   RootIndexRoute: typeof RootIndexRoute
-  AdminOrgSlugSRoute: typeof AdminOrgSlugSRouteWithChildren
+  OrgSlugAdminSRoute: typeof OrgSlugAdminSRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -157,33 +157,33 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RootIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/$orgSlug/s': {
-      id: '/admin/$orgSlug/s'
-      path: '/admin/$orgSlug/s'
-      fullPath: '/admin/$orgSlug/s'
-      preLoaderRoute: typeof AdminOrgSlugSRouteImport
+    '/$orgSlug/admin/s': {
+      id: '/$orgSlug/admin/s'
+      path: '/$orgSlug/admin/s'
+      fullPath: '/$orgSlug/admin/s'
+      preLoaderRoute: typeof OrgSlugAdminSRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/$orgSlug/s/dashboard': {
-      id: '/admin/$orgSlug/s/dashboard'
+    '/$orgSlug/admin/s/dashboard': {
+      id: '/$orgSlug/admin/s/dashboard'
       path: '/dashboard'
-      fullPath: '/admin/$orgSlug/s/dashboard'
-      preLoaderRoute: typeof AdminOrgSlugSDashboardRouteImport
-      parentRoute: typeof AdminOrgSlugSRoute
+      fullPath: '/$orgSlug/admin/s/dashboard'
+      preLoaderRoute: typeof OrgSlugAdminSDashboardRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
     }
   }
 }
 
-interface AdminOrgSlugSRouteChildren {
-  AdminOrgSlugSDashboardRoute: typeof AdminOrgSlugSDashboardRoute
+interface OrgSlugAdminSRouteChildren {
+  OrgSlugAdminSDashboardRoute: typeof OrgSlugAdminSDashboardRoute
 }
 
-const AdminOrgSlugSRouteChildren: AdminOrgSlugSRouteChildren = {
-  AdminOrgSlugSDashboardRoute: AdminOrgSlugSDashboardRoute,
+const OrgSlugAdminSRouteChildren: OrgSlugAdminSRouteChildren = {
+  OrgSlugAdminSDashboardRoute: OrgSlugAdminSDashboardRoute,
 }
 
-const AdminOrgSlugSRouteWithChildren = AdminOrgSlugSRoute._addFileChildren(
-  AdminOrgSlugSRouteChildren,
+const OrgSlugAdminSRouteWithChildren = OrgSlugAdminSRoute._addFileChildren(
+  OrgSlugAdminSRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -192,7 +192,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   OnboardRoute: OnboardRoute,
   RootIndexRoute: RootIndexRoute,
-  AdminOrgSlugSRoute: AdminOrgSlugSRouteWithChildren,
+  OrgSlugAdminSRoute: OrgSlugAdminSRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

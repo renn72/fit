@@ -8,20 +8,11 @@ export const baseExercise = s.sqliteTable('base_exercise', {
 	level: s.text('level').notNull(),
 	mechanic: s.text('mechanic'),
 	equipment: s.text('equipment'),
-	primaryMuscles: s
-		.text('primary_muscles', { mode: 'json' })
-		.$type<string[]>()
-		.notNull(),
-	secondaryMuscles: s
-		.text('secondary_muscles', { mode: 'json' })
-		.$type<string[]>()
-		.notNull(),
-	instructions: s
-		.text('instructions', { mode: 'json' })
-		.$type<string[]>()
-		.notNull(),
+	primaryMuscles: s.text('primary_muscles').notNull(),
+	secondaryMuscles: s.text('secondary_muscles').notNull(),
+	instructions: s.text('instructions').notNull(),
 	category: s.text('category').notNull(),
-	images: s.text('images', { mode: 'json' }).$type<string[]>().notNull(),
+	images: s.text('images').notNull(),
 	createdAt: s
 		.integer('created_at', { mode: 'timestamp_ms' })
 		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
