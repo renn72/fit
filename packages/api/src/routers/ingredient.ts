@@ -118,7 +118,14 @@ export const ingredientRouter = {
 			tags: ['Ingredient'],
 		})
 		.input(IngredientGetAllBaseInput)
-		.handler(async ({ input }) => {
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to view base ingredients',
+				})
+			}
+
 			const res = await db.query.baseIngredients.findMany({
 				limit: input.limit,
 			})

@@ -118,7 +118,14 @@ export const exerciseRouter = {
 			tags: ['Exercise'],
 		})
 		.input(ExerciseGetAllBaseInput)
-		.handler(async ({ input }) => {
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to view base exercises',
+				})
+			}
+
 			const res = await db.query.baseExercise.findMany({
 				limit: input.limit,
 			})
