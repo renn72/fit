@@ -4,8 +4,11 @@ import { organisation, planCode, subscription } from '@fit/db/schema/org'
 
 import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
-import z from 'zod'
 import { protectedProcedure } from '../index'
+import {
+	OrganisationCreateInput,
+	OrganisationGetPlanByCodeInput,
+} from '../schemas/organisation'
 
 export const orgRouter = {
 	create: protectedProcedure
@@ -15,15 +18,7 @@ export const orgRouter = {
 			summary: 'Create organisation',
 			tags: ['Organisation'],
 		})
-		.input(
-			z.object({
-				name: z.string().min(1).max(32),
-				slug: z.string().min(1).max(32),
-				timezone: z.string().min(1),
-				planId: z.string().min(1),
-				code: z.string().optional(),
-			}),
-		)
+		.input(OrganisationCreateInput)
 		.handler(async ({ input, context }) => {
 			const existing = await db.query.organisation.findFirst({
 				where: {
@@ -152,7 +147,7 @@ export const orgRouter = {
 			summary: 'Get plan by code',
 			tags: ['Organisation'],
 		})
-		.input(z.object({ code: z.string().min(1) }))
+		.input(OrganisationGetPlanByCodeInput)
 		.handler(async ({ input }) => {
 			const codeRecord = await db.query.planCode.findFirst({
 				where: {

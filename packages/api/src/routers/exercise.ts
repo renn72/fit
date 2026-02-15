@@ -1,7 +1,11 @@
 import { db } from '@fit/db'
 
-import z from 'zod'
 import { protectedProcedure } from '../index'
+import {
+	ExerciseGetAllBaseInput,
+	ExerciseGetAllOrgInput,
+	ExerciseGetInput,
+} from '../schemas/exercise'
 
 export const exerciseRouter = {
 	getAllOrg: protectedProcedure
@@ -11,12 +15,7 @@ export const exerciseRouter = {
 			summary: 'Get all exercises for an organisation',
 			tags: ['Exercise'],
 		})
-		.input(
-			z.object({
-				organisationId: z.string().min(1),
-				limit: z.number().optional(),
-			}),
-		)
+		.input(ExerciseGetAllOrgInput)
 		.handler(async ({ input }) => {
 			const orgExercises = await db.query.exercise.findMany({
 				where: { organisationId: input.organisationId },
@@ -48,7 +47,7 @@ export const exerciseRouter = {
 			summary: 'Get an exercise by ID',
 			tags: ['Exercise'],
 		})
-		.input(z.object({ id: z.string().min(1) }))
+		.input(ExerciseGetInput)
 		.handler(async ({ input }) => {
 			const orgExercise = await db.query.exercise.findFirst({
 				where: { id: input.id },
@@ -70,7 +69,7 @@ export const exerciseRouter = {
 			summary: 'Get all base exercises',
 			tags: ['Exercise'],
 		})
-		.input(z.object({ limit: z.number().optional() }))
+		.input(ExerciseGetAllBaseInput)
 		.handler(async ({ input }) => {
 			const res = await db.query.baseExercise.findMany({
 				limit: input.limit,
