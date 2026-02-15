@@ -31,7 +31,18 @@ export const ingredientRouter = {
 				(bi) => !overwrittenBaseIds.includes(bi.id),
 			)
 
-			const allIngredients = [...orgIngredients, ...availableBaseIngredients]
+			const allIngredients = [
+				...orgIngredients.map((i) => ({
+					...i,
+					isBase: false,
+					isOverwriteBase: !!i.baseIngredientId,
+				})),
+				...availableBaseIngredients.map((bi) => ({
+					...bi,
+					isBase: true,
+					isOverwriteBase: false,
+				})),
+			]
 
 			if (input.limit) {
 				return allIngredients.slice(0, input.limit)

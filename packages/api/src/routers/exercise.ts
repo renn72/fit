@@ -31,7 +31,18 @@ export const exerciseRouter = {
 				(be) => !overwrittenBaseIds.includes(be.id),
 			)
 
-			const allExercises = [...orgExercises, ...availableBaseExercises]
+			const allExercises = [
+				...orgExercises.map((e) => ({
+					...e,
+					isBase: false,
+					isOverwriteBase: !!e.baseExerciseId,
+				})),
+				...availableBaseExercises.map((be) => ({
+					...be,
+					isBase: true,
+					isOverwriteBase: false,
+				})),
+			]
 
 			if (input.limit) {
 				return allExercises.slice(0, input.limit)
