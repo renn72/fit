@@ -12,3 +12,14 @@ export const IngredientGetInput = z.object({
 export const IngredientGetAllBaseInput = z.object({
 	limit: z.number().optional(),
 })
+
+export const IngredientCreateInput = z.object({
+	name: z.string().min(1),
+	calories: z.number().min(0),
+	protein: z.number().min(0),
+	fat: z.number().min(0),
+	carbohydrate: z.number().min(0),
+	serveSize: z.number().min(0),
+	serveUnit: z.string().min(1),
+	baseIngredientId: z.string().optional().nullable(),
+})

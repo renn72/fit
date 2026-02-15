@@ -1,13 +1,50 @@
 import { db } from '@fit/db'
+import { exercise } from '@fit/db/schema/exercise'
 
+import { ORPCError } from '@orpc/server'
 import { protectedProcedure } from '../index'
 import {
+	ExerciseCreateInput,
 	ExerciseGetAllBaseInput,
 	ExerciseGetAllOrgInput,
 	ExerciseGetInput,
 } from '../schemas/exercise'
 
 export const exerciseRouter = {
+	create: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/exercise',
+			summary: 'Create an exercise',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseCreateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to create exercises',
+				})
+			}
+
+			if (!context.session.user.organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			const [newExercise] = await db
+				.insert(exercise)
+				.values({
+					...input,
+					creatorId: context.session.user.id,
+					organisationId: context.session.user.organisationId,
+				})
+				.returning()
+
+			return newExercise
+		}),
+
 	getAllOrg: protectedProcedure
 		.route({
 			method: 'GET',

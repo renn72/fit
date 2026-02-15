@@ -56,6 +56,7 @@ export const auth = betterAuth({
 					...user,
 					metaTags: dbUser?.metaTags, // a list of tags, delimited by comma
 					organisationSlug: dbUser?.organisationSlug,
+					organisationId: dbUser?.organisationId,
 					organisationCreatorId: dbUser?.organisationCreatorId,
 				},
 				session,

@@ -1,13 +1,50 @@
 import { db } from '@fit/db'
+import { ingredient } from '@fit/db/schema/ingredient'
 
+import { ORPCError } from '@orpc/server'
 import { protectedProcedure } from '../index'
 import {
+	IngredientCreateInput,
 	IngredientGetAllBaseInput,
 	IngredientGetAllOrgInput,
 	IngredientGetInput,
 } from '../schemas/ingredient'
 
 export const ingredientRouter = {
+	create: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/ingredient',
+			summary: 'Create an ingredient',
+			tags: ['Ingredient'],
+		})
+		.input(IngredientCreateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to create ingredients',
+				})
+			}
+
+			if (!context.session.user.organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			const [newIngredient] = await db
+				.insert(ingredient)
+				.values({
+					...input,
+					creatorId: context.session.user.id,
+					organisationId: context.session.user.organisationId,
+				})
+				.returning()
+
+			return newIngredient
+		}),
+
 	getAllOrg: protectedProcedure
 		.route({
 			method: 'GET',
