@@ -125,7 +125,9 @@ export const orgRouter = {
 			tags: ['Organisation'],
 		})
 		.handler(async () => {
-			const res = await db.select({ slug: organisation.slug }).from(organisation)
+			const res = await db
+				.select({ slug: organisation.slug })
+				.from(organisation)
 			return res.map((r) => r.slug)
 		}),
 

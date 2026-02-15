@@ -38,6 +38,11 @@ export const ingredient = s.sqliteTable(
 		carbohydrate: s.real('carbohydrate').notNull(),
 		serveSize: s.real('serve_size').notNull(),
 		serveUnit: s.text('serve_unit').notNull(),
+		baseIngredientId: s
+			.text('base_ingredient_id')
+			.references(() => baseIngredients.id, {
+				onDelete: 'set null',
+			}),
 		creatorId: s.text('creator_id').references(() => user.id, {
 			onDelete: 'set null',
 		}),

@@ -100,6 +100,18 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.ingredient.organisationId,
 			to: r.organisation.id,
 		}),
+		baseIngredient: r.one.baseIngredients({
+			from: r.ingredient.baseIngredientId,
+			to: r.baseIngredients.id,
+		}),
+	},
+
+	// ***************** Base Ingredient *******************
+	baseIngredients: {
+		ingredients: r.many.ingredient({
+			from: r.baseIngredients.id,
+			to: r.ingredient.baseIngredientId,
+		}),
 	},
 
 	// ***************** Subscription *******************

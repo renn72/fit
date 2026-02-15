@@ -1,4 +1,6 @@
 import { adminSetupRouter } from './admin-setup'
+import { exerciseRouter } from './exercise'
+import { ingredientRouter } from './ingredient'
 import { orgRouter } from './organisation'
 import { userRouter } from './user'
 
@@ -32,6 +34,8 @@ export const appRouter = {
 	organisation: orgRouter,
 	user: userRouter,
 	adminSetup: adminSetupRouter,
+	exercise: exerciseRouter,
+	ingredient: ingredientRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>
