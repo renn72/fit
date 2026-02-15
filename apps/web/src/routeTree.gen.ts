@@ -15,6 +15,7 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RootIndexRouteImport } from './routes/root/index'
 import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
+import { Route as OrgSlugAdminSIngredientsRouteImport } from './routes/$orgSlug/admin.s.ingredients'
 import { Route as OrgSlugAdminSExercisesRouteImport } from './routes/$orgSlug/admin.s.exercises'
 import { Route as OrgSlugAdminSDashboardRouteImport } from './routes/$orgSlug/admin.s.dashboard'
 
@@ -48,6 +49,12 @@ const OrgSlugAdminSRoute = OrgSlugAdminSRouteImport.update({
   path: '/$orgSlug/admin/s',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgSlugAdminSIngredientsRoute =
+  OrgSlugAdminSIngredientsRouteImport.update({
+    id: '/ingredients',
+    path: '/ingredients',
+    getParentRoute: () => OrgSlugAdminSRoute,
+  } as any)
 const OrgSlugAdminSExercisesRoute = OrgSlugAdminSExercisesRouteImport.update({
   id: '/exercises',
   path: '/exercises',
@@ -68,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
+  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -78,6 +86,7 @@ export interface FileRoutesByTo {
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
+  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -89,6 +98,7 @@ export interface FileRoutesById {
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
+  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,6 +111,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
+    | '/$orgSlug/admin/s/ingredients'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -111,6 +122,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
+    | '/$orgSlug/admin/s/ingredients'
   id:
     | '__root__'
     | '/'
@@ -121,6 +133,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
+    | '/$orgSlug/admin/s/ingredients'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -176,6 +189,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugAdminSRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$orgSlug/admin/s/ingredients': {
+      id: '/$orgSlug/admin/s/ingredients'
+      path: '/ingredients'
+      fullPath: '/$orgSlug/admin/s/ingredients'
+      preLoaderRoute: typeof OrgSlugAdminSIngredientsRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
+    }
     '/$orgSlug/admin/s/exercises': {
       id: '/$orgSlug/admin/s/exercises'
       path: '/exercises'
@@ -196,11 +216,13 @@ declare module '@tanstack/react-router' {
 interface OrgSlugAdminSRouteChildren {
   OrgSlugAdminSDashboardRoute: typeof OrgSlugAdminSDashboardRoute
   OrgSlugAdminSExercisesRoute: typeof OrgSlugAdminSExercisesRoute
+  OrgSlugAdminSIngredientsRoute: typeof OrgSlugAdminSIngredientsRoute
 }
 
 const OrgSlugAdminSRouteChildren: OrgSlugAdminSRouteChildren = {
   OrgSlugAdminSDashboardRoute: OrgSlugAdminSDashboardRoute,
   OrgSlugAdminSExercisesRoute: OrgSlugAdminSExercisesRoute,
+  OrgSlugAdminSIngredientsRoute: OrgSlugAdminSIngredientsRoute,
 }
 
 const OrgSlugAdminSRouteWithChildren = OrgSlugAdminSRoute._addFileChildren(

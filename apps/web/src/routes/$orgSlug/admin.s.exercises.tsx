@@ -1,3 +1,5 @@
+import * as React from 'react'
+
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -5,20 +7,14 @@ import { DataTableFilterList } from '@/components/data-table/data-table-filter-l
 import { Checkbox } from '@/components/ui/checkbox'
 import { getUserForce } from '@/functions/get-user-force'
 import { useDataTable } from '@/hooks/use-data-table'
+import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import {
-	createColumnHelper,
-	getCoreRowModel,
-	getFacetedRowModel,
-	getFacetedUniqueValues,
-	getFilteredRowModel,
-	getPaginationRowModel,
-	getSortedRowModel,
-	useReactTable,
-} from '@tanstack/react-table'
+import { createColumnHelper } from '@tanstack/react-table'
+
+import { parseAsInteger, useQueryState } from 'nuqs'
 
 export const Route = createFileRoute('/$orgSlug/admin/s/exercises')({
 	component: RouteComponent,
@@ -89,11 +85,6 @@ const columns = [
 		meta: {
 			label: 'Level',
 			variant: 'select',
-			options: [
-				{ label: 'Beginner', value: 'beginner' },
-				{ label: 'Intermediate', value: 'intermediate' },
-				{ label: 'Expert', value: 'expert' },
-			],
 		},
 	}),
 	columnHelper.accessor('category', {
@@ -162,6 +153,9 @@ const columns = [
 	columnHelper.accessor('secondaryMuscles', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Secondary Muscles' />
+		),
+		cell: ({ row }) => (
+			<div className='max-w-35'>{row.getValue('secondaryMuscles')}</div>
 		),
 		meta: {
 			label: 'Secondary Muscles',
@@ -232,11 +226,52 @@ function RouteComponent() {
 		}),
 	)
 
+	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
+	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
+	const [sorting] = useQueryState(
+		'sort',
+		getSortingStateParser<Exercise>(
+			columns
+				// TODO any
+				.map((c) => (c as any).accessorKey)
+				.filter((key): key is string => !!key),
+		).withDefault([{ id: 'createdAt', desc: true }]),
+	)
+
+	const exercisesData = (exercises as Exercise[]) ?? []
+
+	const { paginatedData, pageCount } = React.useMemo(() => {
+		const processed = [...exercisesData]
+
+		if (sorting && sorting.length > 0) {
+			const { id, desc } = sorting[0]
+			processed.sort((a, b) => {
+				const aValue = a[id as keyof Exercise]
+				const bValue = b[id as keyof Exercise]
+
+				if (aValue === bValue) return 0
+				if (aValue === null || aValue === undefined) return 1
+				if (bValue === null || bValue === undefined) return -1
+
+				if (aValue < bValue) return desc ? 1 : -1
+				return desc ? -1 : 1
+			})
+		}
+
+		const total = processed.length
+		const pageCount = Math.ceil(total / perPage)
+		const start = (page - 1) * perPage
+		const end = start + perPage
+		const paginatedData = processed.slice(start, end)
+
+		return { paginatedData, pageCount }
+	}, [exercisesData, page, perPage, sorting])
+
 	const { table } = useDataTable({
-		data: (exercises as Exercise[]) ?? [],
+		data: paginatedData,
 		columns,
-		pageCount: 1, // Client-side pagination for now
-		getRowId: (originalRow, index) => originalRow.id,
+		pageCount,
+		getRowId: (originalRow) => originalRow.id,
 		initialState: {
 			sorting: [{ id: 'createdAt', desc: true }],
 			columnPinning: { right: ['actions'] },
@@ -252,7 +287,7 @@ function RouteComponent() {
 	}
 
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full h-full'>
+		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
 			</div>
