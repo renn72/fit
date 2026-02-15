@@ -2,10 +2,11 @@ import * as auth from './schema/auth'
 import * as exercise from './schema/exercise'
 import * as ingredient from './schema/ingredient'
 import * as org from './schema/org'
+import * as recipe from './schema/recipe'
 
 import { defineRelations } from 'drizzle-orm'
 
-const schema = { ...org, ...auth, ...exercise, ...ingredient }
+const schema = { ...org, ...auth, ...exercise, ...ingredient, ...recipe }
 
 export const relations = defineRelations(schema, (r) => ({
 	// ***************** User *******************
@@ -33,6 +34,10 @@ export const relations = defineRelations(schema, (r) => ({
 		ingredients: r.many.ingredient({
 			from: r.user.id,
 			to: r.ingredient.creatorId,
+		}),
+		recipes: r.many.recipe({
+			from: r.user.id,
+			to: r.recipe.creatorId,
 		}),
 	},
 
@@ -88,6 +93,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.organisation.id,
 			to: r.ingredient.organisationId,
 		}),
+		recipes: r.many.recipe({
+			from: r.organisation.id,
+			to: r.recipe.organisationId,
+		}),
 	},
 
 	// ***************** Ingredient *******************
@@ -104,6 +113,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.ingredient.baseIngredientId,
 			to: r.baseIngredients.id,
 		}),
+		recipes: r.many.recipeToIngredient({
+			from: r.ingredient.id,
+			to: r.recipeToIngredient.ingredientId,
+		}),
 	},
 
 	// ***************** Base Ingredient *******************
@@ -111,6 +124,38 @@ export const relations = defineRelations(schema, (r) => ({
 		ingredients: r.many.ingredient({
 			from: r.baseIngredients.id,
 			to: r.ingredient.baseIngredientId,
+		}),
+	},
+
+	// ***************** Recipe *******************
+	recipe: {
+		creator: r.one.user({
+			from: r.recipe.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.recipe.organisationId,
+			to: r.organisation.id,
+		}),
+		ingredients: r.many.recipeToIngredient({
+			from: r.recipe.id,
+			to: r.recipeToIngredient.recipeId,
+		}),
+	},
+
+	// ***************** Recipe To Ingredient *******************
+	recipeToIngredient: {
+		recipe: r.one.recipe({
+			from: r.recipeToIngredient.recipeId,
+			to: r.recipe.id,
+		}),
+		ingredient: r.one.ingredient({
+			from: r.recipeToIngredient.ingredientId,
+			to: r.ingredient.id,
+		}),
+		altIngredient: r.one.ingredient({
+			from: r.recipeToIngredient.altIngredientId,
+			to: r.ingredient.id,
 		}),
 	},
 
