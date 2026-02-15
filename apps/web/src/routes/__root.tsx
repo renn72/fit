@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-router'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
+import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
 import appCss from '../index.css?url'
 export interface RouterAppContext {
 	orpc: typeof orpc
@@ -81,11 +82,13 @@ function InnerRoot() {
 				<HeadContent />
 			</head>
 			<body>
-				<TooltipProvider>
-					<div className='grid h-svh grid-rows-[auto_1fr]'>
-						<Outlet />
-					</div>
-				</TooltipProvider>
+				<NuqsAdapter>
+					<TooltipProvider>
+						<div className='grid h-svh grid-rows-[auto_1fr]'>
+							<Outlet />
+						</div>
+					</TooltipProvider>
+				</NuqsAdapter>
 				<Toaster richColors />
 				<TanStackRouterDevtools position='bottom-left' />
 				<ReactQueryDevtools position='bottom' buttonPosition='bottom-right' />
