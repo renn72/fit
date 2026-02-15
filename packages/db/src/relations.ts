@@ -1,8 +1,9 @@
-import { defineRelations } from 'drizzle-orm'
 import * as auth from './schema/auth'
 import * as exercise from './schema/exercise'
-import * as org from './schema/org'
 import * as ingredient from './schema/ingredient'
+import * as org from './schema/org'
+
+import { defineRelations } from 'drizzle-orm'
 
 const schema = { ...org, ...auth, ...exercise, ...ingredient }
 
@@ -28,6 +29,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.user.organisationId,
 			to: r.organisation.id,
 			alias: 'member',
+		}),
+		ingredients: r.many.ingredient({
+			from: r.user.id,
+			to: r.ingredient.creatorId,
 		}),
 	},
 
@@ -78,6 +83,22 @@ export const relations = defineRelations(schema, (r) => ({
 		subscriptions: r.many.subscription({
 			from: r.organisation.id,
 			to: r.subscription.organisationId,
+		}),
+		ingredients: r.many.ingredient({
+			from: r.organisation.id,
+			to: r.ingredient.organisationId,
+		}),
+	},
+
+	// ***************** Ingredient *******************
+	ingredient: {
+		creator: r.one.user({
+			from: r.ingredient.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.ingredient.organisationId,
+			to: r.organisation.id,
 		}),
 	},
 
