@@ -135,6 +135,7 @@ export function BaseIngredientsTable() {
 
 	const { table, ...dataGridProps } = useDataGrid({
 		data: ingredients,
+		// @ts-ignore TODO: fix types
 		columns,
 		getRowId: (row) => row.id,
 		enableSearch: true,

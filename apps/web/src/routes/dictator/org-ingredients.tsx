@@ -5,7 +5,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/dictator/org-ingredients')({
 	loader: async ({ context }) => {
-		await context.queryClient.ensureQueryData(
+		await context.queryClient.prefetchQuery(
 			orpc.ingredient.getAll.queryOptions({ input: {} }),
 		)
 	},

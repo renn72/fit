@@ -7,7 +7,9 @@ import { orpc } from '@/utils/orpc'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/dictator/admin-func')({
+import { toast } from 'sonner'
+
+export const Route = createFileRoute('/dictator/generation')({
 	component: RouteComponent,
 	beforeLoad: async () => {
 		const session = await getUser()
@@ -26,11 +28,13 @@ export const Route = createFileRoute('/dictator/admin-func')({
 function RouteComponent() {
 	const [isMutatingIngredients, setIsMutatingIngredients] = useState(false)
 	const [isMutatingExercises, setIsMutatingExercises] = useState(false)
+	const [isGeneratingData, setIsGeneratingData] = useState(false)
 
 	const importExercises = useMutation(
 		orpc.adminSetup.importExercises.mutationOptions({
 			onMutate: () => setIsMutatingExercises(true),
 			onSettled: () => setIsMutatingExercises(false),
+			onSuccess: () => toast.success('Exercises imported successfully'),
 		}),
 	)
 
@@ -38,6 +42,16 @@ function RouteComponent() {
 		orpc.adminSetup.importBaseIngredients.mutationOptions({
 			onMutate: () => setIsMutatingIngredients(true),
 			onSettled: () => setIsMutatingIngredients(false),
+			onSuccess: () => toast.success('Ingredients imported successfully'),
+		}),
+	)
+
+	const generateDummyData = useMutation(
+		orpc.adminSetup.generateDummyData.mutationOptions({
+			onMutate: () => setIsGeneratingData(true),
+			onSettled: () => setIsGeneratingData(false),
+			onSuccess: () => toast.success('Dummy data generated successfully'),
+			onError: (err) => toast.error(err.message),
 		}),
 	)
 
@@ -57,6 +71,15 @@ function RouteComponent() {
 				onMouseDown={() => importBaseIngredients.mutate({})}
 			>
 				Import Base Ingredients
+			</LoadingButton>
+
+			<LoadingButton
+				variant='secondary'
+				loading={isGeneratingData}
+				className='w-80 cursor-pointer'
+				onMouseDown={() => generateDummyData.mutate({})}
+			>
+				Generate Org Dummy Data
 			</LoadingButton>
 		</div>
 	)

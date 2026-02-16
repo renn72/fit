@@ -31,7 +31,7 @@ const data = {
 		{
 			title: 'Base Data',
 			url: '#',
-			icon: <DatabaseIcon weight="duotone" />,
+			icon: <DatabaseIcon weight='duotone' />,
 			isActive: true,
 			items: [
 				{
@@ -47,7 +47,7 @@ const data = {
 		{
 			title: 'Org Data',
 			url: '#',
-			icon: <RobotIcon weight="duotone" />,
+			icon: <RobotIcon weight='duotone' />,
 			items: [
 				{
 					title: 'Org Ingredients',
@@ -62,11 +62,11 @@ const data = {
 		{
 			title: 'System',
 			url: '#',
-			icon: <GearIcon weight="duotone" />,
+			icon: <GearIcon weight='duotone' />,
 			items: [
 				{
-					title: 'Imports',
-					url: '/dictator',
+					title: 'Generation',
+					url: '/dictator/generation',
 				},
 			],
 		},
@@ -85,7 +85,9 @@ const data = {
 	],
 }
 
-export function DictatorSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+export function DictatorSidebar({
+	...props
+}: React.ComponentProps<typeof Sidebar>) {
 	return (
 		<Sidebar
 			className='top-(--header-height) h-[calc(100svh-var(--header-height))]!'
@@ -102,9 +104,7 @@ export function DictatorSidebar({ ...props }: React.ComponentProps<typeof Sideba
 				<NavMain items={data.navMain} />
 				<NavSecondary items={data.navSecondary} className='mt-auto' />
 			</SidebarContent>
-			<SidebarFooter>
-				<NavUser user={data.user} />
-			</SidebarFooter>
+			<SidebarFooter />
 		</Sidebar>
 	)
 }

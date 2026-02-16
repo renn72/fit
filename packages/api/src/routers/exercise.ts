@@ -36,12 +36,18 @@ export const exerciseRouter = {
 							slug: true,
 						},
 					},
+					creator: {
+						columns: {
+							name: true,
+						},
+					},
 				},
 			})
 
 			return res.map((e) => ({
 				...e,
 				organisationSlug: e.organisation?.slug,
+				creatorName: e.creator?.name ?? 'Unknown',
 			}))
 		}),
 

@@ -16,26 +16,34 @@ import { orpc } from '@/utils/orpc'
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 export function OrgExercisesTable() {
-	const { data: exercises } = useSuspenseQuery(
+	const { data: rawExercises } = useSuspenseQuery(
 		orpc.exercise.getAll.queryOptions({ input: {} }),
 	)
+
+	const exercises = React.useMemo(() => {
+		return rawExercises.map((e) => ({
+			...e,
+			name: e.name.replace(/^Overwrite: /, ''),
+		}))
+	}, [rawExercises])
 
 	const dataHeight =
 		typeof window !== 'undefined' ? window.innerHeight - 138 : 600
 
 	const columns = React.useMemo(() => {
 		const filterFn = getFilterFn<any>()
+
 		return [
 			getDataGridSelectColumn<any>(),
 			{
-				id: 'organisationSlug',
-				accessorKey: 'organisationSlug',
-				header: 'Org Slug',
+				id: 'createdAt',
+				accessorKey: 'createdAt',
+				header: 'Created At',
 				filterFn,
 				meta: {
-					label: 'Org Slug',
+					label: 'Created At',
 					cell: {
-						variant: 'short-text',
+						variant: 'date',
 					},
 				},
 			},
@@ -75,11 +83,108 @@ export function OrgExercisesTable() {
 					},
 				},
 			},
+			{
+				id: 'force',
+				accessorKey: 'force',
+				header: 'Force',
+				filterFn,
+				meta: {
+					label: 'Force',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'mechanic',
+				accessorKey: 'mechanic',
+				header: 'Mechanic',
+				filterFn,
+				meta: {
+					label: 'Mechanic',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'equipment',
+				accessorKey: 'equipment',
+				header: 'Equipment',
+				filterFn,
+				meta: {
+					label: 'Equipment',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'primaryMuscles',
+				accessorKey: 'primaryMuscles',
+				header: 'Primary Muscles',
+				filterFn,
+				meta: {
+					label: 'Primary Muscles',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'secondaryMuscles',
+				accessorKey: 'secondaryMuscles',
+				header: 'Secondary Muscles',
+				filterFn,
+				meta: {
+					label: 'Secondary Muscles',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'isOverwrite',
+				accessorFn: (row: any) => !!row.baseExerciseId,
+				header: 'Overwrite',
+				filterFn,
+				meta: {
+					label: 'Is Overwrite',
+					cell: {
+						variant: 'checkbox',
+					},
+				},
+			},
+			{
+				id: 'creatorName',
+				accessorKey: 'creatorName',
+				header: 'Creator',
+				filterFn,
+				meta: {
+					label: 'Creator',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'organisationSlug',
+				accessorKey: 'organisationSlug',
+				header: 'Org Slug',
+				filterFn,
+				meta: {
+					label: 'Org Slug',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
 		]
 	}, [])
 
 	const { table, ...dataGridProps } = useDataGrid({
 		data: exercises,
+		// @ts-ignore TODO: fix types
 		columns,
 		getRowId: (row) => row.id,
 		enableSearch: true,

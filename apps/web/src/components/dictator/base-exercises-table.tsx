@@ -119,6 +119,7 @@ export function BaseExercisesTable() {
 
 	const { table, ...dataGridProps } = useDataGrid({
 		data: exercises,
+		// @ts-ignore TODO: fix types
 		columns,
 		getRowId: (row) => row.id,
 		enableSearch: true,

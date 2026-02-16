@@ -36,12 +36,18 @@ export const ingredientRouter = {
 							slug: true,
 						},
 					},
+					creator: {
+						columns: {
+							name: true,
+						},
+					},
 				},
 			})
 
 			return res.map((i) => ({
 				...i,
-				organisationSlug: i.organisation.slug,
+				organisationSlug: i.organisation?.slug,
+				creatorName: i.creator?.name ?? 'Unknown',
 			}))
 		}),
 

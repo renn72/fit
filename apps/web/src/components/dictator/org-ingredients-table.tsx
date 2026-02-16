@@ -16,26 +16,35 @@ import { orpc } from '@/utils/orpc'
 import { useSuspenseQuery } from '@tanstack/react-query'
 
 export function OrgIngredientsTable() {
-	const { data: ingredients } = useSuspenseQuery(
+	const { data: rawIngredients } = useSuspenseQuery(
 		orpc.ingredient.getAll.queryOptions({ input: {} }),
 	)
+
+	const ingredients = React.useMemo(() => {
+		return rawIngredients.map((i) => ({
+			...i,
+
+			name: i.name.replace(/^Overwrite: /, ''),
+		}))
+	}, [rawIngredients])
 
 	const dataHeight =
 		typeof window !== 'undefined' ? window.innerHeight - 138 : 600
 
 	const columns = React.useMemo(() => {
 		const filterFn = getFilterFn<any>()
+
 		return [
 			getDataGridSelectColumn<any>(),
 			{
-				id: 'organisationSlug',
-				accessorKey: 'organisationSlug',
-				header: 'Org Slug',
+				id: 'createdAt',
+				accessorKey: 'createdAt',
+				header: 'Created At',
 				filterFn,
 				meta: {
-					label: 'Org Slug',
+					label: 'Created At',
 					cell: {
-						variant: 'short-text',
+						variant: 'date',
 					},
 				},
 			},
@@ -43,6 +52,7 @@ export function OrgIngredientsTable() {
 				id: 'name',
 				accessorKey: 'name',
 				header: 'Name',
+				minSize: 260,
 				filterFn,
 				meta: {
 					label: 'Name',
@@ -103,11 +113,72 @@ export function OrgIngredientsTable() {
 					},
 				},
 			},
+			{
+				id: 'serveSize',
+				accessorKey: 'serveSize',
+				header: 'Size',
+				filterFn,
+				meta: {
+					label: 'Serve Size',
+					cell: {
+						variant: 'number',
+					},
+				},
+			},
+			{
+				id: 'serveUnit',
+				accessorKey: 'serveUnit',
+				header: 'Unit',
+				filterFn,
+				meta: {
+					label: 'Serve Unit',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'isOverwrite',
+				accessorFn: (row: any) => !!row.baseIngredientId,
+				header: 'Overwrite',
+				filterFn,
+				meta: {
+					label: 'Is Overwrite',
+					cell: {
+						variant: 'checkbox',
+					},
+				},
+			},
+			{
+				id: 'creatorName',
+				accessorKey: 'creatorName',
+				header: 'Creator',
+				filterFn,
+				meta: {
+					label: 'Creator',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
+				id: 'organisationSlug',
+				accessorKey: 'organisationSlug',
+				header: 'Org Slug',
+				filterFn,
+				meta: {
+					label: 'Org Slug',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
 		]
 	}, [])
 
 	const { table, ...dataGridProps } = useDataGrid({
 		data: ingredients,
+		// @ts-ignore TODO: fix types
 		columns,
 		getRowId: (row) => row.id,
 		enableSearch: true,

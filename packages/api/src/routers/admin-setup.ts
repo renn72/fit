@@ -1,10 +1,14 @@
 import { db } from '@fit/db'
-import { baseExercise } from '@fit/db/schema/exercise'
-import { baseIngredients } from '@fit/db/schema/ingredient'
+import { user } from '@fit/db/schema/auth'
+import { baseExercise, exercise } from '@fit/db/schema/exercise'
+import { baseIngredients, ingredient } from '@fit/db/schema/ingredient'
+import { organisation } from '@fit/db/schema/org'
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { ORPCError } from '@orpc/server'
+import { v4 as uuid } from 'uuid'
 import { protectedProcedure } from '../index'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -57,6 +61,123 @@ function splitCsvLines(content: string): string[] {
 }
 
 export const adminSetupRouter = {
+	generateDummyData: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-dummy-data',
+			summary: 'Generate dummy data (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.handler(async ({ context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate dummy data',
+				})
+			}
+
+			const baseExs = await db.query.baseExercise.findMany({ limit: 5 })
+			const baseIngs = await db.query.baseIngredients.findMany({ limit: 5 })
+
+			if (baseExs.length === 0 || baseIngs.length === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'Import base exercises and ingredients first.',
+				})
+			}
+
+			await db.transaction(async (tx) => {
+				for (let i = 1; i <= 3; i++) {
+					const creatorId = uuid()
+					const orgId = uuid()
+					const orgSlug = `org-${i}-${Math.random().toString(36).substring(7)}`
+
+					// Create Creator User
+					await tx.insert(user).values({
+						id: creatorId,
+						name: `Creator ${i}`,
+						email: `creator${i}@example.com`,
+						organisationId: orgId,
+						organisationSlug: orgSlug,
+						organisationCreatorId: orgId,
+					})
+
+					// Create Org
+					await tx.insert(organisation).values({
+						id: orgId,
+						name: `Organisation ${i}`,
+						slug: orgSlug,
+						creatorId: creatorId,
+						state: 'active',
+					})
+
+					// Create members (5-10)
+					const memberCount = Math.floor(Math.random() * 6) + 5
+					for (let j = 1; j <= memberCount; j++) {
+						await tx.insert(user).values({
+							id: uuid(),
+							name: `User ${i}-${j}`,
+							email: `user${i}-${j}@example.com`,
+							organisationId: orgId,
+							organisationSlug: orgSlug,
+						})
+					}
+
+					// Create exercises (5-10)
+					const exerciseCount = Math.floor(Math.random() * 6) + 5
+					for (let k = 1; k <= exerciseCount; k++) {
+						const isOverwrite = k === 1
+						const baseEx = isOverwrite ? baseExs[i % baseExs.length] : null
+
+												await tx.insert(exercise).values({
+
+													id: uuid(),
+
+													name: isOverwrite ? baseEx?.name ?? 'Overwrite' : `Org Exercise ${i}-${k}`,
+
+													organisationId: orgId,
+							creatorId: creatorId,
+							category: baseEx?.category ?? 'Strength',
+							instructions: baseEx?.instructions ?? 'Generated instructions',
+							primaryMuscles: baseEx?.primaryMuscles ?? 'Generated muscles',
+							secondaryMuscles: baseEx?.secondaryMuscles ?? '',
+							level: baseEx?.level ?? 'Beginner',
+							force: baseEx?.force ?? 'Push',
+							mechanic: baseEx?.mechanic ?? 'Compound',
+							equipment: baseEx?.equipment ?? 'None',
+							images: baseEx?.images ?? '',
+							baseExerciseId: baseEx?.id ?? null,
+						})
+					}
+
+					// Create ingredients (5-10)
+					const ingredientCount = Math.floor(Math.random() * 6) + 5
+					for (let l = 1; l <= ingredientCount; l++) {
+						const isOverwrite = l === 1
+						const baseIng = isOverwrite ? baseIngs[i % baseIngs.length] : null
+
+												await tx.insert(ingredient).values({
+
+													id: uuid(),
+
+													name: isOverwrite ? baseIng?.name ?? 'Overwrite' : `Org Ingredient ${i}-${l}`,
+
+													organisationId: orgId,
+							creatorId: creatorId,
+							calories: baseIng?.calories ?? 100,
+							protein: baseIng?.protein ?? 10,
+							fat: baseIng?.fat ?? 5,
+							carbohydrate: baseIng?.carbohydrate ?? 20,
+							serveSize: baseIng?.serveSize ?? 100,
+							serveUnit: baseIng?.serveUnit ?? 'grams',
+							baseIngredientId: baseIng?.id ?? null,
+						})
+					}
+				}
+			})
+
+			return { message: 'Dummy data generated successfully' }
+		}),
+
 	importBaseIngredients: protectedProcedure
 		.route({
 			method: 'POST',
