@@ -4,9 +4,8 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { ExerciseCreateDialog } from '@/components/exercise/exercise-create-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { getUserForce } from '@/functions/get-user-force'
+import { getUser } from '@/functions/get-user'
 import { useDataTable } from '@/hooks/use-data-table'
 import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
@@ -20,7 +19,7 @@ import { parseAsInteger, useQueryState } from 'nuqs'
 export const Route = createFileRoute('/$orgSlug/admin/s/exercises')({
 	component: RouteComponent,
 	beforeLoad: async () => {
-		const session = await getUserForce()
+		const session = await getUser()
 		return { session }
 	},
 })
@@ -288,7 +287,6 @@ function RouteComponent() {
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

@@ -4,9 +4,8 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { IngredientCreateDialog } from '@/components/ingredient/ingredient-create-dialog'
 import { Checkbox } from '@/components/ui/checkbox'
-import { getUserForce } from '@/functions/get-user-force'
+import { getUser } from '@/functions/get-user'
 import { useDataTable } from '@/hooks/use-data-table'
 import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
@@ -29,7 +28,7 @@ import { parseAsInteger, useQueryState } from 'nuqs'
 export const Route = createFileRoute('/$orgSlug/admin/s/ingredients')({
 	component: RouteComponent,
 	beforeLoad: async () => {
-		const session = await getUserForce()
+		const session = await getUser()
 		return { session }
 	},
 })
@@ -44,7 +43,7 @@ interface Ingredient {
 	carbohydrate: number
 	serveSize: number
 	serveUnit: string
-	createdAt: number
+	createdAt: Date
 	isBase: boolean
 	isOverwriteBase: boolean
 }
@@ -244,7 +243,6 @@ function RouteComponent() {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
-				<IngredientCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

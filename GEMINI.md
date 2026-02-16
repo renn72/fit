@@ -15,13 +15,46 @@ packages/api oprc for api
 
 
 
-- Use Shadcn where possible
 - NEVER run any build or linting commands.
 - aways use the basic types for the database, int, text, bool, timestamp unless there is a really really good reason to use a different type.
 - all primary ids in the db should be uuids
 - where need ensure bs columns are marked with not null
 - in the base directory, look for a file call fit-dd-mm-yy.md if it doesn't exist, create it. after each action please summarize what was doen in this file in a list format, this is for my viewing in my obsidian vault. make an  obsidian link to fit in it.
 
+
+
+# Web
+
+- Use Shadcn where possible
+- Shadcn is build with BaseUI, not that with base ui, there is is asChild paramater, instead you pass the element you want rendered, through the rendered patam, eg <Button render={<div />}>Button</Button>
+- here is an eaxmple of how to secure routes with the session
+export const Route = createFileRoute('/dashboard')({
+	component: RouteComponent,
+	beforeLoad: async () => {
+		const session = await getUser()
+		return { session }
+	},
+	loader: async ({ context }) => {
+		if (!context.session) {
+			throw redirect({
+				to: '/login',
+			})
+		}
+	},
+})
+- if data needs to be prefetched here is how
+export const Route = createFileRoute('/dictator/base-exercises')({
+	loader: async ({ context }) => {
+		await context.queryClient.prefetchQuery(
+			orpc.exercise.getAllBase.queryOptions({ input: {} }),
+		)
+	},
+	ssr: 'data-only',
+	component: BaseExercisesTable,
+})
+
+
+# Database
 
 I am using a cutting edge beta version of drizzle that has some updates to how queries work, see the docs below
 
