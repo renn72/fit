@@ -9,3 +9,5 @@
     -   Implemented advanced data tables for Exercises and Ingredients using Dice UI components.
     -   Fixed client-side pagination and sorting issues in the data tables.
     -   Integrated `orpc` with React Query for efficient data fetching.
+
+
