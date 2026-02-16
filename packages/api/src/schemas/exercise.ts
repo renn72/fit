@@ -24,9 +24,9 @@ export const ExerciseCreateInput = z.object({
 	mechanic: z.string().optional().nullable(),
 	equipment: z.string().optional().nullable(),
 	primaryMuscles: z.string().min(1),
-	secondaryMuscles: z.string().min(1),
+	secondaryMuscles: z.string(),
 	instructions: z.string().min(1),
 	category: z.string().min(1),
-	images: z.string().min(1),
+	images: z.string(),
 	baseExerciseId: z.string().optional().nullable(),
 })

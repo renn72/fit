@@ -17,6 +17,10 @@ Implementing the **Dictator Mode** taught me the value of total component isolat
 We encountered server-side errors when virtualization logic relied on browser APIs (`window`). 
 - **Insight:** For complex DataGrids, `ssr: 'data-only'` is the superior pattern. It allows us to keep the performance benefits of TanStack Router's prefetching while safely deferring the "heavy" layout rendering to the client where the DOM environment is stable.
 
+### Form Transformation Boundaries
+Integrating TanStack Form with our comma-separated string schema taught me about the "Transformation Boundary".
+- **Insight:** Keep the UI state rich (Arrays, Objects) as long as possible. Only transform into the database-required format (e.g., `.join(',')`) at the very last second in the `onSubmit` handler. This keeps the form logic clean and allows for easy validation of individual items.
+
 ### Relational Purity vs. String Prefixes
 Our early dummy data used "Overwrite:" string prefixes to mark modified base items. 
 - **Insight:** We must always favor relational flags (`isOverwrite` via `baseId`) over string mutations. Data should remain "clean" in the database; if the UI needs to highlight an override, it should do so based on the relational state, not by dirtying the `name` column.

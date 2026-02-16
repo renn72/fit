@@ -23,6 +23,8 @@ import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
 import { Route as OrgSlugAdminSIngredientsRouteImport } from './routes/$orgSlug/admin.s.ingredients'
 import { Route as OrgSlugAdminSExercisesRouteImport } from './routes/$orgSlug/admin.s.exercises'
 import { Route as OrgSlugAdminSDashboardRouteImport } from './routes/$orgSlug/admin.s.dashboard'
+import { Route as OrgSlugAdminSIngredientFormRouteImport } from './routes/$orgSlug/admin.s.ingredient.form'
+import { Route as OrgSlugAdminSExerciseFormRouteImport } from './routes/$orgSlug/admin.s.exercise.form'
 
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',
@@ -95,6 +97,18 @@ const OrgSlugAdminSDashboardRoute = OrgSlugAdminSDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => OrgSlugAdminSRoute,
 } as any)
+const OrgSlugAdminSIngredientFormRoute =
+  OrgSlugAdminSIngredientFormRouteImport.update({
+    id: '/ingredient/form',
+    path: '/ingredient/form',
+    getParentRoute: () => OrgSlugAdminSRoute,
+  } as any)
+const OrgSlugAdminSExerciseFormRoute =
+  OrgSlugAdminSExerciseFormRouteImport.update({
+    id: '/exercise/form',
+    path: '/exercise/form',
+    getParentRoute: () => OrgSlugAdminSRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -111,6 +125,8 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/exercise/form': typeof OrgSlugAdminSExerciseFormRoute
+  '/$orgSlug/admin/s/ingredient/form': typeof OrgSlugAdminSIngredientFormRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,6 +143,8 @@ export interface FileRoutesByTo {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/exercise/form': typeof OrgSlugAdminSExerciseFormRoute
+  '/$orgSlug/admin/s/ingredient/form': typeof OrgSlugAdminSIngredientFormRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -144,6 +162,8 @@ export interface FileRoutesById {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/exercise/form': typeof OrgSlugAdminSExerciseFormRoute
+  '/$orgSlug/admin/s/ingredient/form': typeof OrgSlugAdminSIngredientFormRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -162,6 +182,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/exercise/form'
+    | '/$orgSlug/admin/s/ingredient/form'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -178,6 +200,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/exercise/form'
+    | '/$orgSlug/admin/s/ingredient/form'
   id:
     | '__root__'
     | '/'
@@ -194,6 +218,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/exercise/form'
+    | '/$orgSlug/admin/s/ingredient/form'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -305,6 +331,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugAdminSDashboardRouteImport
       parentRoute: typeof OrgSlugAdminSRoute
     }
+    '/$orgSlug/admin/s/ingredient/form': {
+      id: '/$orgSlug/admin/s/ingredient/form'
+      path: '/ingredient/form'
+      fullPath: '/$orgSlug/admin/s/ingredient/form'
+      preLoaderRoute: typeof OrgSlugAdminSIngredientFormRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
+    }
+    '/$orgSlug/admin/s/exercise/form': {
+      id: '/$orgSlug/admin/s/exercise/form'
+      path: '/exercise/form'
+      fullPath: '/$orgSlug/admin/s/exercise/form'
+      preLoaderRoute: typeof OrgSlugAdminSExerciseFormRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
+    }
   }
 }
 
@@ -332,12 +372,16 @@ interface OrgSlugAdminSRouteChildren {
   OrgSlugAdminSDashboardRoute: typeof OrgSlugAdminSDashboardRoute
   OrgSlugAdminSExercisesRoute: typeof OrgSlugAdminSExercisesRoute
   OrgSlugAdminSIngredientsRoute: typeof OrgSlugAdminSIngredientsRoute
+  OrgSlugAdminSExerciseFormRoute: typeof OrgSlugAdminSExerciseFormRoute
+  OrgSlugAdminSIngredientFormRoute: typeof OrgSlugAdminSIngredientFormRoute
 }
 
 const OrgSlugAdminSRouteChildren: OrgSlugAdminSRouteChildren = {
   OrgSlugAdminSDashboardRoute: OrgSlugAdminSDashboardRoute,
   OrgSlugAdminSExercisesRoute: OrgSlugAdminSExercisesRoute,
   OrgSlugAdminSIngredientsRoute: OrgSlugAdminSIngredientsRoute,
+  OrgSlugAdminSExerciseFormRoute: OrgSlugAdminSExerciseFormRoute,
+  OrgSlugAdminSIngredientFormRoute: OrgSlugAdminSIngredientFormRoute,
 }
 
 const OrgSlugAdminSRouteWithChildren = OrgSlugAdminSRoute._addFileChildren(
