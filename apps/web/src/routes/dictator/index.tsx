@@ -5,7 +5,7 @@ import { orpc } from '@/utils/orpc'
 
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-export const Route = createFileRoute('/root/')({
+export const Route = createFileRoute('/dictator/')({
 	component: RouteComponent,
 })
 

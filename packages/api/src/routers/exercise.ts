@@ -6,11 +6,45 @@ import { protectedProcedure } from '../index'
 import {
 	ExerciseCreateInput,
 	ExerciseGetAllBaseInput,
+	ExerciseGetAllInput,
 	ExerciseGetAllOrgInput,
 	ExerciseGetInput,
 } from '../schemas/exercise'
 
 export const exerciseRouter = {
+	getAll: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/exercise/all',
+			summary: 'Get all exercises (Dictator only)',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseGetAllInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to view all exercises',
+				})
+			}
+
+			const res = await db.query.exercise.findMany({
+				limit: input.limit,
+				with: {
+					organisation: {
+						columns: {
+							slug: true,
+						},
+					},
+				},
+			})
+
+			return res.map((e) => ({
+				...e,
+				organisationSlug: e.organisation.slug,
+			}))
+		}),
+
 	create: protectedProcedure
 		.route({
 			method: 'POST',

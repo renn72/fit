@@ -16,6 +16,7 @@ export const user = sqliteTable(
 		banned: integer('banned', { mode: 'boolean' }),
 		banReason: text('ban_reason'),
 		banExpires: integer('ban_expires', { mode: 'timestamp_ms' }),
+		// remove slug
 		organisationSlug: text('organisation_slug'),
 		organisationId: text('organisation_id'),
 		organisationCreatorId: text('organisation_creator_id'),

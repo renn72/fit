@@ -13,6 +13,10 @@ export const IngredientGetAllBaseInput = z.object({
 	limit: z.number().optional(),
 })
 
+export const IngredientGetAllInput = z.object({
+	limit: z.number().optional(),
+})
+
 export const IngredientCreateInput = z.object({
 	name: z.string().min(1),
 	calories: z.number().min(0),

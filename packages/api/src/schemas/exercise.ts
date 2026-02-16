@@ -13,6 +13,10 @@ export const ExerciseGetAllBaseInput = z.object({
 	limit: z.number().optional(),
 })
 
+export const ExerciseGetAllInput = z.object({
+	limit: z.number().optional(),
+})
+
 export const ExerciseCreateInput = z.object({
 	name: z.string().min(1),
 	force: z.string().optional().nullable(),

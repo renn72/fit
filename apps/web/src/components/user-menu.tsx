@@ -32,6 +32,9 @@ export function UserMenu() {
 		)
 	}
 
+	const metaTags = session.user.metaTags?.split(',') ?? []
+	const isDictator = metaTags.includes('dictator')
+
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger render={<Button variant='outline' />}>
@@ -42,6 +45,24 @@ export function UserMenu() {
 					<DropdownMenuLabel>My Account</DropdownMenuLabel>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem>{session.user.email}</DropdownMenuItem>
+					{session.user.organisationSlug && (
+						<DropdownMenuItem
+							render={
+								<Link
+									to='/$orgSlug/admin/s'
+									params={{ orgSlug: session.user.organisationSlug }}
+								/>
+							}
+						>
+							Admin Panel
+						</DropdownMenuItem>
+					)}
+					{isDictator && (
+						<DropdownMenuItem render={<Link to='/dictator' />}>
+							Dictator Mode
+						</DropdownMenuItem>
+					)}
+					<DropdownMenuSeparator />
 					<DropdownMenuItem
 						variant='destructive'
 						onClick={() => {

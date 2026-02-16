@@ -39,6 +39,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.user.id,
 			to: r.recipe.creatorId,
 		}),
+		exercises: r.many.exercise({
+			from: r.user.id,
+			to: r.exercise.creatorId,
+		}),
 	},
 
 	// ***************** User Settings *******************
@@ -96,6 +100,34 @@ export const relations = defineRelations(schema, (r) => ({
 		recipes: r.many.recipe({
 			from: r.organisation.id,
 			to: r.recipe.organisationId,
+		}),
+		exercises: r.many.exercise({
+			from: r.organisation.id,
+			to: r.exercise.organisationId,
+		}),
+	},
+
+	// ***************** Exercise *******************
+	exercise: {
+		creator: r.one.user({
+			from: r.exercise.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.exercise.organisationId,
+			to: r.organisation.id,
+		}),
+		baseExercise: r.one.baseExercise({
+			from: r.exercise.baseExerciseId,
+			to: r.baseExercise.id,
+		}),
+	},
+
+	// ***************** Base Exercise *******************
+	baseExercise: {
+		exercises: r.many.exercise({
+			from: r.baseExercise.id,
+			to: r.exercise.baseExerciseId,
 		}),
 	},
 

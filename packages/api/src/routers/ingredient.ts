@@ -6,11 +6,45 @@ import { protectedProcedure } from '../index'
 import {
 	IngredientCreateInput,
 	IngredientGetAllBaseInput,
+	IngredientGetAllInput,
 	IngredientGetAllOrgInput,
 	IngredientGetInput,
 } from '../schemas/ingredient'
 
 export const ingredientRouter = {
+	getAll: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/ingredient/all',
+			summary: 'Get all ingredients (Dictator only)',
+			tags: ['Ingredient'],
+		})
+		.input(IngredientGetAllInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to view all ingredients',
+				})
+			}
+
+			const res = await db.query.ingredient.findMany({
+				limit: input.limit,
+				with: {
+					organisation: {
+						columns: {
+							slug: true,
+						},
+					},
+				},
+			})
+
+			return res.map((i) => ({
+				...i,
+				organisationSlug: i.organisation.slug,
+			}))
+		}),
+
 	create: protectedProcedure
 		.route({
 			method: 'POST',
