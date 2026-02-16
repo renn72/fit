@@ -16,7 +16,11 @@ import {
 	CommandList,
 	CommandSeparator,
 } from '@/components/ui/command'
-import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import {
+	Popover,
+	PopoverTrigger as PopoverAnchor,
+	PopoverContent,
+} from '@/components/ui/popover'
 import {
 	Select,
 	SelectContent,
