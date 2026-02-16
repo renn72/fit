@@ -51,7 +51,7 @@ const data = {
 				},
 				{
 					title: 'Ingredients',
-					url: '#',
+					url: '/$orgSlug/admin/s/ingredients',
 				},
 			],
 		},
@@ -59,6 +59,7 @@ const data = {
 			title: 'Fitness',
 			url: '#',
 			icon: <RobotIcon weight='duotone' />,
+			isActive: true,
 			items: [
 				{
 					title: 'Genesis',
@@ -70,7 +71,7 @@ const data = {
 				},
 				{
 					title: 'Exercises',
-					url: '#',
+					url: '/$orgSlug/admin/s/exercises',
 				},
 			],
 		},

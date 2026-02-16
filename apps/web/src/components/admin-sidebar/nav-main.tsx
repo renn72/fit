@@ -17,6 +17,10 @@ import {
 	SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 
+import { getRouteApi } from '@tanstack/react-router'
+
+const route = getRouteApi('/$orgSlug/admin/s')
+
 import { CaretRightIcon } from '@phosphor-icons/react'
 
 export function NavMain({
@@ -33,6 +37,7 @@ export function NavMain({
 		}[]
 	}[]
 }) {
+	const { orgSlug } = route.useParams()
 	return (
 		<SidebarGroup>
 			<SidebarGroupLabel>Platform</SidebarGroupLabel>
@@ -63,7 +68,13 @@ export function NavMain({
 									<SidebarMenuSub>
 										{item.items?.map((subItem) => (
 											<SidebarMenuSubItem key={subItem.title}>
-												<SidebarMenuSubButton render={<a href={subItem.url} />}>
+												<SidebarMenuSubButton
+													render={
+														<a
+															href={subItem.url.replace('$orgSlug', orgSlug)}
+														/>
+													}
+												>
 													<span>{subItem.title}</span>
 												</SidebarMenuSubButton>
 											</SidebarMenuSubItem>
