@@ -7,7 +7,7 @@ import { orpc } from '@/utils/orpc'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/dictator/')({
+export const Route = createFileRoute('/dictator/admin-func')({
 	component: RouteComponent,
 	beforeLoad: async () => {
 		const session = await getUser()

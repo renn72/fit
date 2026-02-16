@@ -41,7 +41,7 @@ export const exerciseRouter = {
 
 			return res.map((e) => ({
 				...e,
-				organisationSlug: e.organisation.slug,
+				organisationSlug: e.organisation?.slug,
 			}))
 		}),
 

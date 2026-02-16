@@ -153,6 +153,7 @@ export const ingredientRouter = {
 		})
 		.input(IngredientGetAllBaseInput)
 		.handler(async ({ input, context }) => {
+			console.log('hi')
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {

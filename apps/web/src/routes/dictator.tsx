@@ -35,7 +35,7 @@ function LayoutRouteComponent() {
 				<div className='flex flex-1'>
 					<DictatorSidebar />
 					<SidebarInset>
-						<div className='flex flex-col flex-1 p-4 overflow-auto'>
+						<div className='flex overflow-auto flex-col flex-1 p-4'>
 							<Outlet />
 						</div>
 					</SidebarInset>

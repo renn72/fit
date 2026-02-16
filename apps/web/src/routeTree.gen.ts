@@ -14,11 +14,11 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as DictatorRouteImport } from './routes/dictator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DictatorIndexRouteImport } from './routes/dictator/index'
 import { Route as DictatorOrgIngredientsRouteImport } from './routes/dictator/org-ingredients'
 import { Route as DictatorOrgExercisesRouteImport } from './routes/dictator/org-exercises'
 import { Route as DictatorBaseIngredientsRouteImport } from './routes/dictator/base-ingredients'
 import { Route as DictatorBaseExercisesRouteImport } from './routes/dictator/base-exercises'
+import { Route as DictatorAdminFuncRouteImport } from './routes/dictator/admin-func'
 import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
 import { Route as OrgSlugAdminSIngredientsRouteImport } from './routes/$orgSlug/admin.s.ingredients'
 import { Route as OrgSlugAdminSExercisesRouteImport } from './routes/$orgSlug/admin.s.exercises'
@@ -49,11 +49,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DictatorIndexRoute = DictatorIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DictatorRoute,
-} as any)
 const DictatorOrgIngredientsRoute = DictatorOrgIngredientsRouteImport.update({
   id: '/org-ingredients',
   path: '/org-ingredients',
@@ -72,6 +67,11 @@ const DictatorBaseIngredientsRoute = DictatorBaseIngredientsRouteImport.update({
 const DictatorBaseExercisesRoute = DictatorBaseExercisesRouteImport.update({
   id: '/base-exercises',
   path: '/base-exercises',
+  getParentRoute: () => DictatorRoute,
+} as any)
+const DictatorAdminFuncRoute = DictatorAdminFuncRouteImport.update({
+  id: '/admin-func',
+  path: '/admin-func',
   getParentRoute: () => DictatorRoute,
 } as any)
 const OrgSlugAdminSRoute = OrgSlugAdminSRouteImport.update({
@@ -102,11 +102,11 @@ export interface FileRoutesByFullPath {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/dictator/admin-func': typeof DictatorAdminFuncRoute
   '/dictator/base-exercises': typeof DictatorBaseExercisesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/dictator/': typeof DictatorIndexRoute
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
@@ -115,13 +115,14 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/dictator/admin-func': typeof DictatorAdminFuncRoute
   '/dictator/base-exercises': typeof DictatorBaseExercisesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/dictator': typeof DictatorIndexRoute
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
@@ -134,11 +135,11 @@ export interface FileRoutesById {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/dictator/admin-func': typeof DictatorAdminFuncRoute
   '/dictator/base-exercises': typeof DictatorBaseExercisesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/dictator/': typeof DictatorIndexRoute
   '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
@@ -152,11 +153,11 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/dictator/admin-func'
     | '/dictator/base-exercises'
     | '/dictator/base-ingredients'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/dictator/'
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
@@ -165,13 +166,14 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/dashboard'
+    | '/dictator'
     | '/login'
     | '/onboard'
+    | '/dictator/admin-func'
     | '/dictator/base-exercises'
     | '/dictator/base-ingredients'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/dictator'
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
@@ -183,11 +185,11 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/dictator/admin-func'
     | '/dictator/base-exercises'
     | '/dictator/base-ingredients'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/dictator/'
     | '/$orgSlug/admin/s'
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
@@ -240,13 +242,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dictator/': {
-      id: '/dictator/'
-      path: '/'
-      fullPath: '/dictator/'
-      preLoaderRoute: typeof DictatorIndexRouteImport
-      parentRoute: typeof DictatorRoute
-    }
     '/dictator/org-ingredients': {
       id: '/dictator/org-ingredients'
       path: '/org-ingredients'
@@ -273,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/base-exercises'
       fullPath: '/dictator/base-exercises'
       preLoaderRoute: typeof DictatorBaseExercisesRouteImport
+      parentRoute: typeof DictatorRoute
+    }
+    '/dictator/admin-func': {
+      id: '/dictator/admin-func'
+      path: '/admin-func'
+      fullPath: '/dictator/admin-func'
+      preLoaderRoute: typeof DictatorAdminFuncRouteImport
       parentRoute: typeof DictatorRoute
     }
     '/$orgSlug/admin/s': {
@@ -307,19 +309,19 @@ declare module '@tanstack/react-router' {
 }
 
 interface DictatorRouteChildren {
+  DictatorAdminFuncRoute: typeof DictatorAdminFuncRoute
   DictatorBaseExercisesRoute: typeof DictatorBaseExercisesRoute
   DictatorBaseIngredientsRoute: typeof DictatorBaseIngredientsRoute
   DictatorOrgExercisesRoute: typeof DictatorOrgExercisesRoute
   DictatorOrgIngredientsRoute: typeof DictatorOrgIngredientsRoute
-  DictatorIndexRoute: typeof DictatorIndexRoute
 }
 
 const DictatorRouteChildren: DictatorRouteChildren = {
+  DictatorAdminFuncRoute: DictatorAdminFuncRoute,
   DictatorBaseExercisesRoute: DictatorBaseExercisesRoute,
   DictatorBaseIngredientsRoute: DictatorBaseIngredientsRoute,
   DictatorOrgExercisesRoute: DictatorOrgExercisesRoute,
   DictatorOrgIngredientsRoute: DictatorOrgIngredientsRoute,
-  DictatorIndexRoute: DictatorIndexRoute,
 }
 
 const DictatorRouteWithChildren = DictatorRoute._addFileChildren(
