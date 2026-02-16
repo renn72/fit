@@ -210,10 +210,6 @@ function RouteComponent() {
 	const { orgSlug } = Route.useParams()
 	const { session } = Route.useRouteContext()
 
-	// We need to resolve the orgId from the session based on the slug.
-	// Assuming user can only access their own org for now or we check if slug matches.
-	// The session user object has organisationSlug and organisationId.
-
 	const userOrgId =
 		session?.user?.organisationSlug === orgSlug
 			? session?.user?.organisationId

@@ -427,6 +427,7 @@ export function NumberCell<TData>({
 	const min = numberCellOpts?.min
 	const max = numberCellOpts?.max
 	const step = numberCellOpts?.step
+	const precision = numberCellOpts?.precision
 
 	const prevIsEditingRef = React.useRef(isEditing)
 
@@ -437,12 +438,15 @@ export function NumberCell<TData>({
 	}
 
 	const onBlur = React.useCallback(() => {
-		const numValue = value === '' ? null : Number(value)
+		let numValue = value === '' ? null : Number(value)
+		if (numValue !== null && precision !== undefined) {
+			numValue = Number(numValue.toFixed(precision))
+		}
 		if (!readOnly && numValue !== initialValue) {
 			tableMeta?.onDataUpdate?.({ rowIndex, columnId, value: numValue })
 		}
 		tableMeta?.onCellEditingStop?.()
-	}, [tableMeta, rowIndex, columnId, initialValue, value, readOnly])
+	}, [tableMeta, rowIndex, columnId, initialValue, value, readOnly, precision])
 
 	const onChange = React.useCallback(
 		(event: React.ChangeEvent<HTMLInputElement>) => {
@@ -456,14 +460,20 @@ export function NumberCell<TData>({
 			if (isEditing) {
 				if (event.key === 'Enter') {
 					event.preventDefault()
-					const numValue = value === '' ? null : Number(value)
+					let numValue = value === '' ? null : Number(value)
+					if (numValue !== null && precision !== undefined) {
+						numValue = Number(numValue.toFixed(precision))
+					}
 					if (numValue !== initialValue) {
 						tableMeta?.onDataUpdate?.({ rowIndex, columnId, value: numValue })
 					}
 					tableMeta?.onCellEditingStop?.({ moveToNextRow: true })
 				} else if (event.key === 'Tab') {
 					event.preventDefault()
-					const numValue = value === '' ? null : Number(value)
+					let numValue = value === '' ? null : Number(value)
+					if (numValue !== null && precision !== undefined) {
+						numValue = Number(numValue.toFixed(precision))
+					}
 					if (numValue !== initialValue) {
 						tableMeta?.onDataUpdate?.({ rowIndex, columnId, value: numValue })
 					}
@@ -527,7 +537,11 @@ export function NumberCell<TData>({
 					onChange={onChange}
 				/>
 			) : (
-				<span data-slot='grid-cell-content'>{value}</span>
+				<span data-slot='grid-cell-content'>
+					{precision !== undefined && initialValue !== null
+						? initialValue.toFixed(precision)
+						: value}
+				</span>
 			)}
 		</DataGridCellWrapper>
 	)

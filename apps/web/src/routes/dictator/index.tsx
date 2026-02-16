@@ -1,12 +1,26 @@
 import { useState } from 'react'
 
 import { LoadingButton } from '@/components/ui/button'
+import { getUser } from '@/functions/get-user'
 import { orpc } from '@/utils/orpc'
 
 import { useMutation } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, redirect } from '@tanstack/react-router'
+
 export const Route = createFileRoute('/dictator/')({
 	component: RouteComponent,
+	beforeLoad: async () => {
+		const session = await getUser()
+		return { session }
+	},
+	loader: async ({ context }) => {
+		if (!context) {
+			redirect({
+				to: '/',
+				throw: true,
+			})
+		}
+	},
 })
 
 function RouteComponent() {

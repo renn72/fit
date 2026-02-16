@@ -23,6 +23,7 @@ export type CellOpts =
       min?: number;
       max?: number;
       step?: number;
+      precision?: number;
     }
   | {
       variant: "select";
