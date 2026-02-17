@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-import { LoadingButton } from '@/components/ui/button'
+import { LoadingButton } from '@/components/ui-extended/loading-button'
 import { getUser } from '@/functions/get-user'
 import { orpc } from '@/utils/orpc'
 

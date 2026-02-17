@@ -1,6 +1,7 @@
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { getUser, getUserQuery } from '@/functions/get-user'
 import type { orpc } from '@/utils/orpc'
 
 import type { QueryClient } from '@tanstack/react-query'
@@ -21,6 +22,14 @@ export interface RouterAppContext {
 }
 
 export const Route = createRootRouteWithContext<RouterAppContext>()({
+	beforeLoad: async ({ context }) => {
+		const session = await context.queryClient.ensureQueryData({
+			...getUserQuery,
+			revalidateIfStale: true,
+		})
+		console.log('server and client', session)
+		return { session }
+	},
 	head: () => ({
 		meta: [
 			{

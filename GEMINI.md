@@ -26,6 +26,7 @@ packages/api oprc for api
 # Web
 
 - Use Shadcn where possible
+- Always respect the componets/ui directory, and if you need to extend any features do it in a new directory
 - Shadcn is build with BaseUI, not that with base ui, there is is asChild paramater, instead you pass the element you want rendered, through the rendered patam, eg <Button render={<div />}>Button</Button>
 - here is an eaxmple of how to secure routes with the session
 export const Route = createFileRoute('/dashboard')({

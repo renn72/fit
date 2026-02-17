@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 
 import { Loader } from '@/components/loader'
 import { Badge } from '@/components/ui/badge'
-import { Button, LoadingButton } from '@/components/ui/button'
+import { Button } from '@/components/ui/button'
+import { LoadingButton } from '@/components/ui-extended/loading-button'
 import {
 	Card,
 	CardContent,

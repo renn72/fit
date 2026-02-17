@@ -2,9 +2,24 @@ import { AppSidebar } from '@/components/admin-sidebar/app-sidebar'
 import { SidebarHeader } from '@/components/admin-sidebar/sidebar-header'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/admin/s')({
+	loader: async ({ context, params }) => {
+		const { orgSlug } = params
+		const session = context.session
+		const userOrgSlug = session?.user?.organisationSlug
+		if (userOrgSlug !== orgSlug) {
+			throw redirect({
+				to: '/',
+			})
+		}
+		if (!session?.user?.organisationId) {
+			throw redirect({
+				to: '/',
+			})
+		}
+	},
 	component: LayoutRouteComponent,
 })
 

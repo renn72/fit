@@ -15,6 +15,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { createColumnHelper } from '@tanstack/react-table'
 import { getRouteApi } from '@tanstack/react-router'
 
+import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
 // Define the shape of our data
@@ -147,18 +148,14 @@ const columns = [
 const route = getRouteApi('/$orgSlug/admin/s/ingredients')
 
 export function IngredientsTable() {
-	const { orgSlug } = route.useParams()
 	const { session } = route.useRouteContext()
 
-	const userOrgId =
-		session?.user?.organisationSlug === orgSlug
-			? session?.user?.organisationId
-			: undefined
+	const userOrgId = session.user.organisationId
+	if (!_.isString(userOrgId)) return <div>Missing org</div>
+	return <Table userOrgId={userOrgId} />
+}
 
-	if (!userOrgId) {
-		return <div className='p-4'>Organisation not found or access denied.</div>
-	}
-
+const Table = ({ userOrgId }: { userOrgId: string }) => {
 	const { data: ingredients } = useSuspenseQuery(
 		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },

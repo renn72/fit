@@ -9,6 +9,6 @@ export const Route = createFileRoute('/dictator/org-ingredients')({
 			orpc.ingredient.getAll.queryOptions({ input: {} }),
 		)
 	},
-	ssr: 'data-only',
+	ssr: false,
 	component: OrgIngredientsTable,
 })
