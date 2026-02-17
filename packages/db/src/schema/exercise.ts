@@ -40,11 +40,11 @@ export const exercise = s.sqliteTable(
 		level: s.text('level'),
 		mechanic: s.text('mechanic'),
 		equipment: s.text('equipment'),
-		primaryMuscles: s.text('primary_muscles').notNull(),
-		secondaryMuscles: s.text('secondary_muscles').notNull(),
-		instructions: s.text('instructions').notNull(),
-		category: s.text('category').notNull(),
-		images: s.text('images').notNull(),
+		primaryMuscles: s.text('primary_muscles'),
+		secondaryMuscles: s.text('secondary_muscles'),
+		instructions: s.text('instructions'),
+		category: s.text('category'),
+		images: s.text('images'),
 		baseExerciseId: s
 			.text('base_exercise_id')
 			.references(() => baseExercise.id, {
