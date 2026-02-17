@@ -9,13 +9,6 @@ import {
 	FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
-import {
-	Select,
-	SelectContent,
-	SelectItem,
-	SelectTrigger,
-	SelectValue,
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { orpc } from '@/utils/orpc'
@@ -29,12 +22,12 @@ import { z } from 'zod'
 const exerciseCreateSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
 	category: z.array(z.string()),
-	level: z.string(),
-	force: z.string(),
-	mechanic: z.string(),
-	equipment: z.string(),
-	primaryMuscles: z.string(),
-	secondaryMuscles: z.string(),
+	level: z.array(z.string()),
+	force: z.array(z.string()),
+	mechanic: z.array(z.string()),
+	equipment: z.array(z.string()),
+	primaryMuscles: z.array(z.string()),
+	secondaryMuscles: z.array(z.string()),
 	instructions: z.string(),
 	images: z.string(),
 })
@@ -51,6 +44,26 @@ const categories = [
 	'powerlifting',
 	'cardio',
 	'olympic weightlifting',
+]
+
+const levels = ['beginner', 'intermediate', 'expert']
+
+const forces = ['push', 'pull', 'static']
+
+const mechanics = ['compound', 'isolation']
+
+const equipments = [
+	'body only',
+	'machine',
+	'kettlebells',
+	'dumbbell',
+	'cable',
+	'barbell',
+	'bands',
+	'medicine ball',
+	'exercise ball',
+	'e-z curl bar',
+	'foam roll',
 ]
 
 export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
@@ -75,12 +88,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 		defaultValues: {
 			name: '',
 			category: [] as string[],
-			level: 'beginner',
-			force: 'push',
-			mechanic: 'compound',
-			equipment: 'body only',
-			primaryMuscles: '',
-			secondaryMuscles: '',
+			level: [] as string[],
+			force: [] as string[],
+			mechanic: [] as string[],
+			equipment: [] as string[],
+			primaryMuscles: [] as string[],
+			secondaryMuscles: [] as string[],
 			instructions: '',
 			images: '',
 		},
@@ -91,14 +104,19 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 			await createExercise.mutateAsync({
 				...value,
 				category: value.category.length === 0 ? null : value.category.join(','),
-				level: value.level === '' ? null : value.level,
-				force: value.force === '' ? null : value.force,
-				mechanic: value.mechanic === '' ? null : value.mechanic,
-				equipment: value.equipment === '' ? null : value.equipment,
+				level: value.level.length === 0 ? null : value.level.join(','),
+				force: value.force.length === 0 ? null : value.force.join(','),
+				mechanic: value.mechanic.length === 0 ? null : value.mechanic.join(','),
+				equipment:
+					value.equipment.length === 0 ? null : value.equipment.join(','),
 				primaryMuscles:
-					value.primaryMuscles === '' ? null : value.primaryMuscles,
+					value.primaryMuscles.length === 0
+						? null
+						: value.primaryMuscles.join(','),
 				secondaryMuscles:
-					value.secondaryMuscles === '' ? null : value.secondaryMuscles,
+					value.secondaryMuscles.length === 0
+						? null
+						: value.secondaryMuscles.join(','),
 				instructions: value.instructions === '' ? null : value.instructions,
 				images: value.images === '' ? null : value.images,
 			})
@@ -151,19 +169,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 						{(field) => (
 							<Field data-invalid={field.state.meta.errors.length > 0}>
 								<FieldLabel htmlFor={field.name}>Level</FieldLabel>
-								<Select
+								<TagsInput
 									value={field.state.value}
-									onValueChange={(e) => field.handleChange(e || '')}
-								>
-									<SelectTrigger id={field.name}>
-										<SelectValue placeholder='Select level' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='beginner'>Beginner</SelectItem>
-										<SelectItem value='intermediate'>Intermediate</SelectItem>
-										<SelectItem value='expert'>Expert</SelectItem>
-									</SelectContent>
-								</Select>
+									onValueChange={field.handleChange}
+									suggestions={levels}
+									placeholder='Select or type level...'
+								/>
 								<FieldError errors={field.state.meta.errors} />
 							</Field>
 						)}
@@ -175,19 +186,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 						{(field) => (
 							<Field>
 								<FieldLabel htmlFor={field.name}>Force</FieldLabel>
-								<Select
+								<TagsInput
 									value={field.state.value}
-									onValueChange={(e) => field.handleChange(e || '')}
-								>
-									<SelectTrigger id={field.name}>
-										<SelectValue placeholder='Select force' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='push'>Push</SelectItem>
-										<SelectItem value='pull'>Pull</SelectItem>
-										<SelectItem value='static'>Static</SelectItem>
-									</SelectContent>
-								</Select>
+									onValueChange={field.handleChange}
+									suggestions={forces}
+									placeholder='Select or type force...'
+								/>
 							</Field>
 						)}
 					</form.Field>
@@ -196,18 +200,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 						{(field) => (
 							<Field>
 								<FieldLabel htmlFor={field.name}>Mechanic</FieldLabel>
-								<Select
+								<TagsInput
 									value={field.state.value}
-									onValueChange={(e) => field.handleChange(e || '')}
-								>
-									<SelectTrigger id={field.name}>
-										<SelectValue placeholder='Select mechanic' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='compound'>Compound</SelectItem>
-										<SelectItem value='isolation'>Isolation</SelectItem>
-									</SelectContent>
-								</Select>
+									onValueChange={field.handleChange}
+									suggestions={mechanics}
+									placeholder='Select or type mechanic...'
+								/>
 							</Field>
 						)}
 					</form.Field>
@@ -216,27 +214,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 						{(field) => (
 							<Field>
 								<FieldLabel htmlFor={field.name}>Equipment</FieldLabel>
-								<Select
+								<TagsInput
 									value={field.state.value}
-									onValueChange={(e) => field.handleChange(e || '')}
-								>
-									<SelectTrigger id={field.name}>
-										<SelectValue placeholder='Select equipment' />
-									</SelectTrigger>
-									<SelectContent>
-										<SelectItem value='body only'>Body Only</SelectItem>
-										<SelectItem value='machine'>Machine</SelectItem>
-										<SelectItem value='kettlebells'>Kettlebells</SelectItem>
-										<SelectItem value='dumbbell'>Dumbbell</SelectItem>
-										<SelectItem value='cable'>Cable</SelectItem>
-										<SelectItem value='barbell'>Barbell</SelectItem>
-										<SelectItem value='bands'>Bands</SelectItem>
-										<SelectItem value='medicine ball'>Medicine Ball</SelectItem>
-										<SelectItem value='exercise ball'>Exercise Ball</SelectItem>
-										<SelectItem value='e-z curl bar'>E-Z Curl Bar</SelectItem>
-										<SelectItem value='foam roll'>Foam Roll</SelectItem>
-									</SelectContent>
-								</Select>
+									onValueChange={field.handleChange}
+									suggestions={equipments}
+									placeholder='Select or type equipment...'
+								/>
 							</Field>
 						)}
 					</form.Field>
@@ -246,13 +229,10 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 					{(field) => (
 						<Field data-invalid={field.state.meta.errors.length > 0}>
 							<FieldLabel htmlFor={field.name}>Primary Muscles</FieldLabel>
-							<Input
-								id={field.name}
-								name={field.name}
+							<TagsInput
 								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder='e.g. chest, triceps (comma separated)'
+								onValueChange={field.handleChange}
+								placeholder='e.g. chest, triceps'
 							/>
 							<FieldError errors={field.state.meta.errors} />
 						</Field>
@@ -263,13 +243,10 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 					{(field) => (
 						<Field>
 							<FieldLabel htmlFor={field.name}>Secondary Muscles</FieldLabel>
-							<Input
-								id={field.name}
-								name={field.name}
+							<TagsInput
 								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder='e.g. shoulders (comma separated)'
+								onValueChange={field.handleChange}
+								placeholder='e.g. shoulders'
 							/>
 						</Field>
 					)}

@@ -61,7 +61,7 @@ export const exerciseRouter = {
 		.input(ExerciseCreateInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			if (!metaTags.includes('itemUpdater')) {
+			if (!metaTags.includes('itemUpdater') || !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
 					message: 'You do not have permission to create exercises',
 				})
