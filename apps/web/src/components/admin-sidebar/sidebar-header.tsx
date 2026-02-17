@@ -15,7 +15,7 @@ import { UserMenu } from '@/components/user-menu'
 import { SidebarIcon } from 'lucide-react'
 
 // @ts-ignore TODO: fix any
-export function SidebarHeader({ session }) {
+export function SidebarHeader({ session }: { session: any }) {
 	const { toggleSidebar } = useSidebar()
 
 	return (

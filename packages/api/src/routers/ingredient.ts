@@ -61,7 +61,7 @@ export const ingredientRouter = {
 		.input(IngredientCreateInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			if (!metaTags.includes('itemUpdater') || !metaTags.includes('dictator')) {
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
 					message: 'You do not have permission to create ingredients',
 				})

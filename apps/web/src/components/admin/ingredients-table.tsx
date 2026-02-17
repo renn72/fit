@@ -12,8 +12,8 @@ import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { createColumnHelper } from '@tanstack/react-table'
 import { getRouteApi } from '@tanstack/react-router'
+import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
@@ -55,6 +55,10 @@ const columns = [
 			label: 'Calories',
 			variant: 'number',
 		},
+		cell: ({ row }) => {
+			const value = row.getValue('calories') as number
+			return value.toFixed(1)
+		},
 	}),
 	columnHelper.accessor('protein', {
 		header: ({ column }) => (
@@ -63,6 +67,10 @@ const columns = [
 		meta: {
 			label: 'Protein',
 			variant: 'number',
+		},
+		cell: ({ row }) => {
+			const value = row.getValue('protein') as number
+			return value.toFixed(1)
 		},
 	}),
 	columnHelper.accessor('fat', {
@@ -73,6 +81,10 @@ const columns = [
 			label: 'Fat',
 			variant: 'number',
 		},
+		cell: ({ row }) => {
+			const value = row.getValue('fat') as number
+			return value.toFixed(1)
+		},
 	}),
 	columnHelper.accessor('carbohydrate', {
 		header: ({ column }) => (
@@ -81,6 +93,10 @@ const columns = [
 		meta: {
 			label: 'Carbs',
 			variant: 'number',
+		},
+		cell: ({ row }) => {
+			const value = row.getValue('carbohydrate') as number
+			return value.toFixed(1)
 		},
 	}),
 	columnHelper.accessor('serveSize', {
@@ -116,11 +132,13 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Is Base' />
 		),
 		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isBase')}
-				disabled
-				aria-label='Is Base'
-			/>
+			<div className='w-10'>
+				<Checkbox
+					checked={row.getValue('isBase')}
+					disabled
+					aria-label='Is Base'
+				/>
+			</div>
 		),
 		meta: {
 			label: 'Is Base',

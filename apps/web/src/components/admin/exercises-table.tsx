@@ -80,7 +80,7 @@ const columns = [
 		),
 		meta: {
 			label: 'Level',
-			variant: 'select',
+			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('category', {
@@ -89,16 +89,7 @@ const columns = [
 		),
 		meta: {
 			label: 'Category',
-			variant: 'select',
-			options: [
-				{ label: 'Strength', value: 'strength' },
-				{ label: 'Stretching', value: 'stretching' },
-				{ label: 'Plyometrics', value: 'plyometrics' },
-				{ label: 'Strongman', value: 'strongman' },
-				{ label: 'Powerlifting', value: 'powerlifting' },
-				{ label: 'Cardio', value: 'cardio' },
-				{ label: 'Olympic Weightlifting', value: 'olympic weightlifting' },
-			],
+			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('force', {
@@ -107,12 +98,7 @@ const columns = [
 		),
 		meta: {
 			label: 'Force',
-			variant: 'select',
-			options: [
-				{ label: 'Push', value: 'push' },
-				{ label: 'Pull', value: 'pull' },
-				{ label: 'Static', value: 'static' },
-			],
+			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('mechanic', {
@@ -121,11 +107,7 @@ const columns = [
 		),
 		meta: {
 			label: 'Mechanic',
-			variant: 'select',
-			options: [
-				{ label: 'Compound', value: 'compound' },
-				{ label: 'Isolation', value: 'isolation' },
-			],
+			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('equipment', {
@@ -151,7 +133,9 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Secondary Muscles' />
 		),
 		cell: ({ row }) => (
-			<div className='max-w-35'>{row.getValue('secondaryMuscles')}</div>
+			<div className='max-w-35 truncate'>
+				{row.getValue('secondaryMuscles')}
+			</div>
 		),
 		meta: {
 			label: 'Secondary Muscles',
