@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 
+import { IngredientCreateDialog } from '@/components/admin/ingredient-create-dialog'
+import { IngredientRowActions } from '@/components/admin/ingredient-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -161,6 +163,10 @@ const columns = [
 			variant: 'boolean',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <IngredientRowActions row={row} />,
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/admin/s/ingredients')
@@ -235,6 +241,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
+				<IngredientCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

@@ -47,5 +47,21 @@ The shift to `defineRelations` in Drizzle v2 simplifies the schema definition bu
 Using Shadcn as the foundation with Dice UI for complex data components ensures a "pro" feel.
 - **Insight:** Client-side pagination/sorting is fine for now, but as datasets grow (especially ingredients), we must be prepared to shift to server-side processing without breaking the UI state managed by `nuqs`.
 
+### The "Shadow Override" Evolution
+Our editing logic now supports the automatic creation of organization-specific records when a user attempts to "edit" a global base item.
+- **Insight:** This preserves the immutability of the global library while providing a seamless UX. The system treats base items as "templates" that transition into "entities" the moment a tenant-specific law (edit) is applied.
+
+### Extended UI Primitives
+Moving complex compositions like `TagsInput + Combobox` into `ui-extended` prevents component bloat in standard route files.
+- **Insight:** `ui/` should remain pure Shadcn/Base-UI primitives. `ui-extended/` is where the FIT-specific "Pro" patterns live—combining multiple primitives with business logic (like tag suggestions) to keep our forms declarative and readable.
+
+### SSR Cookie Forwarding
+We solved 401 Unauthorized errors during server-side prefetching by explicitly forwarding headers.
+- **Insight:** In a monorepo using `vinxi`, the server-side fetch doesn't automatically share the browser's cookie jar. We must treat the `orpc` client as a proxy, manually bridging the gap between the incoming request and our API procedures during the `loader` phase.
+
+### Precision as a Core Mandate
+Implementing 1-point decimal precision across the stack highlighted the danger of floating-point drift.
+- **Insight:** Consistency is not just a UI concern; it's a data integrity requirement. By rounding at the API handler, the onSubmit handler, and the form defaultValues, we ensure that what the user sees, what they edit, and what is stored are identical laws.
+
 ## My Vow
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts.

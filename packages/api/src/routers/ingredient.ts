@@ -9,7 +9,10 @@ import {
 	IngredientGetAllInput,
 	IngredientGetAllOrgInput,
 	IngredientGetInput,
+	IngredientUpdateInput,
 } from '../schemas/ingredient'
+
+import { eq, and } from 'drizzle-orm'
 
 export const ingredientRouter = {
 	getAll: protectedProcedure
@@ -77,6 +80,10 @@ export const ingredientRouter = {
 				.insert(ingredient)
 				.values({
 					...input,
+					calories: Math.round(input.calories * 10) / 10,
+					protein: Math.round(input.protein * 10) / 10,
+					fat: Math.round(input.fat * 10) / 10,
+					carbohydrate: Math.round(input.carbohydrate * 10) / 10,
 					creatorId: context.session.user.id,
 					organisationId: context.session.user.organisationId,
 				})
@@ -171,5 +178,82 @@ export const ingredientRouter = {
 				limit: input.limit,
 			})
 			return res
+		}),
+
+	update: protectedProcedure
+		.route({
+			method: 'PATCH',
+			path: '/ingredient',
+			summary: 'Update an ingredient',
+			tags: ['Ingredient'],
+		})
+		.input(IngredientUpdateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to update ingredients',
+				})
+			}
+
+			const organisationId = context.session.user.organisationId
+			if (!organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			// 1. Check if it's an existing org ingredient
+			const existingOrgIngredient = await db.query.ingredient.findFirst({
+				where: and(
+					eq(ingredient.id, input.id),
+					eq(ingredient.organisationId, organisationId),
+				),
+			})
+
+			if (existingOrgIngredient) {
+				const [updated] = await db
+					.update(ingredient)
+					.set({
+						name: input.name,
+						calories: Math.round(input.calories * 10) / 10,
+						protein: Math.round(input.protein * 10) / 10,
+						fat: Math.round(input.fat * 10) / 10,
+						carbohydrate: Math.round(input.carbohydrate * 10) / 10,
+						serveSize: input.serveSize,
+						serveUnit: input.serveUnit,
+					})
+					.where(eq(ingredient.id, input.id))
+					.returning()
+				return updated
+			}
+
+			// 2. Check if it's a base ingredient (to create an override)
+			const baseIng = await db.query.baseIngredients.findFirst({
+				where: (bi, { eq }) => eq(bi.id, input.id),
+			})
+
+			if (baseIng) {
+				const [newOverride] = await db
+					.insert(ingredient)
+					.values({
+						name: input.name,
+						calories: Math.round(input.calories * 10) / 10,
+						protein: Math.round(input.protein * 10) / 10,
+						fat: Math.round(input.fat * 10) / 10,
+						carbohydrate: Math.round(input.carbohydrate * 10) / 10,
+						serveSize: input.serveSize,
+						serveUnit: input.serveUnit,
+						baseIngredientId: baseIng.id,
+						organisationId,
+						creatorId: context.session.user.id,
+					})
+					.returning()
+				return newOverride
+			}
+
+			throw new ORPCError('NOT_FOUND', {
+				message: 'Ingredient not found',
+			})
 		}),
 }

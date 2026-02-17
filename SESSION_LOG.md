@@ -29,4 +29,19 @@
     - Built a robust **Multi-Tenant Dummy Data Generator** to create realistic test environments (Orgs, Creators, Members, and Overwritten content).
     - Refined organisational views with metadata (Creator names, formatted timestamps) and name-cleaning logic.
 
+# 2026-02-17
+
+- **Advanced Table Architecture:**
+    - Refactored Admin Exercises and Ingredients into modular table components (`ExercisesTable`, `IngredientsTable`).
+    - Standardized **SSR Strategy** for all high-privileged routes to use `ssr: false` while maintaining `loader` prefetching for high-speed client-side hydration.
+    - Fixed SSR authentication by implementing header forwarding in the `orpc` client using `vinxi/http`.
+- **UI System Evolution:**
+    - Created a new **Extended UI Layer** (`ui-extended/`) to house complex, high-level primitives.
+    - Built a robust `TagsInput` component that integrates `diceui` with Shadcn's `Combobox` for advanced data entry.
+    - Integrated **Row Actions** into DataTables using `DropdownMenu` and `Dialog` state management.
+- **CRUD & Override Logic:**
+    - Implemented the **"Shadow Override" Pattern** in the API: Editing a base item automatically generates a tenant-specific override while preserving global base data.
+    - Built comprehensive Edit/Create forms for Ingredients and Exercises using TanStack Form.
+    - Enforced **Numeric Precision Standards** (1-point decimal) at the Schema, API handler, and UI levels to ensure data consistency across the ecosystem.
+
 

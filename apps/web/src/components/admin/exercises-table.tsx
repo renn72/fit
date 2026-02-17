@@ -3,6 +3,7 @@
 import * as React from 'react'
 
 import { ExerciseCreateDialog } from '@/components/admin/exercise-create-dialog'
+import { ExerciseRowActions } from '@/components/admin/exercise-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -183,6 +184,10 @@ const columns = [
 			label: 'Overwrite Base',
 			variant: 'boolean',
 		},
+	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <ExerciseRowActions row={row} />,
 	}),
 ]
 

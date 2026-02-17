@@ -9,7 +9,10 @@ import {
 	ExerciseGetAllInput,
 	ExerciseGetAllOrgInput,
 	ExerciseGetInput,
+	ExerciseUpdateInput,
 } from '../schemas/exercise'
+
+import { eq, and } from 'drizzle-orm'
 
 export const exerciseRouter = {
 	getAll: protectedProcedure
@@ -170,5 +173,88 @@ export const exerciseRouter = {
 				limit: input.limit,
 			})
 			return res
+		}),
+
+	update: protectedProcedure
+		.route({
+			method: 'PATCH',
+			path: '/exercise',
+			summary: 'Update an exercise',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseUpdateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to update exercises',
+				})
+			}
+
+			const organisationId = context.session.user.organisationId
+			if (!organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			// 1. Check if it's an existing org exercise
+			const existingOrgExercise = await db.query.exercise.findFirst({
+				where: and(
+					eq(exercise.id, input.id),
+					eq(exercise.organisationId, organisationId),
+				),
+			})
+
+			if (existingOrgExercise) {
+				const [updated] = await db
+					.update(exercise)
+					.set({
+						name: input.name,
+						force: input.force,
+						level: input.level,
+						mechanic: input.mechanic,
+						equipment: input.equipment,
+						primaryMuscles: input.primaryMuscles,
+						secondaryMuscles: input.secondaryMuscles,
+						instructions: input.instructions,
+						category: input.category,
+						images: input.images,
+					})
+					.where(eq(exercise.id, input.id))
+					.returning()
+				return updated
+			}
+
+			// 2. Check if it's a base exercise (to create an override)
+			const baseEx = await db.query.baseExercise.findFirst({
+				where: (be, { eq }) => eq(be.id, input.id),
+			})
+
+			if (baseEx) {
+				const [newOverride] = await db
+					.insert(exercise)
+					.values({
+						name: input.name,
+						force: input.force,
+						level: input.level,
+						mechanic: input.mechanic,
+						equipment: input.equipment,
+						primaryMuscles: input.primaryMuscles,
+						secondaryMuscles: input.secondaryMuscles,
+						instructions: input.instructions,
+						category: input.category,
+						images: input.images,
+						baseExerciseId: baseEx.id,
+						organisationId,
+						creatorId: context.session.user.id,
+					})
+					.returning()
+				return newOverride
+			}
+
+			throw new ORPCError('NOT_FOUND', {
+				message: 'Exercise not found',
+			})
 		}),
 }
