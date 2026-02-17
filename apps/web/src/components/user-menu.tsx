@@ -14,15 +14,10 @@ import { authClient } from '@/lib/auth-client'
 import { Link, useNavigate } from '@tanstack/react-router'
 
 import { Button } from './ui/button'
-import { Skeleton } from './ui/skeleton'
 
-export function UserMenu() {
+// @ts-ignore TODO: fix any
+export function UserMenu({ session }: { session?: any }) {
 	const navigate = useNavigate()
-	const { data: session, isPending } = authClient.useSession()
-
-	if (isPending) {
-		return <Skeleton className='w-24 h-9' />
-	}
 
 	if (!session) {
 		return (

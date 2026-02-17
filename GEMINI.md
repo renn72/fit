@@ -28,30 +28,22 @@ packages/api oprc for api
 - Use Shadcn where possible
 - Always respect the componets/ui directory, and if you need to extend any features do it in a new directory
 - Shadcn is build with BaseUI, not that with base ui, there is is asChild paramater, instead you pass the element you want rendered, through the rendered patam, eg <Button render={<div />}>Button</Button>
-- here is an eaxmple of how to secure routes with the session
-export const Route = createFileRoute('/dashboard')({
-	component: RouteComponent,
-	beforeLoad: async () => {
-		const session = await getUser()
-		return { session }
-	},
-	loader: async ({ context }) => {
-		if (!context.session) {
-			throw redirect({
-				to: '/login',
-			})
-		}
-	},
-})
 - if data needs to be prefetched here is how
-export const Route = createFileRoute('/dictator/base-exercises')({
+export const Route = createFileRoute('/$orgSlug/admin/s/exercises')({
+	component: ExercisesTable,
 	loader: async ({ context }) => {
+		const session = context.session
+		const userOrgId = session?.user?.organisationId
+
+		if (!userOrgId) return <div>missing org</div>
+
 		await context.queryClient.prefetchQuery(
-			orpc.exercise.getAllBase.queryOptions({ input: {} }),
+			orpc.exercise.getAllOrg.queryOptions({
+				input: { organisationId: userOrgId },
+			}),
 		)
 	},
-	ssr: 'data-only',
-	component: BaseExercisesTable,
+	ssr: false,
 })
 
 

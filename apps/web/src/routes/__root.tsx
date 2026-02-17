@@ -1,7 +1,7 @@
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
-import { getUser, getUserQuery } from '@/functions/get-user'
+import { getUserQuery } from '@/functions/get-user'
 import type { orpc } from '@/utils/orpc'
 
 import type { QueryClient } from '@tanstack/react-query'
@@ -27,7 +27,6 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 			...getUserQuery,
 			revalidateIfStale: true,
 		})
-		console.log('server and client', session)
 		return { session }
 	},
 	head: () => ({
@@ -86,7 +85,11 @@ function InnerRoot() {
 	const { theme } = useTheme()
 
 	return (
-		<html lang='en' className={theme === 'system' ? '' : theme}>
+		<html
+			suppressHydrationWarning
+			lang='en'
+			className={theme === 'system' ? '' : theme}
+		>
 			<head>
 				<HeadContent />
 			</head>

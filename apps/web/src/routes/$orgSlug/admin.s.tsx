@@ -24,10 +24,11 @@ export const Route = createFileRoute('/$orgSlug/admin/s')({
 })
 
 function LayoutRouteComponent() {
+	const { session } = Route.useRouteContext()
 	return (
 		<div className='[--header-height:calc(--spacing(14))]'>
 			<SidebarProvider className='flex flex-col'>
-				<SidebarHeader />
+				<SidebarHeader session={session} />
 				<div className='flex flex-1'>
 					<AppSidebar />
 					<SidebarInset>

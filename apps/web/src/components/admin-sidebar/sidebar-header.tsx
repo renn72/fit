@@ -14,7 +14,8 @@ import { UserMenu } from '@/components/user-menu'
 
 import { SidebarIcon } from 'lucide-react'
 
-export function SidebarHeader() {
+// @ts-ignore TODO: fix any
+export function SidebarHeader({ session }) {
 	const { toggleSidebar } = useSidebar()
 
 	return (
@@ -44,7 +45,7 @@ export function SidebarHeader() {
 				</div>
 				<div className='flex gap-2 items-center'>
 					<ModeToggle />
-					<UserMenu />
+					<UserMenu session={session} />
 				</div>
 			</div>
 		</header>

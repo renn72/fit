@@ -17,13 +17,12 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { TagsInput } from '@/components/ui-extended/tags-input'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 
-import * as TagsInput from '@diceui/tags-input'
-import { ArrowsClockwiseIcon, XIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -40,9 +39,19 @@ const exerciseCreateSchema = z.object({
 	images: z.string(),
 })
 
-interface ExerciseCreateFormProps {
+export interface ExerciseCreateFormProps {
 	onSuccess?: () => void
 }
+
+const categories = [
+	'strength',
+	'stretching',
+	'plyometrics',
+	'strongman',
+	'powerlifting',
+	'cardio',
+	'olympic weightlifting',
+]
 
 export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 	const queryClient = useQueryClient()
@@ -65,7 +74,7 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 	const form = useForm({
 		defaultValues: {
 			name: '',
-			category: [''],
+			category: [] as string[],
 			level: 'beginner',
 			force: 'push',
 			mechanic: 'compound',
@@ -81,8 +90,7 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 		onSubmit: async ({ value }) => {
 			await createExercise.mutateAsync({
 				...value,
-				category:
-					value.category.join(',') === '' ? null : value.category.join(','),
+				category: value.category.length === 0 ? null : value.category.join(','),
 				level: value.level === '' ? null : value.level,
 				force: value.force === '' ? null : value.force,
 				mechanic: value.mechanic === '' ? null : value.mechanic,
@@ -128,40 +136,12 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 						{(field) => (
 							<Field data-invalid={field.state.meta.errors.length > 0}>
 								<FieldLabel htmlFor={field.name}>Category</FieldLabel>
-								<TagsInput.TagsInputRoot
+								<TagsInput
 									value={field.state.value}
 									onValueChange={field.handleChange}
-									className='flex flex-col gap-2 w-95'
-									editable
-								>
-									<TagsInput.TagsInputLabel className='text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'>
-										{field.name}
-									</TagsInput.TagsInputLabel>
-									<div className='flex gap-1'>
-										<div className='flex flex-wrap gap-1.5 items-center py-2 px-3 w-full text-sm rounded-md border focus-within:ring-1 disabled:opacity-50 disabled:cursor-not-allowed min-h-10 border-input bg-background dark:focus-within:ring-zinc-400 focus-within:ring-zinc-500'>
-											{field.state.value.map((trick) => (
-												<TagsInput.TagsInputItem
-													key={trick}
-													value={trick}
-													className='inline-flex max-w-[calc(100%-8px)] items-center gap-1.5 rounded border bg-transparent px-2.5 py-1 text-sm focus:outline-hidden data-disabled:cursor-not-allowed data-editable:select-none data-editing:bg-transparent data-disabled:opacity-50 data-editing:ring-1 data-editing:ring-zinc-500 dark:data-editing:ring-zinc-400 [&:not([data-editing])]:pr-1.5 [&[data-highlighted]:not([data-editing])]:bg-zinc-200 [&[data-highlighted]:not([data-editing])]:text-black dark:[&[data-highlighted]:not([data-editing])]:bg-zinc-800 dark:[&[data-highlighted]:not([data-editing])]:text-white'
-												>
-													<TagsInput.TagsInputItemText className='truncate' />
-													<TagsInput.TagsInputItemDelete className='w-4 h-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 shrink-0 ring-offset-zinc-950'>
-														<XIcon className='w-3.5 h-3.5' />
-													</TagsInput.TagsInputItemDelete>
-												</TagsInput.TagsInputItem>
-											))}
-											<TagsInput.TagsInputInput
-												placeholder='Add trick...'
-												className='flex-1 bg-transparent disabled:opacity-50 disabled:cursor-not-allowed outline-hidden placeholder:text-zinc-500 dark:placeholder:text-zinc-400'
-											/>
-										</div>
-										<TagsInput.TagsInputClear className='flex gap-2 justify-center items-center h-9 bg-transparent rounded-sm border border-input text-zinc-800 shadow-xs dark:text-zinc-300 dark:hover:bg-zinc-900/80 hover:bg-zinc-100/80'>
-											<ArrowsClockwiseIcon className='w-4 h-4' />
-											Clear
-										</TagsInput.TagsInputClear>
-									</div>
-								</TagsInput.TagsInputRoot>
+									suggestions={categories}
+									placeholder='Select or type category...'
+								/>
 								<FieldError errors={field.state.meta.errors} />
 							</Field>
 						)}
