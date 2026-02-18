@@ -2,6 +2,7 @@ import { db } from '@fit/db'
 import { exercise } from '@fit/db/schema/exercise'
 
 import { ORPCError } from '@orpc/server'
+import { eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
 	ExerciseCreateInput,
@@ -11,8 +12,6 @@ import {
 	ExerciseGetInput,
 	ExerciseUpdateInput,
 } from '../schemas/exercise'
-
-import { eq, and } from 'drizzle-orm'
 
 export const exerciseRouter = {
 	getAll: protectedProcedure
@@ -200,10 +199,10 @@ export const exerciseRouter = {
 
 			// 1. Check if it's an existing org exercise
 			const existingOrgExercise = await db.query.exercise.findFirst({
-				where: and(
-					eq(exercise.id, input.id),
-					eq(exercise.organisationId, organisationId),
-				),
+				where: {
+					id: input.id,
+					organisationId: organisationId,
+				},
 			})
 
 			if (existingOrgExercise) {
@@ -228,7 +227,9 @@ export const exerciseRouter = {
 
 			// 2. Check if it's a base exercise (to create an override)
 			const baseEx = await db.query.baseExercise.findFirst({
-				where: (be, { eq }) => eq(be.id, input.id),
+				where: {
+					id: input.id,
+				},
 			})
 
 			if (baseEx) {

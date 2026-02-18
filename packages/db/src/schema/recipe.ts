@@ -34,7 +34,10 @@ export const recipe = s.sqliteTable(
 			.$onUpdate(() => /* @__PURE__ */ new Date())
 			.notNull(),
 	},
-	(table) => [s.index('recipe_organisationId_idx').on(table.organisationId)],
+	(table) => [
+		s.index('recipe_organisationId_idx').on(table.organisationId),
+		s.index('recipe_creatorId_idx').on(table.creatorId),
+	],
 )
 
 export const recipeToIngredient = s.sqliteTable('recipe_to_ingredient', {
