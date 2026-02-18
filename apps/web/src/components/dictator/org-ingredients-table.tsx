@@ -139,7 +139,7 @@ export function OrgIngredientsTable() {
 			},
 			{
 				id: 'isOverwrite',
-				accessorFn: (row: any) => !!row.baseIngredientId,
+				accessorFn: (row: any) => !!row.baseId,
 				header: 'Overwrite',
 				filterFn,
 				meta: {

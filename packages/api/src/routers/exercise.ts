@@ -96,15 +96,19 @@ export const exerciseRouter = {
 		})
 		.input(ExerciseGetAllOrgInput)
 		.handler(async ({ input }) => {
+			// Get org exercises
 			const orgExercises = await db.query.exercise.findMany({
 				where: { organisationId: input.organisationId },
 			})
 
 			const overwrittenBaseIds = orgExercises
-				.map((e) => e.baseExerciseId)
+				.map((e) => e.baseId)
 				.filter((id): id is string => id !== null)
 
-			const baseExercises = await db.query.baseExercise.findMany()
+			// Get base exercises (isBase=true, not overwritten by org)
+			const baseExercises = await db.query.exercise.findMany({
+				where: { isBase: true },
+			})
 
 			const availableBaseExercises = baseExercises.filter(
 				(be) => !overwrittenBaseIds.includes(be.id),
@@ -114,7 +118,7 @@ export const exerciseRouter = {
 				...orgExercises.map((e) => ({
 					...e,
 					isBase: false,
-					isOverwriteBase: !!e.baseExerciseId,
+					isOverwriteBase: !!e.baseId,
 				})),
 				...availableBaseExercises.map((be) => ({
 					...be,
@@ -139,17 +143,11 @@ export const exerciseRouter = {
 		})
 		.input(ExerciseGetInput)
 		.handler(async ({ input }) => {
-			const orgExercise = await db.query.exercise.findFirst({
+			const ex = await db.query.exercise.findFirst({
 				where: { id: input.id },
 			})
 
-			if (orgExercise) return orgExercise
-
-			const baseEx = await db.query.baseExercise.findFirst({
-				where: { id: input.id },
-			})
-
-			return baseEx || null
+			return ex || null
 		}),
 
 	getAllBase: protectedProcedure
@@ -168,7 +166,8 @@ export const exerciseRouter = {
 				})
 			}
 
-			const res = await db.query.baseExercise.findMany({
+			const res = await db.query.exercise.findMany({
+				where: { isBase: true },
 				limit: input.limit,
 			})
 			return res
@@ -226,9 +225,10 @@ export const exerciseRouter = {
 			}
 
 			// 2. Check if it's a base exercise (to create an override)
-			const baseEx = await db.query.baseExercise.findFirst({
+			const baseEx = await db.query.exercise.findFirst({
 				where: {
 					id: input.id,
+					isBase: true,
 				},
 			})
 
@@ -246,7 +246,7 @@ export const exerciseRouter = {
 						instructions: input.instructions,
 						category: input.category,
 						images: input.images,
-						baseExerciseId: baseEx.id,
+						baseId: baseEx.id,
 						organisationId,
 						creatorId: context.session.user.id,
 					})

@@ -3,6 +3,7 @@ import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 
 import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
+import { v4 as uuid } from 'uuid'
 import { protectedProcedure } from '../index'
 import {
 	RecipeCreateInput,
@@ -156,11 +157,8 @@ export const recipeRouter = {
 		})
 		.input(RecipeCreateInput)
 		.handler(async ({ input, context }) => {
-			const userMetaTags = context.session.user.metaTags?.split(',') ?? []
-			if (
-				!userMetaTags.includes('itemUpdater') &&
-				!userMetaTags.includes('dictator')
-			) {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
 					message: 'You do not have permission to create recipes',
 				})
@@ -174,32 +172,27 @@ export const recipeRouter = {
 
 			const { ingredients, ...recipeData } = input
 
+			const newRecipeId = uuid()
 			const [newRecipe] = await db
 				.insert(recipe)
 				.values({
-					name: recipeData.name ?? '',
-					description: recipeData.description ?? undefined,
-					category: recipeData.category ?? undefined,
-					image: recipeData.image ?? undefined,
+					id: newRecipeId,
+					name: recipeData.name,
+					description: recipeData.description ?? null,
+					category: recipeData.category ?? null,
+					image: recipeData.image ?? null,
 					metaTags: recipeData.metaTags ?? '',
 					creatorId: context.session.user.id,
 					organisationId: context.session.user.organisationId,
 				})
 				.returning()
 
-			if (!newRecipe) {
-				throw new ORPCError('INTERNAL_SERVER_ERROR', {
-					message: 'Failed to create recipe',
-				})
-			}
-
 			if (ingredients && ingredients.length > 0) {
 				const ingredientLinks = ingredients.map((ing) => ({
-					recipeId: newRecipe.id,
-					ingredientId: ing.ingredientId ?? undefined,
-					customIngredientId: ing.customIngredientId ?? undefined,
-					altIngredientId: ing.altIngredientId ?? undefined,
-					altBaseIngredientId: ing.altBaseIngredientId ?? undefined,
+					recipeId: newRecipeId,
+					ingredientId: ing.ingredientId,
+					isBaseIngredient: ing.isBaseIngredient,
+					altIngredientId: ing.altIngredientId ?? null,
 					amount: ing.amount,
 					unit: ing.unit,
 				}))
@@ -252,10 +245,10 @@ export const recipeRouter = {
 				.update(recipe)
 				.set({
 					name: input.name,
-					description: input.description ?? undefined,
-					category: input.category ?? undefined,
-					image: input.image ?? undefined,
-					metaTags: input.metaTags ?? '',
+					description: input.description,
+					category: input.category,
+					image: input.image,
+					metaTags: input.metaTags || '',
 				})
 				.where(eq(recipe.id, input.id))
 				.returning()

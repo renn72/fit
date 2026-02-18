@@ -76,11 +76,13 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 		}
 		if (orgIngredients) {
 			options.push(
-				...orgIngredients.map((ing) => ({
-					value: ing.id,
-					label: `${ing.name} (Org)`,
-					isBase: false,
-				})),
+				...orgIngredients
+					.filter((ing) => !ing.isBase)
+					.map((ing) => ({
+						value: ing.id,
+						label: `${ing.name} (Org)`,
+						isBase: false,
+					})),
 			)
 		}
 		return options
@@ -95,11 +97,9 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 			metaTags: '',
 			ingredients: [] as Array<{
 				ingredientId: string
-				customIngredientId: string
-				isBase: boolean
+				isBaseIngredient: boolean
 				altIngredientId: string
-				altBaseIngredientId: string
-				altIsBase: boolean
+				altIsBaseIngredient: boolean
 				amount: number
 				unit: string
 			}>,
@@ -114,7 +114,7 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 				return
 			}
 			const validIngredients = value.ingredients.filter(
-				(i) => (i.ingredientId || i.customIngredientId) && i.unit,
+				(i) => i.ingredientId && i.unit,
 			)
 			if (validIngredients.length === 0) {
 				toast.error(
@@ -130,14 +130,9 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 				image: value.image || null,
 				metaTags: value.metaTags || '',
 				ingredients: validIngredients.map((ing) => ({
-					ingredientId: ing.isBase ? ing.ingredientId || null : null,
-					customIngredientId: ing.isBase
-						? null
-						: ing.customIngredientId || null,
-					altIngredientId: ing.altIsBase ? ing.altIngredientId || null : null,
-					altBaseIngredientId: ing.altIsBase
-						? null
-						: ing.altBaseIngredientId || null,
+					ingredientId: ing.ingredientId,
+					isBaseIngredient: ing.isBaseIngredient,
+					altIngredientId: ing.altIngredientId || null,
 					amount: ing.amount,
 					unit: ing.unit,
 				})),
@@ -150,11 +145,9 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 			...prev,
 			{
 				ingredientId: '',
-				customIngredientId: '',
-				isBase: true,
+				isBaseIngredient: true,
 				altIngredientId: '',
-				altBaseIngredientId: '',
-				altIsBase: true,
+				altIsBaseIngredient: true,
 				amount: 0,
 				unit: '',
 			},
@@ -294,40 +287,20 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 																<FieldLabel>Ingredient</FieldLabel>
 																<VirtualizedCombobox
 																	options={combinedIngredientOptions}
-																	selectedOption={
-																		ingField.state.value ||
-																		field.state.value[index]
-																			?.customIngredientId ||
-																		''
-																	}
+																	selectedOption={ingField.state.value || ''}
 																	onSelectOption={(val) => {
 																		const isBase =
 																			combinedIngredientOptions.find(
 																				(o) => o.value === val,
 																			)?.isBase ?? true
 																		form.setFieldValue(
-																			`ingredients[${index}].isBase`,
+																			`ingredients[${index}].isBaseIngredient`,
 																			isBase,
 																		)
-																		if (isBase) {
-																			form.setFieldValue(
-																				`ingredients[${index}].ingredientId`,
-																				val,
-																			)
-																			form.setFieldValue(
-																				`ingredients[${index}].customIngredientId`,
-																				'',
-																			)
-																		} else {
-																			form.setFieldValue(
-																				`ingredients[${index}].ingredientId`,
-																				'',
-																			)
-																			form.setFieldValue(
-																				`ingredients[${index}].customIngredientId`,
-																				val,
-																			)
-																		}
+																		form.setFieldValue(
+																			`ingredients[${index}].ingredientId`,
+																			val,
+																		)
 																	}}
 																	searchPlaceholder='Search ingredients...'
 																	width='100%'
@@ -392,40 +365,20 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 															<FieldLabel>Alternative (Optional)</FieldLabel>
 															<VirtualizedCombobox
 																options={combinedIngredientOptions}
-																selectedOption={
-																	altField.state.value ||
-																	field.state.value[index]
-																		?.altBaseIngredientId ||
-																	''
-																}
+																selectedOption={altField.state.value || ''}
 																onSelectOption={(val) => {
 																	const isBase =
 																		combinedIngredientOptions.find(
 																			(o) => o.value === val,
 																		)?.isBase ?? true
 																	form.setFieldValue(
-																		`ingredients[${index}].altIsBase`,
+																		`ingredients[${index}].altIsBaseIngredient`,
 																		isBase,
 																	)
-																	if (isBase) {
-																		form.setFieldValue(
-																			`ingredients[${index}].altIngredientId`,
-																			val,
-																		)
-																		form.setFieldValue(
-																			`ingredients[${index}].altBaseIngredientId`,
-																			'',
-																		)
-																	} else {
-																		form.setFieldValue(
-																			`ingredients[${index}].altIngredientId`,
-																			'',
-																		)
-																		form.setFieldValue(
-																			`ingredients[${index}].altBaseIngredientId`,
-																			val,
-																		)
-																	}
+																	form.setFieldValue(
+																		`ingredients[${index}].altIngredientId`,
+																		val,
+																	)
 																}}
 																searchPlaceholder='Select alternative...'
 																width='100%'

@@ -145,7 +145,7 @@ export function OrgExercisesTable() {
 			},
 			{
 				id: 'isOverwrite',
-				accessorFn: (row: any) => !!row.baseExerciseId,
+				accessorFn: (row: any) => !!row.baseId,
 				header: 'Overwrite',
 				filterFn,
 				meta: {

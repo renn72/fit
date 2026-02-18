@@ -117,17 +117,13 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.exercise.organisationId,
 			to: r.organisation.id,
 		}),
-		baseExercise: r.one.baseExercise({
-			from: r.exercise.baseExerciseId,
-			to: r.baseExercise.id,
+		baseExercise: r.one.exercise({
+			from: r.exercise.baseId,
+			to: r.exercise.id,
 		}),
-	},
-
-	// ***************** Base Exercise *******************
-	baseExercise: {
-		exercises: r.many.exercise({
-			from: r.baseExercise.id,
-			to: r.exercise.baseExerciseId,
+		overrides: r.many.exercise({
+			from: r.exercise.id,
+			to: r.exercise.baseId,
 		}),
 	},
 
@@ -141,21 +137,17 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.ingredient.organisationId,
 			to: r.organisation.id,
 		}),
-		baseIngredient: r.one.baseIngredients({
-			from: r.ingredient.baseIngredientId,
-			to: r.baseIngredients.id,
+		baseIngredient: r.one.ingredient({
+			from: r.ingredient.baseId,
+			to: r.ingredient.id,
+		}),
+		overrides: r.many.ingredient({
+			from: r.ingredient.id,
+			to: r.ingredient.baseId,
 		}),
 		recipes: r.many.recipeToIngredient({
 			from: r.ingredient.id,
 			to: r.recipeToIngredient.ingredientId,
-		}),
-	},
-
-	// ***************** Base Ingredient *******************
-	baseIngredients: {
-		ingredients: r.many.ingredient({
-			from: r.baseIngredients.id,
-			to: r.ingredient.baseIngredientId,
 		}),
 	},
 

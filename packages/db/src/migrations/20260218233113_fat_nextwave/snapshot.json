@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "3decd61a-b171-4156-b60c-de1e41be8b84",
+  "id": "6097bcd1-7b83-4777-bce9-4cf5119b94b6",
   "prevIds": [
-    "6e726850-2b4d-44d2-8329-2e90edd3a6a4"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
@@ -31,15 +31,7 @@
       "entityType": "tables"
     },
     {
-      "name": "base_exercise",
-      "entityType": "tables"
-    },
-    {
       "name": "exercise",
-      "entityType": "tables"
-    },
-    {
-      "name": "base_ingredients",
       "entityType": "tables"
     },
     {
@@ -60,6 +52,14 @@
     },
     {
       "name": "subscription",
+      "entityType": "tables"
+    },
+    {
+      "name": "recipe",
+      "entityType": "tables"
+    },
+    {
+      "name": "recipe_to_ingredient",
       "entityType": "tables"
     },
     {
@@ -640,136 +640,6 @@
       "generated": null,
       "name": "id",
       "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "name",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "force",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "level",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "mechanic",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "equipment",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "primary_muscles",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "secondary_muscles",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "instructions",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "category",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "images",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
-      "generated": null,
-      "name": "updated_at",
-      "entityType": "columns",
-      "table": "base_exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "id",
-      "entityType": "columns",
       "table": "exercise"
     },
     {
@@ -824,7 +694,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -834,7 +704,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -844,7 +714,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -854,7 +724,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -864,11 +734,21 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "images",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "is_base",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -878,7 +758,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "base_exercise_id",
+      "name": "base_id",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -894,7 +774,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -930,97 +810,7 @@
       "generated": null,
       "name": "id",
       "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "public_food_key",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "name",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "real",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "calories",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "real",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "protein",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "real",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "fat",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "real",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "carbohydrate",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "real",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "serve_size",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "text",
-      "notNull": true,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "serve_unit",
-      "entityType": "columns",
-      "table": "base_ingredients"
-    },
-    {
-      "type": "integer",
-      "notNull": true,
-      "autoincrement": false,
-      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
-      "generated": null,
-      "name": "created_at",
-      "entityType": "columns",
-      "table": "base_ingredients"
+      "table": "ingredient"
     },
     {
       "type": "text",
@@ -1028,7 +818,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "id",
+      "name": "public_food_key",
       "entityType": "columns",
       "table": "ingredient"
     },
@@ -1099,6 +889,26 @@
       "default": null,
       "generated": null,
       "name": "serve_unit",
+      "entityType": "columns",
+      "table": "ingredient"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "is_base",
+      "entityType": "columns",
+      "table": "ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "base_id",
       "entityType": "columns",
       "table": "ingredient"
     },
@@ -1114,7 +924,7 @@
     },
     {
       "type": "text",
-      "notNull": true,
+      "notNull": false,
       "autoincrement": false,
       "default": null,
       "generated": null,
@@ -1463,6 +1273,176 @@
       "table": "subscription"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "image",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "meta_tags",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "recipe"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recipe_id",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "ingredient_id",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "is_base_ingredient",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "alt_ingredient_id",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "real",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "amount",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "unit",
+      "entityType": "columns",
+      "table": "recipe_to_ingredient"
+    },
+    {
       "columns": [
         "user_id"
       ],
@@ -1524,16 +1504,16 @@
     },
     {
       "columns": [
-        "base_exercise_id"
+        "base_id"
       ],
-      "tableTo": "base_exercise",
+      "tableTo": "exercise",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
-      "name": "fk_exercise_base_exercise_id_base_exercise_id_fk",
+      "name": "fk_exercise_base_id_exercise_id_fk",
       "entityType": "fks",
       "table": "exercise"
     },
@@ -1566,6 +1546,21 @@
       "name": "fk_exercise_organisation_id_organisation_id_fk",
       "entityType": "fks",
       "table": "exercise"
+    },
+    {
+      "columns": [
+        "base_id"
+      ],
+      "tableTo": "ingredient",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_ingredient_base_id_ingredient_id_fk",
+      "entityType": "fks",
+      "table": "ingredient"
     },
     {
       "columns": [
@@ -1644,6 +1639,81 @@
     },
     {
       "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_recipe_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "recipe"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_recipe_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "recipe"
+    },
+    {
+      "columns": [
+        "recipe_id"
+      ],
+      "tableTo": "recipe",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_recipe_to_ingredient_recipe_id_recipe_id_fk",
+      "entityType": "fks",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "columns": [
+        "ingredient_id"
+      ],
+      "tableTo": "ingredient",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_recipe_to_ingredient_ingredient_id_ingredient_id_fk",
+      "entityType": "fks",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "columns": [
+        "alt_ingredient_id"
+      ],
+      "tableTo": "ingredient",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_recipe_to_ingredient_alt_ingredient_id_ingredient_id_fk",
+      "entityType": "fks",
+      "table": "recipe_to_ingredient"
+    },
+    {
+      "columns": [
         "id"
       ],
       "nameExplicit": false,
@@ -1701,26 +1771,8 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "base_exercise_pk",
-      "table": "base_exercise",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
       "name": "exercise_pk",
       "table": "exercise",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "id"
-      ],
-      "nameExplicit": false,
-      "name": "base_ingredients_pk",
-      "table": "base_ingredients",
       "entityType": "pks"
     },
     {
@@ -1766,6 +1818,24 @@
       "nameExplicit": false,
       "name": "subscription_pk",
       "table": "subscription",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "recipe_pk",
+      "table": "recipe",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "recipe_to_ingredient_pk",
+      "table": "recipe_to_ingredient",
       "entityType": "pks"
     },
     {
@@ -1841,6 +1911,20 @@
     {
       "columns": [
         {
+          "value": "is_base",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "exercise_isBase_idx",
+      "entityType": "indexes",
+      "table": "exercise"
+    },
+    {
+      "columns": [
+        {
           "value": "organisation_id",
           "isExpression": false
         }
@@ -1849,6 +1933,20 @@
       "where": null,
       "origin": "manual",
       "name": "ingredient_organisationId_idx",
+      "entityType": "indexes",
+      "table": "ingredient"
+    },
+    {
+      "columns": [
+        {
+          "value": "is_base",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "ingredient_isBase_idx",
       "entityType": "indexes",
       "table": "ingredient"
     },
@@ -1865,6 +1963,34 @@
       "name": "user_organisationSlug_idx",
       "entityType": "indexes",
       "table": "organisation"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "recipe_organisationId_idx",
+      "entityType": "indexes",
+      "table": "recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "creator_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "recipe_creatorId_idx",
+      "entityType": "indexes",
+      "table": "recipe"
     },
     {
       "columns": [

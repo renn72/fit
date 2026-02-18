@@ -28,7 +28,7 @@ export const ExerciseCreateInput = z.object({
 	instructions: z.string().optional().nullable(),
 	category: z.string().optional().nullable(),
 	images: z.string().optional().nullable(),
-	baseExerciseId: z.string().optional().nullable(),
+	baseId: z.string().optional().nullable(),
 })
 
 export const ExerciseUpdateInput = z.object({

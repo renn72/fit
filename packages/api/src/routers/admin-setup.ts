@@ -1,7 +1,7 @@
 import { db } from '@fit/db'
 import { user } from '@fit/db/schema/auth'
-import { baseExercise, exercise } from '@fit/db/schema/exercise'
-import { baseIngredients, ingredient } from '@fit/db/schema/ingredient'
+import { exercise } from '@fit/db/schema/exercise'
+import { ingredient } from '@fit/db/schema/ingredient'
 import { organisation } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 
@@ -78,8 +78,14 @@ export const adminSetupRouter = {
 				})
 			}
 
-			const baseExs = await db.query.baseExercise.findMany({ limit: 5 })
-			const baseIngs = await db.query.baseIngredients.findMany({ limit: 5 })
+			const baseExs = await db.query.exercise.findMany({
+				where: { isBase: true },
+				limit: 5,
+			})
+			const baseIngs = await db.query.ingredient.findMany({
+				where: { isBase: true },
+				limit: 5,
+			})
 
 			if (baseExs.length === 0 || baseIngs.length === 0) {
 				throw new ORPCError('BAD_REQUEST', {
@@ -146,7 +152,7 @@ export const adminSetupRouter = {
 							mechanic: baseEx?.mechanic ?? 'Compound',
 							equipment: baseEx?.equipment ?? 'None',
 							images: baseEx?.images ?? '',
-							baseExerciseId: baseEx?.id ?? null,
+							baseId: baseEx?.id ?? null,
 						})
 					}
 
@@ -169,7 +175,7 @@ export const adminSetupRouter = {
 							carbohydrate: baseIng?.carbohydrate ?? 20,
 							serveSize: baseIng?.serveSize ?? 100,
 							serveUnit: baseIng?.serveUnit ?? 'grams',
-							baseIngredientId: baseIng?.id ?? null,
+							baseId: baseIng?.id ?? null,
 						})
 					}
 				}
@@ -236,8 +242,11 @@ export const adminSetupRouter = {
 			const allIngredients = [...solidIngredients, ...liquidIngredients]
 
 			await db.transaction(async (tx) => {
-				for (const ingredient of allIngredients) {
-					await tx.insert(baseIngredients).values(ingredient)
+				for (const ing of allIngredients) {
+					await tx.insert(ingredient).values({
+						...ing,
+						isBase: true,
+					})
 				}
 			})
 
@@ -264,35 +273,36 @@ export const adminSetupRouter = {
 
 			return await db.transaction(async (tx) => {
 				let count = 0
-				for (const exercise of exercises) {
+				for (const ex of exercises) {
 					await tx
-						.insert(baseExercise)
+						.insert(exercise)
 						.values({
-							id: exercise.id,
-							name: exercise.name,
-							force: exercise.force,
-							level: exercise.level,
-							mechanic: exercise.mechanic,
-							equipment: exercise.equipment,
-							primaryMuscles: exercise.primaryMuscles.join(','),
-							secondaryMuscles: exercise.secondaryMuscles.join(','),
-							instructions: exercise.instructions.join(','),
-							category: exercise.category,
-							images: exercise.images.join(','),
+							id: ex.id,
+							name: ex.name,
+							force: ex.force,
+							level: ex.level,
+							mechanic: ex.mechanic,
+							equipment: ex.equipment,
+							primaryMuscles: ex.primaryMuscles.join(','),
+							secondaryMuscles: ex.secondaryMuscles.join(','),
+							instructions: ex.instructions.join(','),
+							category: ex.category,
+							images: ex.images.join(','),
+							isBase: true,
 						})
 						.onConflictDoUpdate({
-							target: baseExercise.id,
+							target: exercise.id,
 							set: {
-								name: exercise.name,
-								force: exercise.force,
-								level: exercise.level,
-								mechanic: exercise.mechanic,
-								equipment: exercise.equipment,
-								primaryMuscles: exercise.primaryMuscles.join(','),
-								secondaryMuscles: exercise.secondaryMuscles.join(','),
-								instructions: exercise.instructions.join(','),
-								category: exercise.category,
-								images: exercise.images.join(','),
+								name: ex.name,
+								force: ex.force,
+								level: ex.level,
+								mechanic: ex.mechanic,
+								equipment: ex.equipment,
+								primaryMuscles: ex.primaryMuscles.join(','),
+								secondaryMuscles: ex.secondaryMuscles.join(','),
+								instructions: ex.instructions.join(','),
+								category: ex.category,
+								images: ex.images.join(','),
 							},
 						})
 					count++
@@ -327,11 +337,13 @@ export const adminSetupRouter = {
 				where: { organisationId: input.organisationId },
 			})
 
-			const baseIngs = await db.query.baseIngredients.findMany()
+			const baseIngs = await db.query.ingredient.findMany({
+				where: { isBase: true },
+			})
 
 			const availableIngredients = [
 				...orgIngredients.map((ing) => ({ ...ing, isBase: false })),
-				...baseIngs.map((ing) => ({ ...ing, isBase: true, id: ing.id })),
+				...baseIngs.map((ing) => ({ ...ing, isBase: true })),
 			]
 
 			if (availableIngredients.length < 3) {
@@ -388,8 +400,8 @@ export const adminSetupRouter = {
 					const selectedIngredients = shuffled.slice(0, ingredientCount)
 
 					const ingredientLinks = selectedIngredients.map((ing: any) => ({
-						ingredientId: ing.isBase ? ing.id : undefined,
-						customIngredientId: ing.isBase ? undefined : ing.id,
+						ingredientId: ing.id,
+						isBaseIngredient: ing.isBase,
 						amount: Math.floor(Math.random() * 90) + 10,
 						unit: 'grams',
 					}))
@@ -419,7 +431,7 @@ export const adminSetupRouter = {
 						ingredientLinks.map((link) => ({
 							recipeId: newRecipe.id,
 							ingredientId: link.ingredientId,
-							customIngredientId: link.customIngredientId,
+							isBaseIngredient: link.isBaseIngredient,
 							amount: link.amount,
 							unit: link.unit,
 						})),

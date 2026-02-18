@@ -1,1 +1,0 @@
-ALTER TABLE `organisation` ADD `timezone` text DEFAULT 'UTC' NOT NULL;

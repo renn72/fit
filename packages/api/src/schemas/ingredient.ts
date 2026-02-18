@@ -25,7 +25,7 @@ export const IngredientCreateInput = z.object({
 	carbohydrate: z.number().min(0),
 	serveSize: z.number().min(0),
 	serveUnit: z.string().min(1),
-	baseIngredientId: z.string().optional().nullable(),
+	baseId: z.string().optional().nullable(),
 })
 
 export const IngredientUpdateInput = z.object({

@@ -1,1 +1,0 @@
-CREATE INDEX `recipe_creatorId_idx` ON `recipe` (`creator_id`);

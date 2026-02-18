@@ -1,5 +1,5 @@
 import { user } from './auth'
-import { baseIngredients, ingredient } from './ingredient'
+import { ingredient } from './ingredient'
 import { organisation } from './org'
 
 import { sql } from 'drizzle-orm'
@@ -49,20 +49,17 @@ export const recipeToIngredient = s.sqliteTable('recipe_to_ingredient', {
 		.text('recipe_id')
 		.references(() => recipe.id, { onDelete: 'cascade' })
 		.notNull(),
-	customIngredientId: s
-		.text('base_ingredient_id')
-		.references(() => ingredient.id, { onDelete: 'cascade' }),
 	ingredientId: s
-		.text('custom_ingredient_id')
-		.references(() => baseIngredients.id, { onDelete: 'cascade' }),
+		.text('ingredient_id')
+		.references(() => ingredient.id, { onDelete: 'cascade' })
+		.notNull(),
+	isBaseIngredient: s
+		.integer('is_base_ingredient', { mode: 'boolean' })
+		.notNull()
+		.default(false),
 	altIngredientId: s.text('alt_ingredient_id').references(() => ingredient.id, {
 		onDelete: 'set null',
 	}),
-	altBaseIngredientId: s
-		.text('alt_base_ingredient_id')
-		.references(() => baseIngredients.id, {
-			onDelete: 'set null',
-		}),
 	amount: s.real('amount').notNull(),
 	unit: s.text('unit').notNull(),
 })

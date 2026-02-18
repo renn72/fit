@@ -1,1 +1,0 @@
-ALTER TABLE `recipe_to_ingredient` ADD `alt_base_ingredient_id` text REFERENCES base_ingredients(id);

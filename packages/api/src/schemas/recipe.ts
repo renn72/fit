@@ -13,18 +13,13 @@ export const RecipeGetAllAdminInput = z.object({
 	limit: z.number().optional(),
 })
 
-export const RecipeIngredientInput = z
-	.object({
-		ingredientId: z.string().optional().nullable(),
-		customIngredientId: z.string().optional().nullable(),
-		altIngredientId: z.string().optional().nullable(),
-		altBaseIngredientId: z.string().optional().nullable(),
-		amount: z.number().min(0),
-		unit: z.string().min(1),
-	})
-	.refine((data) => data.ingredientId || data.customIngredientId, {
-		message: 'Either ingredientId or customIngredientId is required',
-	})
+export const RecipeIngredientInput = z.object({
+	ingredientId: z.string().min(1),
+	isBaseIngredient: z.boolean().default(false),
+	altIngredientId: z.string().optional().nullable(),
+	amount: z.number().min(0),
+	unit: z.string().min(1),
+})
 
 export const RecipeCreateInput = z.object({
 	name: z.string().min(1),

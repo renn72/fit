@@ -2,7 +2,7 @@ import { db } from '@fit/db'
 import { ingredient } from '@fit/db/schema/ingredient'
 
 import { ORPCError } from '@orpc/server'
-import { and, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
 	IngredientCreateInput,
@@ -100,15 +100,19 @@ export const ingredientRouter = {
 		})
 		.input(IngredientGetAllOrgInput)
 		.handler(async ({ input }) => {
+			// Get org ingredients
 			const orgIngredients = await db.query.ingredient.findMany({
 				where: { organisationId: input.organisationId },
 			})
 
 			const overwrittenBaseIds = orgIngredients
-				.map((i) => i.baseIngredientId)
+				.map((i) => i.baseId)
 				.filter((id): id is string => id !== null)
 
-			const baseIngs = await db.query.baseIngredients.findMany()
+			// Get base ingredients (isBase=true, not overwritten by org)
+			const baseIngs = await db.query.ingredient.findMany({
+				where: { isBase: true },
+			})
 
 			const availableBaseIngredients = baseIngs.filter(
 				(bi) => !overwrittenBaseIds.includes(bi.id),
@@ -118,7 +122,7 @@ export const ingredientRouter = {
 				...orgIngredients.map((i) => ({
 					...i,
 					isBase: false,
-					isOverwriteBase: !!i.baseIngredientId,
+					isOverwriteBase: !!i.baseId,
 				})),
 				...availableBaseIngredients.map((bi) => ({
 					...bi,
@@ -143,17 +147,11 @@ export const ingredientRouter = {
 		})
 		.input(IngredientGetInput)
 		.handler(async ({ input }) => {
-			const orgIngredient = await db.query.ingredient.findFirst({
+			const ing = await db.query.ingredient.findFirst({
 				where: { id: input.id },
 			})
 
-			if (orgIngredient) return orgIngredient
-
-			const baseIng = await db.query.baseIngredients.findFirst({
-				where: { id: input.id },
-			})
-
-			return baseIng || null
+			return ing || null
 		}),
 
 	getAllBase: protectedProcedure
@@ -165,7 +163,6 @@ export const ingredientRouter = {
 		})
 		.input(IngredientGetAllBaseInput)
 		.handler(async ({ input, context }) => {
-			console.log('hi')
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
@@ -173,7 +170,8 @@ export const ingredientRouter = {
 				})
 			}
 
-			const res = await db.query.baseIngredients.findMany({
+			const res = await db.query.ingredient.findMany({
+				where: { isBase: true },
 				limit: input.limit,
 			})
 			return res
@@ -228,9 +226,10 @@ export const ingredientRouter = {
 			}
 
 			// 2. Check if it's a base ingredient (to create an override)
-			const baseIng = await db.query.baseIngredients.findFirst({
+			const baseIng = await db.query.ingredient.findFirst({
 				where: {
 					id: input.id,
+					isBase: true,
 				},
 			})
 
@@ -245,7 +244,7 @@ export const ingredientRouter = {
 						carbohydrate: Math.round(input.carbohydrate * 10) / 10,
 						serveSize: input.serveSize,
 						serveUnit: input.serveUnit,
-						baseIngredientId: baseIng.id,
+						baseId: baseIng.id,
 						organisationId,
 						creatorId: context.session.user.id,
 					})
