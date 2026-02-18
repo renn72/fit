@@ -328,7 +328,11 @@ export const adminSetupRouter = {
 			})
 
 			const baseIngs = await db.query.baseIngredients.findMany()
-			const availableIngredients = [...orgIngredients, ...baseIngs]
+
+			const availableIngredients = [
+				...orgIngredients.map((ing) => ({ ...ing, isBase: false })),
+				...baseIngs.map((ing) => ({ ...ing, isBase: true, id: ing.id })),
+			]
 
 			if (availableIngredients.length < 3) {
 				throw new ORPCError('BAD_REQUEST', {
@@ -383,8 +387,9 @@ export const adminSetupRouter = {
 					)
 					const selectedIngredients = shuffled.slice(0, ingredientCount)
 
-					const ingredientLinks = selectedIngredients.map((ing) => ({
-						ingredientId: ing.id,
+					const ingredientLinks = selectedIngredients.map((ing: any) => ({
+						ingredientId: ing.isBase ? ing.id : undefined,
+						customIngredientId: ing.isBase ? undefined : ing.id,
 						amount: Math.floor(Math.random() * 90) + 10,
 						unit: 'grams',
 					}))
@@ -414,6 +419,7 @@ export const adminSetupRouter = {
 						ingredientLinks.map((link) => ({
 							recipeId: newRecipe.id,
 							ingredientId: link.ingredientId,
+							customIngredientId: link.customIngredientId,
 							amount: link.amount,
 							unit: link.unit,
 						})),

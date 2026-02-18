@@ -196,8 +196,10 @@ export const recipeRouter = {
 			if (ingredients && ingredients.length > 0) {
 				const ingredientLinks = ingredients.map((ing) => ({
 					recipeId: newRecipe.id,
-					ingredientId: ing.ingredientId,
+					ingredientId: ing.ingredientId ?? undefined,
+					customIngredientId: ing.customIngredientId ?? undefined,
 					altIngredientId: ing.altIngredientId ?? undefined,
+					altBaseIngredientId: ing.altBaseIngredientId ?? undefined,
 					amount: ing.amount,
 					unit: ing.unit,
 				}))

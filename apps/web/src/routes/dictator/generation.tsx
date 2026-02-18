@@ -33,7 +33,7 @@ function RouteComponent() {
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
-		orpc.organisation.getAll.queryOptions(),
+		orpc.organisation.getAll.queryOptions({}),
 	)
 
 	const importExercises = useMutation(

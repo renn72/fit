@@ -167,4 +167,31 @@ export const orgRouter = {
 
 			return codeRecord.plan
 		}),
+
+	getAll: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/organisation/all',
+			summary: 'Get all organisations (Dictator only)',
+			tags: ['Organisation'],
+		})
+		.handler(async ({ context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to view all organisations',
+				})
+			}
+
+			const orgs = await db.query.organisation.findMany({
+				columns: {
+					id: true,
+					name: true,
+					slug: true,
+					state: true,
+				},
+			})
+
+			return orgs
+		}),
 }
