@@ -15,8 +15,8 @@ export const RecipeGetAllAdminInput = z.object({
 
 export const RecipeIngredientInput = z
 	.object({
-		ingredientId: z.string().optional(),
-		customIngredientId: z.string().optional(),
+		ingredientId: z.string().optional().nullable(),
+		customIngredientId: z.string().optional().nullable(),
 		altIngredientId: z.string().optional().nullable(),
 		altBaseIngredientId: z.string().optional().nullable(),
 		amount: z.number().min(0),

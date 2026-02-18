@@ -132,7 +132,7 @@ const VirtualizedCommand = ({
 			<CommandList
 				ref={parentRef}
 				style={{
-					height: height,
+					height: '400px',
 					width: '100%',
 					overflow: 'auto',
 					zIndex: 1010,
@@ -237,7 +237,7 @@ function VirtualizedCombobox({
 			<PopoverContent
 				side='bottom'
 				sideOffset={-100}
-				className='p-0 w-200 h-75 z-2010 border-primary/60'
+				className='p-0 w-200 h-85 z-2010 border-primary/60'
 			>
 				<VirtualizedCommand
 					height={height}

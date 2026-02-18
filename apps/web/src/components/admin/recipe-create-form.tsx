@@ -59,23 +59,32 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 		}),
 	)
 
-	const customIngredientOptions = React.useMemo(() => {
-		if (!orgIngredients) return []
-		return orgIngredients.map((ing) => ({
-			value: ing.id,
-			label: ing.name,
-			isBase: false,
-		}))
-	}, [orgIngredients])
-
-	const baseIngredientOptions = React.useMemo(() => {
-		if (!baseIngredients) return []
-		return baseIngredients.map((ing) => ({
-			value: ing.id,
-			label: ing.name,
-			isBase: true,
-		}))
-	}, [baseIngredients])
+	const combinedIngredientOptions = React.useMemo(() => {
+		const options: Array<{
+			value: string
+			label: string
+			isBase: boolean
+		}> = []
+		if (baseIngredients) {
+			options.push(
+				...baseIngredients.map((ing) => ({
+					value: ing.id,
+					label: ing.name,
+					isBase: true,
+				})),
+			)
+		}
+		if (orgIngredients) {
+			options.push(
+				...orgIngredients.map((ing) => ({
+					value: ing.id,
+					label: `${ing.name} (Org)`,
+					isBase: false,
+				})),
+			)
+		}
+		return options
+	}, [baseIngredients, orgIngredients])
 
 	const form = useForm({
 		defaultValues: {
@@ -87,14 +96,15 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 			ingredients: [] as Array<{
 				ingredientId: string
 				customIngredientId: string
+				isBase: boolean
 				altIngredientId: string
 				altBaseIngredientId: string
+				altIsBase: boolean
 				amount: number
 				unit: string
 			}>,
 		},
 		onSubmit: async ({ value }) => {
-			// Basic validation
 			if (!value.name.trim()) {
 				toast.error('Name is required')
 				return
@@ -120,10 +130,14 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 				image: value.image || null,
 				metaTags: value.metaTags || '',
 				ingredients: validIngredients.map((ing) => ({
-					ingredientId: ing.ingredientId || null,
-					customIngredientId: ing.customIngredientId || null,
-					altIngredientId: ing.altIngredientId || null,
-					altBaseIngredientId: ing.altBaseIngredientId || null,
+					ingredientId: ing.isBase ? ing.ingredientId || null : null,
+					customIngredientId: ing.isBase
+						? null
+						: ing.customIngredientId || null,
+					altIngredientId: ing.altIsBase ? ing.altIngredientId || null : null,
+					altBaseIngredientId: ing.altIsBase
+						? null
+						: ing.altBaseIngredientId || null,
 					amount: ing.amount,
 					unit: ing.unit,
 				})),
@@ -137,8 +151,10 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 			{
 				ingredientId: '',
 				customIngredientId: '',
+				isBase: true,
 				altIngredientId: '',
 				altBaseIngredientId: '',
+				altIsBase: true,
 				amount: 0,
 				unit: '',
 			},
@@ -271,54 +287,49 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 											<div className='flex gap-4 justify-between items-start'>
 												<div className='flex-1 space-y-3'>
 													<form.Field
-														name={`ingredients[${index}].customIngredientId`}
-													>
-														{(ingField) => (
-															<Field>
-																<FieldLabel>Custom Ingredient (Org)</FieldLabel>
-																<VirtualizedCombobox
-																	options={customIngredientOptions}
-																	selectedOption={ingField.state.value}
-																	onSelectOption={(val) => {
-																		ingField.handleChange(val)
-																		if (val) {
-																			form.setFieldValue(
-																				`ingredients[${index}].ingredientId`,
-																				'',
-																			)
-																		}
-																	}}
-																	searchPlaceholder='Search org ingredients...'
-																	width='100%'
-																	height='200px'
-																/>
-															</Field>
-														)}
-													</form.Field>
-
-													<div className='text-sm text-muted-foreground text-center'>
-														or
-													</div>
-
-													<form.Field
 														name={`ingredients[${index}].ingredientId`}
 													>
 														{(ingField) => (
 															<Field>
-																<FieldLabel>Base Ingredient</FieldLabel>
+																<FieldLabel>Ingredient</FieldLabel>
 																<VirtualizedCombobox
-																	options={baseIngredientOptions}
-																	selectedOption={ingField.state.value}
+																	options={combinedIngredientOptions}
+																	selectedOption={
+																		ingField.state.value ||
+																		field.state.value[index]
+																			?.customIngredientId ||
+																		''
+																	}
 																	onSelectOption={(val) => {
-																		ingField.handleChange(val)
-																		if (val) {
+																		const isBase =
+																			combinedIngredientOptions.find(
+																				(o) => o.value === val,
+																			)?.isBase ?? true
+																		form.setFieldValue(
+																			`ingredients[${index}].isBase`,
+																			isBase,
+																		)
+																		if (isBase) {
+																			form.setFieldValue(
+																				`ingredients[${index}].ingredientId`,
+																				val,
+																			)
 																			form.setFieldValue(
 																				`ingredients[${index}].customIngredientId`,
 																				'',
 																			)
+																		} else {
+																			form.setFieldValue(
+																				`ingredients[${index}].ingredientId`,
+																				'',
+																			)
+																			form.setFieldValue(
+																				`ingredients[${index}].customIngredientId`,
+																				val,
+																			)
 																		}
 																	}}
-																	searchPlaceholder='Search base ingredients...'
+																	searchPlaceholder='Search ingredients...'
 																	width='100%'
 																	height='200px'
 																/>
@@ -380,9 +391,42 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 														<Field>
 															<FieldLabel>Alternative (Optional)</FieldLabel>
 															<VirtualizedCombobox
-																options={ingredientOptions}
-																selectedOption={altField.state.value || ''}
-																onSelectOption={altField.handleChange}
+																options={combinedIngredientOptions}
+																selectedOption={
+																	altField.state.value ||
+																	field.state.value[index]
+																		?.altBaseIngredientId ||
+																	''
+																}
+																onSelectOption={(val) => {
+																	const isBase =
+																		combinedIngredientOptions.find(
+																			(o) => o.value === val,
+																		)?.isBase ?? true
+																	form.setFieldValue(
+																		`ingredients[${index}].altIsBase`,
+																		isBase,
+																	)
+																	if (isBase) {
+																		form.setFieldValue(
+																			`ingredients[${index}].altIngredientId`,
+																			val,
+																		)
+																		form.setFieldValue(
+																			`ingredients[${index}].altBaseIngredientId`,
+																			'',
+																		)
+																	} else {
+																		form.setFieldValue(
+																			`ingredients[${index}].altIngredientId`,
+																			'',
+																		)
+																		form.setFieldValue(
+																			`ingredients[${index}].altBaseIngredientId`,
+																			val,
+																		)
+																	}
+																}}
 																searchPlaceholder='Select alternative...'
 																width='100%'
 																height='300px'
