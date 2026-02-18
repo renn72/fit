@@ -1,0 +1,35 @@
+import { z } from 'zod'
+
+export const RecipeGetInput = z.object({
+	id: z.string().min(1),
+})
+
+export const RecipeGetAllOrgInput = z.object({
+	organisationId: z.string().min(1),
+	limit: z.number().optional(),
+})
+
+export const RecipeGetAllAdminInput = z.object({
+	limit: z.number().optional(),
+})
+
+export const RecipeCreateInput = z.object({
+	name: z.string().min(1),
+	description: z.string().min(1),
+	category: z.string().optional().nullable(),
+	image: z.string().optional().nullable(),
+	metaTags: z.string().optional().nullable(),
+})
+
+export const RecipeUpdateInput = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	description: z.string().min(1),
+	category: z.string().optional().nullable(),
+	image: z.string().optional().nullable(),
+	metaTags: z.string().optional().nullable(),
+})
+
+export const RecipeDeleteInput = z.object({
+	id: z.string().min(1),
+})

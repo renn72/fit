@@ -2,6 +2,7 @@ import { adminSetupRouter } from './admin-setup'
 import { exerciseRouter } from './exercise'
 import { ingredientRouter } from './ingredient'
 import { orgRouter } from './organisation'
+import { recipeRouter } from './recipe'
 import { userRouter } from './user'
 
 import type { RouterClient } from '@orpc/server'
@@ -36,6 +37,7 @@ export const appRouter = {
 	adminSetup: adminSetupRouter,
 	exercise: exerciseRouter,
 	ingredient: ingredientRouter,
+	recipe: recipeRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>
