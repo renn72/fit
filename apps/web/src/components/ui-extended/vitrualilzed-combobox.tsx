@@ -238,7 +238,7 @@ function VirtualizedCombobox({
 			<PopoverContent
 				side='bottom'
 				sideOffset={-100}
-				className='p-0 w-screen h-75 z-2010 border-primary/60'
+				className='p-0 w-200 h-75 z-2010 border-primary/60'
 			>
 				<VirtualizedCommand
 					height={height}

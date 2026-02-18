@@ -1,5 +1,5 @@
 import { db } from '@fit/db'
-import { recipe } from '@fit/db/schema/recipe'
+import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 
 import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
@@ -156,8 +156,11 @@ export const recipeRouter = {
 		})
 		.input(RecipeCreateInput)
 		.handler(async ({ input, context }) => {
-			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+			const userMetaTags = context.session.user.metaTags?.split(',') ?? []
+			if (
+				!userMetaTags.includes('itemUpdater') &&
+				!userMetaTags.includes('dictator')
+			) {
 				throw new ORPCError('FORBIDDEN', {
 					message: 'You do not have permission to create recipes',
 				})
@@ -169,15 +172,38 @@ export const recipeRouter = {
 				})
 			}
 
+			const { ingredients, ...recipeData } = input
+
 			const [newRecipe] = await db
 				.insert(recipe)
 				.values({
-					...input,
-					metaTags: input.metaTags || '',
+					name: recipeData.name ?? '',
+					description: recipeData.description ?? undefined,
+					category: recipeData.category ?? undefined,
+					image: recipeData.image ?? undefined,
+					metaTags: recipeData.metaTags ?? '',
 					creatorId: context.session.user.id,
 					organisationId: context.session.user.organisationId,
 				})
 				.returning()
+
+			if (!newRecipe) {
+				throw new ORPCError('INTERNAL_SERVER_ERROR', {
+					message: 'Failed to create recipe',
+				})
+			}
+
+			if (ingredients && ingredients.length > 0) {
+				const ingredientLinks = ingredients.map((ing) => ({
+					recipeId: newRecipe.id,
+					ingredientId: ing.ingredientId,
+					altIngredientId: ing.altIngredientId ?? undefined,
+					amount: ing.amount,
+					unit: ing.unit,
+				}))
+
+				await db.insert(recipeToIngredient).values(ingredientLinks)
+			}
 
 			return newRecipe
 		}),
@@ -224,10 +250,10 @@ export const recipeRouter = {
 				.update(recipe)
 				.set({
 					name: input.name,
-					description: input.description,
-					category: input.category,
-					image: input.image,
-					metaTags: input.metaTags || '',
+					description: input.description ?? undefined,
+					category: input.category ?? undefined,
+					image: input.image ?? undefined,
+					metaTags: input.metaTags ?? '',
 				})
 				.where(eq(recipe.id, input.id))
 				.returning()

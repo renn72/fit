@@ -10,15 +10,12 @@ import {
 	SidebarFooter,
 	SidebarHeader,
 	SidebarMenu,
-	SidebarMenuButton,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar'
 import { FitByWsysLogo } from '@/components/wsysIcon'
 
 import {
-	BookOpenIcon,
 	ChartPieIcon,
-	CommandIcon,
 	CropIcon,
 	GearIcon,
 	LifebuoyIcon,
@@ -47,7 +44,7 @@ const data = {
 				},
 				{
 					title: 'Recipes',
-					url: '#',
+					url: '/$orgSlug/admin/s/recipes',
 				},
 				{
 					title: 'Ingredients',

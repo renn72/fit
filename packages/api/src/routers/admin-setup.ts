@@ -3,12 +3,14 @@ import { user } from '@fit/db/schema/auth'
 import { baseExercise, exercise } from '@fit/db/schema/exercise'
 import { baseIngredients, ingredient } from '@fit/db/schema/ingredient'
 import { organisation } from '@fit/db/schema/org'
+import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { ORPCError } from '@orpc/server'
 import { v4 as uuid } from 'uuid'
+import { z } from 'zod'
 import { protectedProcedure } from '../index'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -128,13 +130,12 @@ export const adminSetupRouter = {
 						const isOverwrite = k === 1
 						const baseEx = isOverwrite ? baseExs[i % baseExs.length] : null
 
-												await tx.insert(exercise).values({
-
-													id: uuid(),
-
-													name: isOverwrite ? baseEx?.name ?? 'Overwrite' : `Org Exercise ${i}-${k}`,
-
-													organisationId: orgId,
+						await tx.insert(exercise).values({
+							id: uuid(),
+							name: isOverwrite
+								? (baseEx?.name ?? 'Overwrite')
+								: `Org Exercise ${i}-${k}`,
+							organisationId: orgId,
 							creatorId: creatorId,
 							category: baseEx?.category ?? 'Strength',
 							instructions: baseEx?.instructions ?? 'Generated instructions',
@@ -155,13 +156,12 @@ export const adminSetupRouter = {
 						const isOverwrite = l === 1
 						const baseIng = isOverwrite ? baseIngs[i % baseIngs.length] : null
 
-												await tx.insert(ingredient).values({
-
-													id: uuid(),
-
-													name: isOverwrite ? baseIng?.name ?? 'Overwrite' : `Org Ingredient ${i}-${l}`,
-
-													organisationId: orgId,
+						await tx.insert(ingredient).values({
+							id: uuid(),
+							name: isOverwrite
+								? (baseIng?.name ?? 'Overwrite')
+								: `Org Ingredient ${i}-${l}`,
+							organisationId: orgId,
 							creatorId: creatorId,
 							calories: baseIng?.calories ?? 100,
 							protein: baseIng?.protein ?? 10,
@@ -301,5 +301,126 @@ export const adminSetupRouter = {
 				console.log('finished import')
 				return { count }
 			})
+		}),
+
+	generateRecipes: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-recipes',
+			summary: 'Generate random recipes for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate recipes',
+				})
+			}
+
+			const orgIngredients = await db.query.ingredient.findMany({
+				where: { organisationId: input.organisationId },
+			})
+
+			const baseIngs = await db.query.baseIngredients.findMany()
+			const availableIngredients = [...orgIngredients, ...baseIngs]
+
+			if (availableIngredients.length < 3) {
+				throw new ORPCError('BAD_REQUEST', {
+					message:
+						'Not enough ingredients to create recipes. Please create at least 3 ingredients first.',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const recipeNames = [
+				'Chicken Power Bowl',
+				'Beef Protein Salad',
+				'Salmon Omega Meal',
+				'Tofu Veggie Stir Fry',
+				'Egg White Breakfast',
+				'Turkey Lean Wrap',
+				'Quinoa Energy Bowl',
+				'Steak & Greens',
+				'Pasta Protein Mix',
+				'Fish Taco Bowl',
+			]
+
+			const categories = [
+				'Breakfast',
+				'Lunch',
+				'Dinner',
+				'Snack',
+				'Post-Workout',
+			]
+			const tags = [
+				'high-protein',
+				'low-carb',
+				'balanced',
+				'keto-friendly',
+				'muscle-building',
+			]
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 10; i++) {
+					const ingredientCount = Math.floor(Math.random() * 2) + 3
+					const shuffled = [...availableIngredients].sort(
+						() => 0.5 - Math.random(),
+					)
+					const selectedIngredients = shuffled.slice(0, ingredientCount)
+
+					const ingredientLinks = selectedIngredients.map((ing) => ({
+						ingredientId: ing.id,
+						amount: Math.floor(Math.random() * 90) + 10,
+						unit: 'grams',
+					}))
+
+					const [newRecipe] = await tx
+						.insert(recipe)
+						.values({
+							name: recipeNames[i] || `Recipe ${i + 1}`,
+							description: `A delicious and nutritious meal with ${ingredientLinks.length} main ingredients.`,
+							category:
+								categories[Math.floor(Math.random() * categories.length)],
+							metaTags: tags
+								.slice(0, Math.floor(Math.random() * 3) + 1)
+								.join(','),
+							creatorId: orgUser.id,
+							organisationId: input.organisationId,
+						})
+						.returning()
+
+					if (!newRecipe) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create recipe',
+						})
+					}
+
+					await tx.insert(recipeToIngredient).values(
+						ingredientLinks.map((link) => ({
+							recipeId: newRecipe.id,
+							ingredientId: link.ingredientId,
+							amount: link.amount,
+							unit: link.unit,
+						})),
+					)
+				}
+			})
+
+			return { message: '10 recipes generated successfully' }
 		}),
 }

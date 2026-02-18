@@ -14,7 +14,7 @@ export const recipe = s.sqliteTable(
 			.primaryKey()
 			.$defaultFn(() => uuid()),
 		name: s.text('name').notNull(),
-		description: s.text('description').notNull(),
+		description: s.text('description'),
 		category: s.text('category'),
 		image: s.text('image'),
 		metaTags: s.text('meta_tags').notNull(), // Comma separated tags

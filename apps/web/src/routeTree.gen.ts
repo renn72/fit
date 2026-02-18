@@ -20,9 +20,11 @@ import { Route as DictatorGenerationRouteImport } from './routes/dictator/genera
 import { Route as DictatorBaseIngredientsRouteImport } from './routes/dictator/base-ingredients'
 import { Route as DictatorBaseExercisesRouteImport } from './routes/dictator/base-exercises'
 import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
+import { Route as OrgSlugAdminSRecipesRouteImport } from './routes/$orgSlug/admin.s.recipes'
 import { Route as OrgSlugAdminSIngredientsRouteImport } from './routes/$orgSlug/admin.s.ingredients'
 import { Route as OrgSlugAdminSExercisesRouteImport } from './routes/$orgSlug/admin.s.exercises'
 import { Route as OrgSlugAdminSDashboardRouteImport } from './routes/$orgSlug/admin.s.dashboard'
+import { Route as OrgSlugAdminSRecipesCreateRouteImport } from './routes/$orgSlug/admin.s.recipes_.create'
 
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',
@@ -79,6 +81,11 @@ const OrgSlugAdminSRoute = OrgSlugAdminSRouteImport.update({
   path: '/$orgSlug/admin/s',
   getParentRoute: () => rootRouteImport,
 } as any)
+const OrgSlugAdminSRecipesRoute = OrgSlugAdminSRecipesRouteImport.update({
+  id: '/recipes',
+  path: '/recipes',
+  getParentRoute: () => OrgSlugAdminSRoute,
+} as any)
 const OrgSlugAdminSIngredientsRoute =
   OrgSlugAdminSIngredientsRouteImport.update({
     id: '/ingredients',
@@ -95,6 +102,12 @@ const OrgSlugAdminSDashboardRoute = OrgSlugAdminSDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => OrgSlugAdminSRoute,
 } as any)
+const OrgSlugAdminSRecipesCreateRoute =
+  OrgSlugAdminSRecipesCreateRouteImport.update({
+    id: '/recipes_/create',
+    path: '/recipes/create',
+    getParentRoute: () => OrgSlugAdminSRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -111,6 +124,8 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
+  '/$orgSlug/admin/s/recipes/create': typeof OrgSlugAdminSRecipesCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -127,6 +142,8 @@ export interface FileRoutesByTo {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
+  '/$orgSlug/admin/s/recipes/create': typeof OrgSlugAdminSRecipesCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -144,6 +161,8 @@ export interface FileRoutesById {
   '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
   '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
   '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
+  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
+  '/$orgSlug/admin/s/recipes_/create': typeof OrgSlugAdminSRecipesCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -162,6 +181,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/recipes'
+    | '/$orgSlug/admin/s/recipes/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -178,6 +199,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/recipes'
+    | '/$orgSlug/admin/s/recipes/create'
   id:
     | '__root__'
     | '/'
@@ -194,6 +217,8 @@ export interface FileRouteTypes {
     | '/$orgSlug/admin/s/dashboard'
     | '/$orgSlug/admin/s/exercises'
     | '/$orgSlug/admin/s/ingredients'
+    | '/$orgSlug/admin/s/recipes'
+    | '/$orgSlug/admin/s/recipes_/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -284,6 +309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugAdminSRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$orgSlug/admin/s/recipes': {
+      id: '/$orgSlug/admin/s/recipes'
+      path: '/recipes'
+      fullPath: '/$orgSlug/admin/s/recipes'
+      preLoaderRoute: typeof OrgSlugAdminSRecipesRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
+    }
     '/$orgSlug/admin/s/ingredients': {
       id: '/$orgSlug/admin/s/ingredients'
       path: '/ingredients'
@@ -303,6 +335,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/$orgSlug/admin/s/dashboard'
       preLoaderRoute: typeof OrgSlugAdminSDashboardRouteImport
+      parentRoute: typeof OrgSlugAdminSRoute
+    }
+    '/$orgSlug/admin/s/recipes_/create': {
+      id: '/$orgSlug/admin/s/recipes_/create'
+      path: '/recipes/create'
+      fullPath: '/$orgSlug/admin/s/recipes/create'
+      preLoaderRoute: typeof OrgSlugAdminSRecipesCreateRouteImport
       parentRoute: typeof OrgSlugAdminSRoute
     }
   }
@@ -332,12 +371,16 @@ interface OrgSlugAdminSRouteChildren {
   OrgSlugAdminSDashboardRoute: typeof OrgSlugAdminSDashboardRoute
   OrgSlugAdminSExercisesRoute: typeof OrgSlugAdminSExercisesRoute
   OrgSlugAdminSIngredientsRoute: typeof OrgSlugAdminSIngredientsRoute
+  OrgSlugAdminSRecipesRoute: typeof OrgSlugAdminSRecipesRoute
+  OrgSlugAdminSRecipesCreateRoute: typeof OrgSlugAdminSRecipesCreateRoute
 }
 
 const OrgSlugAdminSRouteChildren: OrgSlugAdminSRouteChildren = {
   OrgSlugAdminSDashboardRoute: OrgSlugAdminSDashboardRoute,
   OrgSlugAdminSExercisesRoute: OrgSlugAdminSExercisesRoute,
   OrgSlugAdminSIngredientsRoute: OrgSlugAdminSIngredientsRoute,
+  OrgSlugAdminSRecipesRoute: OrgSlugAdminSRecipesRoute,
+  OrgSlugAdminSRecipesCreateRoute: OrgSlugAdminSRecipesCreateRoute,
 }
 
 const OrgSlugAdminSRouteWithChildren = OrgSlugAdminSRoute._addFileChildren(
