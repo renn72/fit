@@ -34,7 +34,6 @@
 - **Advanced Table Architecture:**
     - Refactored Admin Exercises and Ingredients into modular table components (`ExercisesTable`, `IngredientsTable`).
     - Standardized **SSR Strategy** for all high-privileged routes to use `ssr: false` while maintaining `loader` prefetching for high-speed client-side hydration.
-    - Fixed SSR authentication by implementing header forwarding in the `orpc` client using `vinxi/http`.
 - **UI System Evolution:**
     - Created a new **Extended UI Layer** (`ui-extended/`) to house complex, high-level primitives.
     - Built a robust `TagsInput` component that integrates `diceui` with Shadcn's `Combobox` for advanced data entry.
@@ -44,4 +43,66 @@
     - Built comprehensive Edit/Create forms for Ingredients and Exercises using TanStack Form.
     - Enforced **Numeric Precision Standards** (1-point decimal) at the Schema, API handler, and UI levels to ensure data consistency across the ecosystem.
 
+# 2026-02-19
+
+- **Database Schema Consolidation:**
+    - **Merged base tables into main tables** following architectural decision to simplify data model:
+        - Consolidated `base_exercise` into `exercise` table with `isBase` boolean flag
+        - Consolidated `base_ingredients` into `ingredient` table with `isBase` boolean flag
+        - Made `organisationId` nullable (NULL for base items)
+        - Added `baseId` self-referencing foreign key for override tracking
+    - Updated `recipeToIngredient` table with simplified structure and `isBaseIngredient` flag
+    - Created migration file for consolidating base tables
+
+- **Route Refactoring:**
+    - Refactored all admin routes from `$orgSlug/admin/s/*` → `$orgSlug/*` for cleaner URLs
+    - Updated all navigation references and route files
+
+- **Plans Management System:**
+    - Created complete plan management interface for dictator users
+    - Added plan CRUD operations (create, update, delete, getAllPlansAdmin)
+    - Built plan management UI with DataGrid, create/edit forms, and row actions
+
+- **Onboarding UX Improvements:**
+    - Moved access code input to bottom of step 2 in Collapsible component
+    - Reduced cognitive load for users without access codes
+
+- **Exercises Management Interface:**
+    - Created complete exercises management interface for organisations
+    - Built exercises table with DataTable component (sorting, filtering, pagination)
+    - Created exercise create form with VirtualizedCombobox for movement selection
+    - Added all exercise fields: sets, reps, rep units, %1RM, target RPE, rest, tempo
+
+- **Dictator Exercises Management:**
+    - Added `/dictator/exercises` route for viewing all exercises across organisations
+    - Created dictator exercises DataGrid with 17 columns
+    - Added exercise generator to create sample exercises for organizations
+
+- **SuperSet Support:**
+    - Added `isSuperSet` boolean column to exercise table
+    - Created `superSetToExercise` junction table for linking exercises to supersets
+    - Added API endpoints: addToSuperSet, removeFromSuperSet, getSuperSetExercises
+    - Full relations for superset parent/child relationships
+
+- **Session Management System:**
+    - Created `session` table for organizing workout sessions
+    - Created `sessionToExercise` junction table with `index` column for ordering
+    - Created `sessionToSuperSet` junction table with `index` column for ordering
+    - Added full CRUD API for sessions
+    - Added endpoints for adding/removing exercises and supersets from sessions
+    - Deep loading support: session → supersets → exercises in each superset
+
+- **Warmup Management System:**
+    - Created `warmupGroup` table for organizing warmup routines
+    - Created `warmup` table with name, description, images, link fields
+    - Added `warmupGroupId` FK to session table for linking warmups to sessions
+    - One-to-many relation: warmupGroup → warmups
+    - Full CRUD API for warmup groups and individual warmups
+    - Updated session router to include warmup data when fetching sessions
+
+- **API Infrastructure:**
+    - Registered new routers: sessionRouter, warmupRouter
+    - Created comprehensive Zod schemas for all new entities
+    - Added permission checks (itemUpdater/dictator) for all modification endpoints
+    - Proper organisation scoping for all tenant-specific data
 
