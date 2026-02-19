@@ -49,7 +49,7 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 				})
 				if (!orgSlug) return
 				router.navigate({
-					to: '/$orgSlug/admin/s/recipes',
+					to: '/$orgSlug/recipes',
 					params: { orgSlug },
 				})
 			},
@@ -410,7 +410,7 @@ export function RecipeCreateForm({ organisationId }: RecipeCreateFormProps) {
 					onClick={() => {
 						if (orgSlug) {
 							router.navigate({
-								to: '/$orgSlug/admin/s/recipes',
+								to: '/$orgSlug/recipes',
 								params: { orgSlug },
 							})
 						}

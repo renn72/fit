@@ -191,7 +191,7 @@ const columns = [
 	}),
 ]
 
-const route = getRouteApi('/$orgSlug/admin/s/exercises')
+const route = getRouteApi('/$orgSlug/exercises')
 
 export function ExercisesTable() {
 	const { session } = route.useRouteContext()

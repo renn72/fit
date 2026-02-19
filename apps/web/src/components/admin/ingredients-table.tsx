@@ -169,7 +169,7 @@ const columns = [
 	}),
 ]
 
-const route = getRouteApi('/$orgSlug/admin/s/ingredients')
+const route = getRouteApi('/$orgSlug/ingredients')
 
 export function IngredientsTable() {
 	const { session } = route.useRouteContext()

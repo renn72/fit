@@ -13,18 +13,19 @@ import { Route as OnboardRouteImport } from './routes/onboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DictatorRouteImport } from './routes/dictator'
 import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as AdminRouteImport } from './routes/admin'
+import { Route as OrgSlugRouteImport } from './routes/$orgSlug'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DictatorOrgIngredientsRouteImport } from './routes/dictator/org-ingredients'
 import { Route as DictatorOrgExercisesRouteImport } from './routes/dictator/org-exercises'
 import { Route as DictatorGenerationRouteImport } from './routes/dictator/generation'
 import { Route as DictatorBaseIngredientsRouteImport } from './routes/dictator/base-ingredients'
 import { Route as DictatorBaseExercisesRouteImport } from './routes/dictator/base-exercises'
-import { Route as OrgSlugAdminSRouteImport } from './routes/$orgSlug/admin.s'
-import { Route as OrgSlugAdminSRecipesRouteImport } from './routes/$orgSlug/admin.s.recipes'
-import { Route as OrgSlugAdminSIngredientsRouteImport } from './routes/$orgSlug/admin.s.ingredients'
-import { Route as OrgSlugAdminSExercisesRouteImport } from './routes/$orgSlug/admin.s.exercises'
-import { Route as OrgSlugAdminSDashboardRouteImport } from './routes/$orgSlug/admin.s.dashboard'
-import { Route as OrgSlugAdminSRecipesCreateRouteImport } from './routes/$orgSlug/admin.s.recipes_.create'
+import { Route as OrgSlugOrgSlugRecipesRouteImport } from './routes/$orgSlug/$orgSlug.recipes'
+import { Route as OrgSlugOrgSlugIngredientsRouteImport } from './routes/$orgSlug/$orgSlug.ingredients'
+import { Route as OrgSlugOrgSlugExercisesRouteImport } from './routes/$orgSlug/$orgSlug.exercises'
+import { Route as OrgSlugOrgSlugDashboardRouteImport } from './routes/$orgSlug/$orgSlug.dashboard'
+import { Route as OrgSlugOrgSlugRecipesCreateRouteImport } from './routes/$orgSlug/$orgSlug.recipes.create'
 
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',
@@ -44,6 +45,16 @@ const DictatorRoute = DictatorRouteImport.update({
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRoute = AdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OrgSlugRoute = OrgSlugRouteImport.update({
+  id: '/$orgSlug',
+  path: '/$orgSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -76,41 +87,38 @@ const DictatorBaseExercisesRoute = DictatorBaseExercisesRouteImport.update({
   path: '/base-exercises',
   getParentRoute: () => DictatorRoute,
 } as any)
-const OrgSlugAdminSRoute = OrgSlugAdminSRouteImport.update({
-  id: '/$orgSlug/admin/s',
-  path: '/$orgSlug/admin/s',
-  getParentRoute: () => rootRouteImport,
+const OrgSlugOrgSlugRecipesRoute = OrgSlugOrgSlugRecipesRouteImport.update({
+  id: '/$orgSlug/recipes',
+  path: '/$orgSlug/recipes',
+  getParentRoute: () => OrgSlugRoute,
 } as any)
-const OrgSlugAdminSRecipesRoute = OrgSlugAdminSRecipesRouteImport.update({
-  id: '/recipes',
-  path: '/recipes',
-  getParentRoute: () => OrgSlugAdminSRoute,
-} as any)
-const OrgSlugAdminSIngredientsRoute =
-  OrgSlugAdminSIngredientsRouteImport.update({
-    id: '/ingredients',
-    path: '/ingredients',
-    getParentRoute: () => OrgSlugAdminSRoute,
+const OrgSlugOrgSlugIngredientsRoute =
+  OrgSlugOrgSlugIngredientsRouteImport.update({
+    id: '/$orgSlug/ingredients',
+    path: '/$orgSlug/ingredients',
+    getParentRoute: () => OrgSlugRoute,
   } as any)
-const OrgSlugAdminSExercisesRoute = OrgSlugAdminSExercisesRouteImport.update({
-  id: '/exercises',
-  path: '/exercises',
-  getParentRoute: () => OrgSlugAdminSRoute,
+const OrgSlugOrgSlugExercisesRoute = OrgSlugOrgSlugExercisesRouteImport.update({
+  id: '/$orgSlug/exercises',
+  path: '/$orgSlug/exercises',
+  getParentRoute: () => OrgSlugRoute,
 } as any)
-const OrgSlugAdminSDashboardRoute = OrgSlugAdminSDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => OrgSlugAdminSRoute,
+const OrgSlugOrgSlugDashboardRoute = OrgSlugOrgSlugDashboardRouteImport.update({
+  id: '/$orgSlug/dashboard',
+  path: '/$orgSlug/dashboard',
+  getParentRoute: () => OrgSlugRoute,
 } as any)
-const OrgSlugAdminSRecipesCreateRoute =
-  OrgSlugAdminSRecipesCreateRouteImport.update({
-    id: '/recipes_/create',
-    path: '/recipes/create',
-    getParentRoute: () => OrgSlugAdminSRoute,
+const OrgSlugOrgSlugRecipesCreateRoute =
+  OrgSlugOrgSlugRecipesCreateRouteImport.update({
+    id: '/create',
+    path: '/create',
+    getParentRoute: () => OrgSlugOrgSlugRecipesRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$orgSlug': typeof OrgSlugRouteWithChildren
+  '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
@@ -120,15 +128,16 @@ export interface FileRoutesByFullPath {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
-  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
-  '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
-  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
-  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
-  '/$orgSlug/admin/s/recipes/create': typeof OrgSlugAdminSRecipesCreateRoute
+  '/$orgSlug/$orgSlug/dashboard': typeof OrgSlugOrgSlugDashboardRoute
+  '/$orgSlug/$orgSlug/exercises': typeof OrgSlugOrgSlugExercisesRoute
+  '/$orgSlug/$orgSlug/ingredients': typeof OrgSlugOrgSlugIngredientsRoute
+  '/$orgSlug/$orgSlug/recipes': typeof OrgSlugOrgSlugRecipesRouteWithChildren
+  '/$orgSlug/$orgSlug/recipes/create': typeof OrgSlugOrgSlugRecipesCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$orgSlug': typeof OrgSlugRouteWithChildren
+  '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
@@ -138,16 +147,17 @@ export interface FileRoutesByTo {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
-  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
-  '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
-  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
-  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
-  '/$orgSlug/admin/s/recipes/create': typeof OrgSlugAdminSRecipesCreateRoute
+  '/$orgSlug/$orgSlug/dashboard': typeof OrgSlugOrgSlugDashboardRoute
+  '/$orgSlug/$orgSlug/exercises': typeof OrgSlugOrgSlugExercisesRoute
+  '/$orgSlug/$orgSlug/ingredients': typeof OrgSlugOrgSlugIngredientsRoute
+  '/$orgSlug/$orgSlug/recipes': typeof OrgSlugOrgSlugRecipesRouteWithChildren
+  '/$orgSlug/$orgSlug/recipes/create': typeof OrgSlugOrgSlugRecipesCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$orgSlug': typeof OrgSlugRouteWithChildren
+  '/admin': typeof AdminRoute
   '/dashboard': typeof DashboardRoute
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
@@ -157,17 +167,18 @@ export interface FileRoutesById {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
-  '/$orgSlug/admin/s': typeof OrgSlugAdminSRouteWithChildren
-  '/$orgSlug/admin/s/dashboard': typeof OrgSlugAdminSDashboardRoute
-  '/$orgSlug/admin/s/exercises': typeof OrgSlugAdminSExercisesRoute
-  '/$orgSlug/admin/s/ingredients': typeof OrgSlugAdminSIngredientsRoute
-  '/$orgSlug/admin/s/recipes': typeof OrgSlugAdminSRecipesRoute
-  '/$orgSlug/admin/s/recipes_/create': typeof OrgSlugAdminSRecipesCreateRoute
+  '/$orgSlug/$orgSlug/dashboard': typeof OrgSlugOrgSlugDashboardRoute
+  '/$orgSlug/$orgSlug/exercises': typeof OrgSlugOrgSlugExercisesRoute
+  '/$orgSlug/$orgSlug/ingredients': typeof OrgSlugOrgSlugIngredientsRoute
+  '/$orgSlug/$orgSlug/recipes': typeof OrgSlugOrgSlugRecipesRouteWithChildren
+  '/$orgSlug/$orgSlug/recipes/create': typeof OrgSlugOrgSlugRecipesCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$orgSlug'
+    | '/admin'
     | '/dashboard'
     | '/dictator'
     | '/login'
@@ -177,15 +188,16 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/$orgSlug/admin/s'
-    | '/$orgSlug/admin/s/dashboard'
-    | '/$orgSlug/admin/s/exercises'
-    | '/$orgSlug/admin/s/ingredients'
-    | '/$orgSlug/admin/s/recipes'
-    | '/$orgSlug/admin/s/recipes/create'
+    | '/$orgSlug/$orgSlug/dashboard'
+    | '/$orgSlug/$orgSlug/exercises'
+    | '/$orgSlug/$orgSlug/ingredients'
+    | '/$orgSlug/$orgSlug/recipes'
+    | '/$orgSlug/$orgSlug/recipes/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$orgSlug'
+    | '/admin'
     | '/dashboard'
     | '/dictator'
     | '/login'
@@ -195,15 +207,16 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/$orgSlug/admin/s'
-    | '/$orgSlug/admin/s/dashboard'
-    | '/$orgSlug/admin/s/exercises'
-    | '/$orgSlug/admin/s/ingredients'
-    | '/$orgSlug/admin/s/recipes'
-    | '/$orgSlug/admin/s/recipes/create'
+    | '/$orgSlug/$orgSlug/dashboard'
+    | '/$orgSlug/$orgSlug/exercises'
+    | '/$orgSlug/$orgSlug/ingredients'
+    | '/$orgSlug/$orgSlug/recipes'
+    | '/$orgSlug/$orgSlug/recipes/create'
   id:
     | '__root__'
     | '/'
+    | '/$orgSlug'
+    | '/admin'
     | '/dashboard'
     | '/dictator'
     | '/login'
@@ -213,21 +226,21 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
-    | '/$orgSlug/admin/s'
-    | '/$orgSlug/admin/s/dashboard'
-    | '/$orgSlug/admin/s/exercises'
-    | '/$orgSlug/admin/s/ingredients'
-    | '/$orgSlug/admin/s/recipes'
-    | '/$orgSlug/admin/s/recipes_/create'
+    | '/$orgSlug/$orgSlug/dashboard'
+    | '/$orgSlug/$orgSlug/exercises'
+    | '/$orgSlug/$orgSlug/ingredients'
+    | '/$orgSlug/$orgSlug/recipes'
+    | '/$orgSlug/$orgSlug/recipes/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  OrgSlugRoute: typeof OrgSlugRouteWithChildren
+  AdminRoute: typeof AdminRoute
   DashboardRoute: typeof DashboardRoute
   DictatorRoute: typeof DictatorRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardRoute: typeof OnboardRoute
-  OrgSlugAdminSRoute: typeof OrgSlugAdminSRouteWithChildren
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +271,20 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$orgSlug': {
+      id: '/$orgSlug'
+      path: '/$orgSlug'
+      fullPath: '/$orgSlug'
+      preLoaderRoute: typeof OrgSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -302,50 +329,73 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DictatorBaseExercisesRouteImport
       parentRoute: typeof DictatorRoute
     }
-    '/$orgSlug/admin/s': {
-      id: '/$orgSlug/admin/s'
-      path: '/$orgSlug/admin/s'
-      fullPath: '/$orgSlug/admin/s'
-      preLoaderRoute: typeof OrgSlugAdminSRouteImport
-      parentRoute: typeof rootRouteImport
+    '/$orgSlug/$orgSlug/recipes': {
+      id: '/$orgSlug/$orgSlug/recipes'
+      path: '/$orgSlug/recipes'
+      fullPath: '/$orgSlug/$orgSlug/recipes'
+      preLoaderRoute: typeof OrgSlugOrgSlugRecipesRouteImport
+      parentRoute: typeof OrgSlugRoute
     }
-    '/$orgSlug/admin/s/recipes': {
-      id: '/$orgSlug/admin/s/recipes'
-      path: '/recipes'
-      fullPath: '/$orgSlug/admin/s/recipes'
-      preLoaderRoute: typeof OrgSlugAdminSRecipesRouteImport
-      parentRoute: typeof OrgSlugAdminSRoute
+    '/$orgSlug/$orgSlug/ingredients': {
+      id: '/$orgSlug/$orgSlug/ingredients'
+      path: '/$orgSlug/ingredients'
+      fullPath: '/$orgSlug/$orgSlug/ingredients'
+      preLoaderRoute: typeof OrgSlugOrgSlugIngredientsRouteImport
+      parentRoute: typeof OrgSlugRoute
     }
-    '/$orgSlug/admin/s/ingredients': {
-      id: '/$orgSlug/admin/s/ingredients'
-      path: '/ingredients'
-      fullPath: '/$orgSlug/admin/s/ingredients'
-      preLoaderRoute: typeof OrgSlugAdminSIngredientsRouteImport
-      parentRoute: typeof OrgSlugAdminSRoute
+    '/$orgSlug/$orgSlug/exercises': {
+      id: '/$orgSlug/$orgSlug/exercises'
+      path: '/$orgSlug/exercises'
+      fullPath: '/$orgSlug/$orgSlug/exercises'
+      preLoaderRoute: typeof OrgSlugOrgSlugExercisesRouteImport
+      parentRoute: typeof OrgSlugRoute
     }
-    '/$orgSlug/admin/s/exercises': {
-      id: '/$orgSlug/admin/s/exercises'
-      path: '/exercises'
-      fullPath: '/$orgSlug/admin/s/exercises'
-      preLoaderRoute: typeof OrgSlugAdminSExercisesRouteImport
-      parentRoute: typeof OrgSlugAdminSRoute
+    '/$orgSlug/$orgSlug/dashboard': {
+      id: '/$orgSlug/$orgSlug/dashboard'
+      path: '/$orgSlug/dashboard'
+      fullPath: '/$orgSlug/$orgSlug/dashboard'
+      preLoaderRoute: typeof OrgSlugOrgSlugDashboardRouteImport
+      parentRoute: typeof OrgSlugRoute
     }
-    '/$orgSlug/admin/s/dashboard': {
-      id: '/$orgSlug/admin/s/dashboard'
-      path: '/dashboard'
-      fullPath: '/$orgSlug/admin/s/dashboard'
-      preLoaderRoute: typeof OrgSlugAdminSDashboardRouteImport
-      parentRoute: typeof OrgSlugAdminSRoute
-    }
-    '/$orgSlug/admin/s/recipes_/create': {
-      id: '/$orgSlug/admin/s/recipes_/create'
-      path: '/recipes/create'
-      fullPath: '/$orgSlug/admin/s/recipes/create'
-      preLoaderRoute: typeof OrgSlugAdminSRecipesCreateRouteImport
-      parentRoute: typeof OrgSlugAdminSRoute
+    '/$orgSlug/$orgSlug/recipes/create': {
+      id: '/$orgSlug/$orgSlug/recipes/create'
+      path: '/create'
+      fullPath: '/$orgSlug/$orgSlug/recipes/create'
+      preLoaderRoute: typeof OrgSlugOrgSlugRecipesCreateRouteImport
+      parentRoute: typeof OrgSlugOrgSlugRecipesRoute
     }
   }
 }
+
+interface OrgSlugOrgSlugRecipesRouteChildren {
+  OrgSlugOrgSlugRecipesCreateRoute: typeof OrgSlugOrgSlugRecipesCreateRoute
+}
+
+const OrgSlugOrgSlugRecipesRouteChildren: OrgSlugOrgSlugRecipesRouteChildren = {
+  OrgSlugOrgSlugRecipesCreateRoute: OrgSlugOrgSlugRecipesCreateRoute,
+}
+
+const OrgSlugOrgSlugRecipesRouteWithChildren =
+  OrgSlugOrgSlugRecipesRoute._addFileChildren(
+    OrgSlugOrgSlugRecipesRouteChildren,
+  )
+
+interface OrgSlugRouteChildren {
+  OrgSlugOrgSlugDashboardRoute: typeof OrgSlugOrgSlugDashboardRoute
+  OrgSlugOrgSlugExercisesRoute: typeof OrgSlugOrgSlugExercisesRoute
+  OrgSlugOrgSlugIngredientsRoute: typeof OrgSlugOrgSlugIngredientsRoute
+  OrgSlugOrgSlugRecipesRoute: typeof OrgSlugOrgSlugRecipesRouteWithChildren
+}
+
+const OrgSlugRouteChildren: OrgSlugRouteChildren = {
+  OrgSlugOrgSlugDashboardRoute: OrgSlugOrgSlugDashboardRoute,
+  OrgSlugOrgSlugExercisesRoute: OrgSlugOrgSlugExercisesRoute,
+  OrgSlugOrgSlugIngredientsRoute: OrgSlugOrgSlugIngredientsRoute,
+  OrgSlugOrgSlugRecipesRoute: OrgSlugOrgSlugRecipesRouteWithChildren,
+}
+
+const OrgSlugRouteWithChildren =
+  OrgSlugRoute._addFileChildren(OrgSlugRouteChildren)
 
 interface DictatorRouteChildren {
   DictatorBaseExercisesRoute: typeof DictatorBaseExercisesRoute
@@ -367,33 +417,14 @@ const DictatorRouteWithChildren = DictatorRoute._addFileChildren(
   DictatorRouteChildren,
 )
 
-interface OrgSlugAdminSRouteChildren {
-  OrgSlugAdminSDashboardRoute: typeof OrgSlugAdminSDashboardRoute
-  OrgSlugAdminSExercisesRoute: typeof OrgSlugAdminSExercisesRoute
-  OrgSlugAdminSIngredientsRoute: typeof OrgSlugAdminSIngredientsRoute
-  OrgSlugAdminSRecipesRoute: typeof OrgSlugAdminSRecipesRoute
-  OrgSlugAdminSRecipesCreateRoute: typeof OrgSlugAdminSRecipesCreateRoute
-}
-
-const OrgSlugAdminSRouteChildren: OrgSlugAdminSRouteChildren = {
-  OrgSlugAdminSDashboardRoute: OrgSlugAdminSDashboardRoute,
-  OrgSlugAdminSExercisesRoute: OrgSlugAdminSExercisesRoute,
-  OrgSlugAdminSIngredientsRoute: OrgSlugAdminSIngredientsRoute,
-  OrgSlugAdminSRecipesRoute: OrgSlugAdminSRecipesRoute,
-  OrgSlugAdminSRecipesCreateRoute: OrgSlugAdminSRecipesCreateRoute,
-}
-
-const OrgSlugAdminSRouteWithChildren = OrgSlugAdminSRoute._addFileChildren(
-  OrgSlugAdminSRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  OrgSlugRoute: OrgSlugRouteWithChildren,
+  AdminRoute: AdminRoute,
   DashboardRoute: DashboardRoute,
   DictatorRoute: DictatorRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardRoute: OnboardRoute,
-  OrgSlugAdminSRoute: OrgSlugAdminSRouteWithChildren,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

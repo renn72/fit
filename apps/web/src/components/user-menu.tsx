@@ -44,7 +44,7 @@ export function UserMenu({ session }: { session?: any }) {
 						<DropdownMenuItem
 							render={
 								<Link
-									to='/$orgSlug/admin/s'
+									to='/$orgSlug'
 									params={{ orgSlug: session.user.organisationSlug }}
 								/>
 							}

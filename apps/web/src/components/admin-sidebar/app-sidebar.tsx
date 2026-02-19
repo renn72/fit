@@ -44,11 +44,11 @@ const data = {
 				},
 				{
 					title: 'Recipes',
-					url: '/$orgSlug/admin/s/recipes',
+					url: '/$orgSlug/recipes',
 				},
 				{
 					title: 'Ingredients',
-					url: '/$orgSlug/admin/s/ingredients',
+					url: '/$orgSlug/ingredients',
 				},
 			],
 		},
@@ -68,7 +68,7 @@ const data = {
 				},
 				{
 					title: 'Exercises',
-					url: '/$orgSlug/admin/s/exercises',
+					url: '/$orgSlug/exercises',
 				},
 			],
 		},

@@ -19,7 +19,7 @@ import {
 
 import { getRouteApi } from '@tanstack/react-router'
 
-const route = getRouteApi('/$orgSlug/admin/s')
+const route = getRouteApi('/$orgSlug')
 
 import { CaretRightIcon } from '@phosphor-icons/react'
 

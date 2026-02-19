@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { Loader } from '@/components/loader'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { LoadingButton } from '@/components/ui-extended/loading-button'
 import {
 	Card,
 	CardContent,
@@ -32,6 +31,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
+import { LoadingButton } from '@/components/ui-extended/loading-button'
 import { cn } from '@/lib/utils'
 import { orpc } from '@/utils/orpc'
 
@@ -90,7 +90,7 @@ const formSchema = z.object({
 		.max(12, 'Description must be at most 12 characters.'),
 	timezone: z.string().min(1, 'Please select a timezone'),
 	planId: z.string().min(1),
-	code: z.string().optional(),
+	code: z.string(),
 })
 
 export function OnboardingForm() {
@@ -127,7 +127,10 @@ export function OnboardingForm() {
 		orpc.organisation.create.mutationOptions({
 			onSuccess: () => {
 				toast.success('Organisation created successfully')
-				navigate({ to: `/admin/${organisationSlug}/s/dashboard` })
+				navigate({
+					to: '/$orgSlug/dashboard',
+					params: { orgSlug: organisationSlug },
+				})
 			},
 			onError: (error) => {
 				toast.error(error.message || 'Failed to create organisation')
@@ -154,7 +157,13 @@ export function OnboardingForm() {
 			}
 
 			setIsSubmitting(true)
-			await createOrg.mutateAsync(value)
+			await createOrg.mutateAsync({
+				name: value.name,
+				slug: value.slug,
+				timezone: value.timezone,
+				planId: value.planId,
+				code: value.code === '' ? null : value.code,
+			})
 		},
 	})
 

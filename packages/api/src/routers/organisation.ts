@@ -95,6 +95,7 @@ export const orgRouter = {
 					.set({
 						organisationId: newOrg.id,
 						organisationCreatorId: newOrg.id,
+						organisationSlug: input.slug,
 					})
 					.where(eq(user.id, context.session.user.id))
 

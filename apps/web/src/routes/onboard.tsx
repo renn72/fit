@@ -14,7 +14,7 @@ export const Route = createFileRoute('/onboard')({
 		if (context.session.user?.organisationSlug) {
 			const slug = context.session.user.organisationSlug
 			redirect({
-				to: '/$orgSlug/admin/s',
+				to: '/$orgSlug',
 				params: { orgSlug: slug },
 				throw: true,
 			})

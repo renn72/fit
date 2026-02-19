@@ -5,7 +5,7 @@ export const OrganisationCreateInput = z.object({
 	slug: z.string().min(1).max(32),
 	timezone: z.string().min(1),
 	planId: z.string().min(1),
-	code: z.string().optional(),
+	code: z.string().optional().nullable(),
 })
 
 export const OrganisationGetPlanByCodeInput = z.object({

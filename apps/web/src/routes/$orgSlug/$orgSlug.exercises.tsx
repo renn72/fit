@@ -1,10 +1,10 @@
-import { RecipesTable } from '@/components/admin/recipes-table'
+import { ExercisesTable } from '@/components/admin/exercises-table'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/$orgSlug/admin/s/recipes')({
-	component: RecipesTable,
+export const Route = createFileRoute('/$orgSlug/$orgSlug/exercises')({
+	component: ExercisesTable,
 	loader: async ({ context }) => {
 		const session = context.session
 		const userOrgId = session?.user?.organisationId
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/$orgSlug/admin/s/recipes')({
 		if (!userOrgId) return <div>missing org</div>
 
 		await context.queryClient.prefetchQuery(
-			orpc.recipe.getOrg.queryOptions({
+			orpc.exercise.getAllOrg.queryOptions({
 				input: { organisationId: userOrgId },
 			}),
 		)

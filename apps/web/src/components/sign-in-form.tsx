@@ -35,7 +35,7 @@ export default function SignInForm({
 				{
 					onSuccess: () => {
 						navigate({
-							to: '/dashboard',
+							to: '/admin',
 						})
 						toast.success('Sign in successful')
 					},
@@ -48,7 +48,7 @@ export default function SignInForm({
 		validators: {
 			onSubmit: z.object({
 				email: z.email('Invalid email address'),
-				password: z.string().min(8, 'Password must be at least 8 characters'),
+				password: z.string().min(6, 'Password must be at least 8 characters'),
 			}),
 		},
 	})

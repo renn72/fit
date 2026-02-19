@@ -4,7 +4,7 @@ import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/$orgSlug/admin/s')({
+export const Route = createFileRoute('/$orgSlug')({
 	loader: async ({ context, params }) => {
 		const { orgSlug } = params
 		const session = context.session

@@ -117,7 +117,7 @@ const columns = [
 	}),
 ]
 
-const route = getRouteApi('/$orgSlug/admin/s/recipes')
+const route = getRouteApi('/$orgSlug/recipes')
 
 export function RecipesTable() {
 	const { session } = route.useRouteContext()
@@ -190,7 +190,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Recipes</h1>
 			</div>
-			<Link to='/$orgSlug/admin/s/recipes/create' params={{ orgSlug: orgSlug }}>
+			<Link to='/$orgSlug/recipes/create' params={{ orgSlug: orgSlug }}>
 				<Button>Create</Button>
 			</Link>
 			<DataTable table={table}>
