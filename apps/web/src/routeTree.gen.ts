@@ -16,6 +16,8 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as OrgSlugRouteImport } from './routes/$orgSlug'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DictatorUsersRouteImport } from './routes/dictator/users'
+import { Route as DictatorOrgsRouteImport } from './routes/dictator/orgs'
 import { Route as DictatorOrgIngredientsRouteImport } from './routes/dictator/org-ingredients'
 import { Route as DictatorOrgExercisesRouteImport } from './routes/dictator/org-exercises'
 import { Route as DictatorGenerationRouteImport } from './routes/dictator/generation'
@@ -61,6 +63,16 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const DictatorUsersRoute = DictatorUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => DictatorRoute,
+} as any)
+const DictatorOrgsRoute = DictatorOrgsRouteImport.update({
+  id: '/orgs',
+  path: '/orgs',
+  getParentRoute: () => DictatorRoute,
 } as any)
 const DictatorOrgIngredientsRoute = DictatorOrgIngredientsRouteImport.update({
   id: '/org-ingredients',
@@ -130,6 +142,8 @@ export interface FileRoutesByFullPath {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
+  '/dictator/orgs': typeof DictatorOrgsRoute
+  '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
 }
 export interface FileRoutesByTo {
@@ -149,6 +163,8 @@ export interface FileRoutesByTo {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
+  '/dictator/orgs': typeof DictatorOrgsRoute
+  '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
 }
 export interface FileRoutesById {
@@ -169,6 +185,8 @@ export interface FileRoutesById {
   '/dictator/generation': typeof DictatorGenerationRoute
   '/dictator/org-exercises': typeof DictatorOrgExercisesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
+  '/dictator/orgs': typeof DictatorOrgsRoute
+  '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
 }
 export interface FileRouteTypes {
@@ -190,6 +208,8 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
+    | '/dictator/orgs'
+    | '/dictator/users'
     | '/$orgSlug/recipes/create'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -209,6 +229,8 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
+    | '/dictator/orgs'
+    | '/dictator/users'
     | '/$orgSlug/recipes/create'
   id:
     | '__root__'
@@ -228,6 +250,8 @@ export interface FileRouteTypes {
     | '/dictator/generation'
     | '/dictator/org-exercises'
     | '/dictator/org-ingredients'
+    | '/dictator/orgs'
+    | '/dictator/users'
     | '/$orgSlug/recipes/create'
   fileRoutesById: FileRoutesById
 }
@@ -291,6 +315,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/dictator/users': {
+      id: '/dictator/users'
+      path: '/users'
+      fullPath: '/dictator/users'
+      preLoaderRoute: typeof DictatorUsersRouteImport
+      parentRoute: typeof DictatorRoute
+    }
+    '/dictator/orgs': {
+      id: '/dictator/orgs'
+      path: '/orgs'
+      fullPath: '/dictator/orgs'
+      preLoaderRoute: typeof DictatorOrgsRouteImport
+      parentRoute: typeof DictatorRoute
     }
     '/dictator/org-ingredients': {
       id: '/dictator/org-ingredients'
@@ -400,6 +438,8 @@ interface DictatorRouteChildren {
   DictatorGenerationRoute: typeof DictatorGenerationRoute
   DictatorOrgExercisesRoute: typeof DictatorOrgExercisesRoute
   DictatorOrgIngredientsRoute: typeof DictatorOrgIngredientsRoute
+  DictatorOrgsRoute: typeof DictatorOrgsRoute
+  DictatorUsersRoute: typeof DictatorUsersRoute
 }
 
 const DictatorRouteChildren: DictatorRouteChildren = {
@@ -408,6 +448,8 @@ const DictatorRouteChildren: DictatorRouteChildren = {
   DictatorGenerationRoute: DictatorGenerationRoute,
   DictatorOrgExercisesRoute: DictatorOrgExercisesRoute,
   DictatorOrgIngredientsRoute: DictatorOrgIngredientsRoute,
+  DictatorOrgsRoute: DictatorOrgsRoute,
+  DictatorUsersRoute: DictatorUsersRoute,
 }
 
 const DictatorRouteWithChildren = DictatorRoute._addFileChildren(

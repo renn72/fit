@@ -29,10 +29,29 @@ const data = {
 	},
 	navMain: [
 		{
+			title: 'System',
+			url: '#',
+			icon: <GearIcon weight='duotone' />,
+			isActive: true,
+			items: [
+				{
+					title: 'All Users',
+					url: '/dictator/users',
+				},
+				{
+					title: 'All Organisations',
+					url: '/dictator/orgs',
+				},
+				{
+					title: 'Generation',
+					url: '/dictator/generation',
+				},
+			],
+		},
+		{
 			title: 'Base Data',
 			url: '#',
 			icon: <DatabaseIcon weight='duotone' />,
-			isActive: true,
 			items: [
 				{
 					title: 'Base Ingredients',
@@ -56,17 +75,6 @@ const data = {
 				{
 					title: 'Org Exercises',
 					url: '/dictator/org-exercises',
-				},
-			],
-		},
-		{
-			title: 'System',
-			url: '#',
-			icon: <GearIcon weight='duotone' />,
-			items: [
-				{
-					title: 'Generation',
-					url: '/dictator/generation',
 				},
 			],
 		},

@@ -185,14 +185,36 @@ export const orgRouter = {
 			}
 
 			const orgs = await db.query.organisation.findMany({
-				columns: {
-					id: true,
-					name: true,
-					slug: true,
-					state: true,
+				with: {
+					creator: {
+						columns: {
+							name: true,
+							email: true,
+						},
+					},
+					members: {
+						columns: {
+							id: true,
+						},
+					},
+					subscriptions: {
+						with: {
+							plan: {
+								columns: {
+									name: true,
+								},
+							},
+						},
+					},
 				},
 			})
 
-			return orgs
+			return orgs.map((o) => ({
+				...o,
+				creatorName: o.creator?.name ?? 'Unknown',
+				creatorEmail: o.creator?.email ?? '',
+				memberCount: o.members?.length ?? 0,
+				planName: o.subscriptions?.[0]?.plan?.name ?? 'No Plan',
+			}))
 		}),
 }
