@@ -9,6 +9,7 @@ export const Route = createFileRoute('/$orgSlug')({
 		const { orgSlug } = params
 		const session = context.session
 		const userOrgSlug = session?.user?.organisationSlug
+
 		if (userOrgSlug !== orgSlug) {
 			throw redirect({
 				to: '/',
@@ -25,6 +26,7 @@ export const Route = createFileRoute('/$orgSlug')({
 
 function LayoutRouteComponent() {
 	const { session } = Route.useRouteContext()
+	console.log('base layout route component')
 	return (
 		<div className='[--header-height:calc(--spacing(14))]'>
 			<SidebarProvider className='flex flex-col'>

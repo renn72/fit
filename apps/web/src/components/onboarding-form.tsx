@@ -128,7 +128,7 @@ export function OnboardingForm() {
 			onSuccess: () => {
 				toast.success('Organisation created successfully')
 				navigate({
-					to: '/$orgSlug/dashboard',
+					to: '/$orgSlug',
 					params: { orgSlug: organisationSlug },
 				})
 			},
@@ -323,7 +323,9 @@ export function OnboardingForm() {
 													<FieldLabel htmlFor={field.name}>Timezone</FieldLabel>
 													<Select
 														value={field.state.value}
-														onValueChange={(value) => field.handleChange(value)}
+														onValueChange={(value) =>
+															field.handleChange(value || '')
+														}
 													>
 														<SelectTrigger className='w-full'>
 															<SelectValue placeholder='Select a timezone' />

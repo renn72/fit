@@ -3,8 +3,6 @@ import { getUserForce } from '@/functions/get-user-force'
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-import * as _ from 'lodash'
-
 export const Route = createFileRoute('/onboard')({
 	beforeLoad: async () => {
 		const session = await getUserForce()

@@ -3,7 +3,7 @@ import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/$orgSlug/$orgSlug/recipes')({
+export const Route = createFileRoute('/$orgSlug/recipes')({
 	component: RecipesTable,
 	loader: async ({ context }) => {
 		const session = context.session

@@ -9,6 +9,7 @@ export const Route = createFileRoute('/')({
 })
 
 function HomeComponent() {
+	const { session } = Route.useRouteContext()
 	const healthCheck = useQuery(orpc.healthCheck.queryOptions())
 
 	return (
@@ -30,7 +31,7 @@ function HomeComponent() {
 					</div>
 				</section>
 				<section className='flex gap-4 items-center p-4 rounded-lg border'>
-					<UserMenu />
+					<UserMenu session={session} />
 				</section>
 			</div>
 		</div>
