@@ -30,6 +30,7 @@ function RouteComponent() {
 	const [isMutatingExercises, setIsMutatingExercises] = useState(false)
 	const [isGeneratingData, setIsGeneratingData] = useState(false)
 	const [isGeneratingRecipes, setIsGeneratingRecipes] = useState(false)
+	const [isGeneratingExercises, setIsGeneratingExercises] = useState(false)
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
@@ -66,6 +67,15 @@ function RouteComponent() {
 			onMutate: () => setIsGeneratingRecipes(true),
 			onSettled: () => setIsGeneratingRecipes(false),
 			onSuccess: () => toast.success('10 recipes generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateExercises = useMutation(
+		orpc.adminSetup.generateExercises.mutationOptions({
+			onMutate: () => setIsGeneratingExercises(true),
+			onSettled: () => setIsGeneratingExercises(false),
+			onSuccess: () => toast.success('10 exercises generated successfully'),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -127,15 +137,66 @@ function RouteComponent() {
 						</select>
 					</div>
 
+				<LoadingButton
+					variant='default'
+					loading={isGeneratingRecipes}
+					disabled={!selectedOrgId}
+					className='w-full cursor-pointer'
+					onMouseDown={() => {
+						if (selectedOrgId) {
+							generateRecipes.mutate({ organisationId: selectedOrgId })
+						}
+					}}
+				>
+					Generate 10 Recipes
+				</LoadingButton>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Exercises</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10 random exercises with
+					various training parameters.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label htmlFor='org-select-exercises' className='text-sm font-medium'>
+							Select Organization
+						</label>
+						<select
+							id='org-select-exercises'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
 					<LoadingButton
 						variant='default'
-						loading={isGeneratingRecipes}
+						loading={isGeneratingExercises}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
 						onMouseDown={() => {
 							if (selectedOrgId) {
-								generateRecipes.mutate({ organisationId: selectedOrgId })
+								generateExercises.mutate({ organisationId: selectedOrgId })
 							}
+						}}
+					>
+						Generate 10 Exercises
+					</LoadingButton>
+				</div>
+			</div>
+		</div>
+	)
+}
 						}}
 					>
 						Generate 10 Recipes

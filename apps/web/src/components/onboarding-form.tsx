@@ -12,6 +12,11 @@ import {
 	CardTitle,
 } from '@/components/ui/card'
 import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from '@/components/ui/collapsible'
+import {
 	Field,
 	FieldDescription,
 	FieldError,
@@ -39,7 +44,7 @@ import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { Check, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Check, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
@@ -102,6 +107,7 @@ export function OnboardingForm() {
 	const [billingInterval, setBillingInterval] = useState<'monthly' | 'yearly'>(
 		'monthly',
 	)
+	const [isAccessCodeOpen, setIsAccessCodeOpen] = useState(false)
 	const navigate = useNavigate()
 
 	const { data: publicPlans } = useQuery(
@@ -376,25 +382,6 @@ export function OnboardingForm() {
 									Select the best plan for your organisation's needs.
 								</p>
 
-								<div className='mx-auto mt-6 max-w-sm'>
-									<InputGroup>
-										<Input
-											placeholder='Access code (optional)'
-											value={accessCode}
-											onChange={(e) => setAccessCode(e.target.value)}
-										/>
-										<LoadingButton
-											type='button'
-											variant='secondary'
-											onClick={() => validateCode.mutate({ code: accessCode })}
-											disabled={!accessCode}
-											loading={validateCode.isPending}
-										>
-											Apply
-										</LoadingButton>
-									</InputGroup>
-								</div>
-
 								<div className='flex justify-center items-center mt-6 space-x-4'>
 									<button
 										type='button'
@@ -531,6 +518,53 @@ export function OnboardingForm() {
 										</>
 									)}
 								</form.Field>
+							</div>
+
+							{/* Access Code Collapsible */}
+							<div className='mx-auto max-w-lg'>
+								<Collapsible
+									open={isAccessCodeOpen}
+									onOpenChange={setIsAccessCodeOpen}
+								>
+									<CollapsibleTrigger
+										render={
+											<Button variant='ghost'>Have an access code?</Button>
+										}
+									>
+										<span>Have an access code?</span>
+										<ChevronDown
+											className={cn(
+												'w-4 h-4 transition-transform',
+												isAccessCodeOpen ? 'rotate-180' : '',
+											)}
+										/>
+									</CollapsibleTrigger>
+									<CollapsibleContent>
+										<div className='p-4 rounded-lg border bg-muted/50'>
+											<p className='mb-3 text-sm text-muted-foreground'>
+												Enter your access code to unlock hidden plans.
+											</p>
+											<InputGroup>
+												<Input
+													placeholder='Access code'
+													value={accessCode}
+													onChange={(e) => setAccessCode(e.target.value)}
+												/>
+												<LoadingButton
+													type='button'
+													variant='secondary'
+													onClick={() =>
+														validateCode.mutate({ code: accessCode })
+													}
+													disabled={!accessCode}
+													loading={validateCode.isPending}
+												>
+													Apply
+												</LoadingButton>
+											</InputGroup>
+										</div>
+									</CollapsibleContent>
+								</Collapsible>
 							</div>
 
 							<div className='flex justify-between items-center mt-8'>

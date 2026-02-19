@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 
-import { ExerciseCreateDialog } from '@/components/admin/exercise-create-dialog'
+import { MovementCreateDialog } from '@/components/admin/movement-create-dialog'
+import { MovementRowActions } from '@/components/admin/movement-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -19,21 +20,23 @@ import { createColumnHelper } from '@tanstack/react-table'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface Exercise {
+// Define the shape of our data
+interface Movement {
 	id: string
 	name: string
-	movementName: string | null
-	sets: number | null
-	reps: number | null
-	repUnit: string | null
-	ormPercent: number | null
-	targetRpe: number | null
-	restTime: number | null
-	restUnit: string | null
+	level: string | null
+	category: string
+	force: string | null
+	mechanic: string | null
+	equipment: string | null
+	primaryMuscles: string
+	secondaryMuscles: string
 	createdAt: Date
+	isBase: boolean
+	isOverwriteBase: boolean
 }
 
-const columnHelper = createColumnHelper<Exercise>()
+const columnHelper = createColumnHelper<Movement>()
 
 const columns = [
 	columnHelper.display({
@@ -72,75 +75,71 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('movementName', {
+	columnHelper.accessor('level', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Movement' />
+			<DataTableColumnHeader column={column} label='Level' />
 		),
 		meta: {
-			label: 'Movement',
+			label: 'Level',
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('sets', {
+	columnHelper.accessor('category', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Sets' />
+			<DataTableColumnHeader column={column} label='Category' />
 		),
 		meta: {
-			label: 'Sets',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('reps', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Reps' />
-		),
-		meta: {
-			label: 'Reps',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('repUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rep Unit' />
-		),
-		meta: {
-			label: 'Rep Unit',
+			label: 'Category',
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('ormPercent', {
+	columnHelper.accessor('force', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='% 1RM' />
+			<DataTableColumnHeader column={column} label='Force' />
 		),
-		cell: ({ row }) => {
-			const value = row.getValue('ormPercent') as number | null
-			return value ? `${value}%` : '-'
-		},
 		meta: {
-			label: '% 1RM',
-			variant: 'number',
+			label: 'Force',
+			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('targetRpe', {
+	columnHelper.accessor('mechanic', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Target RPE' />
+			<DataTableColumnHeader column={column} label='Mechanic' />
 		),
 		meta: {
-			label: 'Target RPE',
-			variant: 'number',
+			label: 'Mechanic',
+			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('restTime', {
+	columnHelper.accessor('equipment', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest' />
+			<DataTableColumnHeader column={column} label='Equipment' />
 		),
-		cell: ({ row }) => {
-			const time = row.getValue('restTime') as number | null
-			const unit = row.getValue('restUnit') as string | null
-			return time ? `${time} ${unit || 's'}` : '-'
-		},
 		meta: {
-			label: 'Rest',
+			label: 'Equipment',
+			variant: 'text', // Could be select if we have a finite list
+		},
+	}),
+	columnHelper.accessor('primaryMuscles', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Primary Muscles' />
+		),
+		meta: {
+			label: 'Primary Muscles',
+			variant: 'text',
+		},
+	}),
+	columnHelper.accessor('secondaryMuscles', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Secondary Muscles' />
+		),
+		cell: ({ row }) => (
+			<div className='max-w-35 truncate'>
+				{row.getValue('secondaryMuscles')}
+			</div>
+		),
+		meta: {
+			label: 'Secondary Muscles',
 			variant: 'text',
 		},
 	}),
@@ -154,11 +153,47 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.accessor('isBase', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Is Base' />
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getValue('isBase')}
+				disabled
+				aria-label='Is Base'
+			/>
+		),
+		meta: {
+			label: 'Is Base',
+			variant: 'boolean',
+		},
+	}),
+	columnHelper.accessor('isOverwriteBase', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Overwrite Base' />
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getValue('isOverwriteBase')}
+				disabled
+				aria-label='Overwrite Base'
+			/>
+		),
+		meta: {
+			label: 'Overwrite Base',
+			variant: 'boolean',
+		},
+	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <MovementRowActions row={row} />,
+	}),
 ]
 
-const route = getRouteApi('/$orgSlug/exercises')
+const route = getRouteApi('/$orgSlug/movements')
 
-export function ExercisesTable() {
+export function MovementsTable() {
 	const { session } = route.useRouteContext()
 
 	const userOrgId = session.user.organisationId
@@ -167,8 +202,8 @@ export function ExercisesTable() {
 }
 
 const Table = ({ userOrgId }: { userOrgId: string }) => {
-	const { data: exercises } = useSuspenseQuery(
-		orpc.exercise.getAllOrg.queryOptions({
+	const { data: movements } = useSuspenseQuery(
+		orpc.movement.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -177,7 +212,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Exercise>(
+		getSortingStateParser<Movement>(
 			columns
 				// TODO any
 				.map((c) => (c as any).accessorKey)
@@ -185,16 +220,16 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const exercisesData = (exercises as Exercise[]) ?? []
+	const movementsData = (movements as Movement[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...exercisesData]
+		const processed = [...movementsData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Exercise]
-				const bValue = b[id as keyof Exercise]
+				const aValue = a[id as keyof Movement]
+				const bValue = b[id as keyof Movement]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -212,7 +247,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [exercisesData, page, perPage, sorting])
+	}, [movementsData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -228,8 +263,8 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
+				<h1 className='text-2xl font-bold tracking-tight'>Movements</h1>
+				<MovementCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

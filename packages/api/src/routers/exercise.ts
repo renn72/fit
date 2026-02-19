@@ -1,16 +1,18 @@
 import { db } from '@fit/db'
-import { exercise } from '@fit/db/schema/exercise'
+import { exercise, superSetToExercise } from '@fit/db/schema/exercise'
 
 import { ORPCError } from '@orpc/server'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
 	ExerciseCreateInput,
-	ExerciseGetAllBaseInput,
-	ExerciseGetAllInput,
+	ExerciseDeleteInput,
 	ExerciseGetAllOrgInput,
 	ExerciseGetInput,
 	ExerciseUpdateInput,
+	SuperSetAddExerciseInput,
+	SuperSetGetExercisesInput,
+	SuperSetRemoveExerciseInput,
 } from '../schemas/exercise'
 
 export const exerciseRouter = {
@@ -18,27 +20,63 @@ export const exerciseRouter = {
 		.route({
 			method: 'GET',
 			path: '/exercise/all',
-			summary: 'Get all exercises (Dictator only)',
+			summary: 'Get all exercises across all organisations (dictator only)',
 			tags: ['Exercise'],
 		})
-		.input(ExerciseGetAllInput)
-		.handler(async ({ input, context }) => {
+		.handler(async ({ context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to view all exercises',
+					message: 'Only dictators can view all exercises',
 				})
 			}
 
-			const res = await db.query.exercise.findMany({
-				limit: input.limit,
+			const exercises = await db.query.exercise.findMany({
 				with: {
-					organisation: {
+					movement: {
 						columns: {
-							slug: true,
+							name: true,
 						},
 					},
 					creator: {
+						columns: {
+							name: true,
+							email: true,
+						},
+					},
+					organisation: {
+						columns: {
+							name: true,
+							slug: true,
+						},
+					},
+				},
+				orderBy: (exercise, { desc }) => [desc(exercise.createdAt)],
+			})
+
+			return exercises.map((e) => ({
+				...e,
+				movementName: e.movement?.name ?? null,
+				creatorName: e.creator?.name ?? null,
+				creatorEmail: e.creator?.email ?? null,
+				organisationName: e.organisation?.name ?? null,
+				organisationSlug: e.organisation?.slug ?? null,
+			}))
+		}),
+
+	getAllOrg: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/exercise/org',
+			summary: 'Get all exercises for an organisation',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseGetAllOrgInput)
+		.handler(async ({ input }) => {
+			const exercises = await db.query.exercise.findMany({
+				where: { organisationId: input.organisationId },
+				with: {
+					movement: {
 						columns: {
 							name: true,
 						},
@@ -46,11 +84,33 @@ export const exerciseRouter = {
 				},
 			})
 
-			return res.map((e) => ({
+			return exercises.map((e) => ({
 				...e,
-				organisationSlug: e.organisation?.slug,
-				creatorName: e.creator?.name ?? 'Unknown',
+				movementName: e.movement?.name ?? null,
 			}))
+		}),
+
+	get: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/exercise/:id',
+			summary: 'Get an exercise by ID',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseGetInput)
+		.handler(async ({ input }) => {
+			const ex = await db.query.exercise.findFirst({
+				where: { id: input.id },
+				with: {
+					movement: {
+						columns: {
+							name: true,
+						},
+					},
+				},
+			})
+
+			return ex || null
 		}),
 
 	create: protectedProcedure
@@ -87,92 +147,6 @@ export const exerciseRouter = {
 			return newExercise
 		}),
 
-	getAllOrg: protectedProcedure
-		.route({
-			method: 'GET',
-			path: '/exercise/org',
-			summary: 'Get all exercises for an organisation',
-			tags: ['Exercise'],
-		})
-		.input(ExerciseGetAllOrgInput)
-		.handler(async ({ input }) => {
-			// Get org exercises
-			const orgExercises = await db.query.exercise.findMany({
-				where: { organisationId: input.organisationId },
-			})
-
-			const overwrittenBaseIds = orgExercises
-				.map((e) => e.baseId)
-				.filter((id): id is string => id !== null)
-
-			// Get base exercises (isBase=true, not overwritten by org)
-			const baseExercises = await db.query.exercise.findMany({
-				where: { isBase: true },
-			})
-
-			const availableBaseExercises = baseExercises.filter(
-				(be) => !overwrittenBaseIds.includes(be.id),
-			)
-
-			const allExercises = [
-				...orgExercises.map((e) => ({
-					...e,
-					isBase: false,
-					isOverwriteBase: !!e.baseId,
-				})),
-				...availableBaseExercises.map((be) => ({
-					...be,
-					isBase: true,
-					isOverwriteBase: false,
-				})),
-			]
-
-			if (input.limit) {
-				return allExercises.slice(0, input.limit)
-			}
-
-			return allExercises
-		}),
-
-	get: protectedProcedure
-		.route({
-			method: 'GET',
-			path: '/exercise/:id',
-			summary: 'Get an exercise by ID',
-			tags: ['Exercise'],
-		})
-		.input(ExerciseGetInput)
-		.handler(async ({ input }) => {
-			const ex = await db.query.exercise.findFirst({
-				where: { id: input.id },
-			})
-
-			return ex || null
-		}),
-
-	getAllBase: protectedProcedure
-		.route({
-			method: 'GET',
-			path: '/exercise/base',
-			summary: 'Get all base exercises',
-			tags: ['Exercise'],
-		})
-		.input(ExerciseGetAllBaseInput)
-		.handler(async ({ input, context }) => {
-			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			if (!metaTags.includes('dictator')) {
-				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to view base exercises',
-				})
-			}
-
-			const res = await db.query.exercise.findMany({
-				where: { isBase: true },
-				limit: input.limit,
-			})
-			return res
-		}),
-
 	update: protectedProcedure
 		.route({
 			method: 'PATCH',
@@ -189,73 +163,160 @@ export const exerciseRouter = {
 				})
 			}
 
-			const organisationId = context.session.user.organisationId
-			if (!organisationId) {
-				throw new ORPCError('BAD_REQUEST', {
-					message: 'User is not associated with an organisation',
+			const { id, ...updateData } = input
+
+			const [updated] = await db
+				.update(exercise)
+				.set(updateData)
+				.where(eq(exercise.id, id))
+				.returning()
+
+			if (!updated) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Exercise not found',
 				})
 			}
 
-			// 1. Check if it's an existing org exercise
-			const existingOrgExercise = await db.query.exercise.findFirst({
-				where: {
-					id: input.id,
-					organisationId: organisationId,
-				},
-			})
+			return updated
+		}),
 
-			if (existingOrgExercise) {
-				const [updated] = await db
-					.update(exercise)
-					.set({
-						name: input.name,
-						force: input.force,
-						level: input.level,
-						mechanic: input.mechanic,
-						equipment: input.equipment,
-						primaryMuscles: input.primaryMuscles,
-						secondaryMuscles: input.secondaryMuscles,
-						instructions: input.instructions,
-						category: input.category,
-						images: input.images,
-					})
-					.where(eq(exercise.id, input.id))
-					.returning()
-				return updated
+	delete: protectedProcedure
+		.route({
+			method: 'DELETE',
+			path: '/exercise/:id',
+			summary: 'Delete an exercise',
+			tags: ['Exercise'],
+		})
+		.input(ExerciseDeleteInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to delete exercises',
+				})
 			}
 
-			// 2. Check if it's a base exercise (to create an override)
-			const baseEx = await db.query.exercise.findFirst({
-				where: {
-					id: input.id,
-					isBase: true,
-				},
-			})
+			await db.delete(exercise).where(eq(exercise.id, input.id))
+			return { success: true, id: input.id }
+		}),
 
-			if (baseEx) {
-				const [newOverride] = await db
-					.insert(exercise)
-					.values({
-						name: input.name,
-						force: input.force,
-						level: input.level,
-						mechanic: input.mechanic,
-						equipment: input.equipment,
-						primaryMuscles: input.primaryMuscles,
-						secondaryMuscles: input.secondaryMuscles,
-						instructions: input.instructions,
-						category: input.category,
-						images: input.images,
-						baseId: baseEx.id,
-						organisationId,
-						creatorId: context.session.user.id,
-					})
-					.returning()
-				return newOverride
+	// ***************** Super Set Operations *******************
+	addToSuperSet: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/exercise/superset/add',
+			summary: 'Add an exercise to a superset',
+			tags: ['Exercise', 'SuperSet'],
+		})
+		.input(SuperSetAddExerciseInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to modify supersets',
+				})
 			}
 
-			throw new ORPCError('NOT_FOUND', {
-				message: 'Exercise not found',
+			// Verify the superSetId points to an exercise marked as isSuperSet
+			const superSet = await db.query.exercise.findFirst({
+				where: { id: input.superSetId },
 			})
+
+			if (!superSet) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Superset exercise not found',
+				})
+			}
+
+			if (!superSet.isSuperSet) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'The specified exercise is not marked as a superset',
+				})
+			}
+
+			// Verify the exercise exists
+			const exerciseToAdd = await db.query.exercise.findFirst({
+				where: { id: input.exerciseId },
+			})
+
+			if (!exerciseToAdd) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Exercise to add not found',
+				})
+			}
+
+			// Add the exercise to the superset
+			const [link] = await db
+				.insert(superSetToExercise)
+				.values({
+					superSetId: input.superSetId,
+					exerciseId: input.exerciseId,
+					order: input.order ?? 0,
+				})
+				.returning()
+
+			return link
+		}),
+
+	removeFromSuperSet: protectedProcedure
+		.route({
+			method: 'DELETE',
+			path: '/exercise/superset/remove',
+			summary: 'Remove an exercise from a superset',
+			tags: ['Exercise', 'SuperSet'],
+		})
+		.input(SuperSetRemoveExerciseInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to modify supersets',
+				})
+			}
+
+			await db
+				.delete(superSetToExercise)
+				.where(
+					and(
+						eq(superSetToExercise.superSetId, input.superSetId),
+						eq(superSetToExercise.exerciseId, input.exerciseId),
+					),
+				)
+
+			return { success: true }
+		}),
+
+	getSuperSetExercises: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/exercise/superset/:superSetId',
+			summary: 'Get all exercises in a superset',
+			tags: ['Exercise', 'SuperSet'],
+		})
+		.input(SuperSetGetExercisesInput)
+		.handler(async ({ input }) => {
+			const links = await db.query.superSetToExercise.findMany({
+				where: { superSetId: input.superSetId },
+				with: {
+					exercise: {
+						with: {
+							movement: {
+								columns: {
+									name: true,
+								},
+							},
+						},
+					},
+				},
+				orderBy: (link, { asc }) => [asc(link.order)],
+			})
+
+			return links.map((link) => ({
+				...link,
+				exercise: {
+					...link.exercise,
+					movementName: link.exercise?.movement?.name ?? null,
+				},
+			}))
 		}),
 }

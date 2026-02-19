@@ -1,12 +1,24 @@
 import * as auth from './schema/auth'
 import * as exercise from './schema/exercise'
 import * as ingredient from './schema/ingredient'
+import * as movement from './schema/movement'
 import * as org from './schema/org'
 import * as recipe from './schema/recipe'
+import * as workoutSession from './schema/session'
+import * as warmup from './schema/warmup'
 
 import { defineRelations } from 'drizzle-orm'
 
-const schema = { ...org, ...auth, ...exercise, ...ingredient, ...recipe }
+const schema = {
+	...org,
+	...auth,
+	...movement,
+	...ingredient,
+	...recipe,
+	...exercise,
+	...workoutSession,
+	...warmup,
+}
 
 export const relations = defineRelations(schema, (r) => ({
 	// ***************** User *******************
@@ -39,6 +51,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.user.id,
 			to: r.recipe.creatorId,
 		}),
+		movements: r.many.movement({
+			from: r.user.id,
+			to: r.movement.creatorId,
+		}),
 		exercises: r.many.exercise({
 			from: r.user.id,
 			to: r.exercise.creatorId,
@@ -57,14 +73,6 @@ export const relations = defineRelations(schema, (r) => ({
 	userToggles: {
 		user: r.one.user({
 			from: r.userToggles.userId,
-			to: r.user.id,
-		}),
-	},
-
-	// ***************** Session *******************
-	session: {
-		user: r.one.user({
-			from: r.session.userId,
 			to: r.user.id,
 		}),
 	},
@@ -101,9 +109,37 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.organisation.id,
 			to: r.recipe.organisationId,
 		}),
+		movements: r.many.movement({
+			from: r.organisation.id,
+			to: r.movement.organisationId,
+		}),
 		exercises: r.many.exercise({
 			from: r.organisation.id,
 			to: r.exercise.organisationId,
+		}),
+	},
+
+	// ***************** Movement *******************
+	movement: {
+		creator: r.one.user({
+			from: r.movement.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.movement.organisationId,
+			to: r.organisation.id,
+		}),
+		baseMovement: r.one.movement({
+			from: r.movement.baseId,
+			to: r.movement.id,
+		}),
+		overrides: r.many.movement({
+			from: r.movement.id,
+			to: r.movement.baseId,
+		}),
+		exercises: r.many.exercise({
+			from: r.movement.id,
+			to: r.exercise.movementId,
 		}),
 	},
 
@@ -117,13 +153,19 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.exercise.organisationId,
 			to: r.organisation.id,
 		}),
-		baseExercise: r.one.exercise({
-			from: r.exercise.baseId,
-			to: r.exercise.id,
+		movement: r.one.movement({
+			from: r.exercise.movementId,
+			to: r.movement.id,
 		}),
-		overrides: r.many.exercise({
+		superSetExercises: r.many.superSetToExercise({
 			from: r.exercise.id,
-			to: r.exercise.baseId,
+			to: r.superSetToExercise.superSetId,
+			alias: 'superSetParent',
+		}),
+		parentSuperSets: r.many.superSetToExercise({
+			from: r.exercise.id,
+			to: r.superSetToExercise.exerciseId,
+			alias: 'superSetChild',
 		}),
 	},
 
@@ -180,6 +222,96 @@ export const relations = defineRelations(schema, (r) => ({
 		altIngredient: r.one.ingredient({
 			from: r.recipeToIngredient.altIngredientId,
 			to: r.ingredient.id,
+		}),
+	},
+
+	// ***************** Super Set To Exercise *******************
+	superSetToExercise: {
+		superSet: r.one.exercise({
+			from: r.superSetToExercise.superSetId,
+			to: r.exercise.id,
+			alias: 'superSetParent',
+		}),
+		exercise: r.one.exercise({
+			from: r.superSetToExercise.exerciseId,
+			to: r.exercise.id,
+			alias: 'superSetChild',
+		}),
+	},
+
+	// ***************** Workout Session *******************
+	workoutSession: {
+		creator: r.one.user({
+			from: r.session.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.session.organisationId,
+			to: r.organisation.id,
+		}),
+		warmupGroup: r.one.warmupGroup({
+			from: r.session.warmupGroupId,
+			to: r.warmupGroup.id,
+		}),
+		exercises: r.many.sessionToExercise({
+			from: r.session.id,
+			to: r.sessionToExercise.sessionId,
+		}),
+		superSets: r.many.sessionToSuperSet({
+			from: r.session.id,
+			to: r.sessionToSuperSet.sessionId,
+		}),
+	},
+
+	// ***************** Session To Exercise *******************
+	sessionToExercise: {
+		session: r.one.session({
+			from: r.sessionToExercise.sessionId,
+			to: r.session.id,
+		}),
+		exercise: r.one.exercise({
+			from: r.sessionToExercise.exerciseId,
+			to: r.exercise.id,
+		}),
+	},
+
+	// ***************** Session To SuperSet *******************
+	sessionToSuperSet: {
+		session: r.one.session({
+			from: r.sessionToSuperSet.sessionId,
+			to: r.session.id,
+		}),
+		superSet: r.one.exercise({
+			from: r.sessionToSuperSet.superSetId,
+			to: r.exercise.id,
+		}),
+	},
+
+	// ***************** Warmup Group *******************
+	warmupGroup: {
+		creator: r.one.user({
+			from: r.warmupGroup.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.warmupGroup.organisationId,
+			to: r.organisation.id,
+		}),
+		warmups: r.many.warmup({
+			from: r.warmupGroup.id,
+			to: r.warmup.warmupGroupId,
+		}),
+		sessions: r.many.session({
+			from: r.warmupGroup.id,
+			to: r.session.warmupGroupId,
+		}),
+	},
+
+	// ***************** Warmup *******************
+	warmup: {
+		warmupGroup: r.one.warmupGroup({
+			from: r.warmup.warmupGroupId,
+			to: r.warmupGroup.id,
 		}),
 	},
 

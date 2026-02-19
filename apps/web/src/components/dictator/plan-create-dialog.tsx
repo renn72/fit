@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ExerciseCreateForm } from '@/components/admin/exercise-create-form'
+import { PlanCreateForm } from '@/components/dictator/plan-create-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -13,35 +13,24 @@ import {
 	DialogTrigger,
 } from '@/components/ui/dialog'
 
-import { useRouteContext } from '@tanstack/react-router'
-
 import { PlusIcon } from '@phosphor-icons/react'
 
-export function ExerciseCreateDialog() {
+export function PlanCreateDialog() {
 	const [open, setOpen] = useState(false)
-	const { session } = useRouteContext({ from: '/$orgSlug/exercises' })
-	const userOrgId = session?.user?.organisationId
-
-	if (!userOrgId) {
-		return null
-	}
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size='sm' className='gap-2' />}>
-				<PlusIcon /> Add Exercise
+				<PlusIcon /> Create Plan
 			</DialogTrigger>
 			<DialogContent className='overflow-y-auto sm:max-w-2xl max-h-[90vh]'>
 				<DialogHeader>
-					<DialogTitle>Create Exercise</DialogTitle>
+					<DialogTitle>Create Plan</DialogTitle>
 					<DialogDescription>
-						Add a new exercise to your organisation.
+						Add a new subscription plan to the platform.
 					</DialogDescription>
 				</DialogHeader>
-				<ExerciseCreateForm
-					onSuccess={() => setOpen(false)}
-					organisationId={userOrgId}
-				/>
+				<PlanCreateForm onSuccess={() => setOpen(false)} />
 			</DialogContent>
 		</Dialog>
 	)

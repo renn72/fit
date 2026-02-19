@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { IngredientEditForm } from '@/components/admin/ingredient-edit-form'
+import { PlanEditForm } from '@/components/dictator/plan-edit-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -17,31 +17,56 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { orpc } from '@/utils/orpc'
 
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import type { Row } from '@tanstack/react-table'
 
 import { DotsThreeOutlineVerticalIcon } from '@phosphor-icons/react'
+import { toast } from 'sonner'
 
-interface Ingredient {
+interface Plan {
 	id: string
 	name: string
-	calories: number
-	protein: number
-	fat: number
-	carbohydrate: number
-	serveSize: number
-	serveUnit: string
+	description: string
+	features: string
+	cta: string
+	priceMonthly: number
+	priceYearly: number
+	maxMembers: number
+	maxTrainers: number
+	tags: string
+	hidden: boolean
 }
 
-interface IngredientRowActionsProps<TData> {
+interface PlanRowActionsProps<TData> {
 	row: Row<TData>
 }
 
-export function IngredientRowActions<TData>({
-	row,
-}: IngredientRowActionsProps<TData>) {
+export function PlanRowActions<TData>({ row }: PlanRowActionsProps<TData>) {
 	const [isEditOpen, setIsEditOpen] = useState(false)
-	const ingredient = row.original as Ingredient
+	const plan = row.original as Plan
+	const queryClient = useQueryClient()
+
+	const deletePlan = useMutation(
+		orpc.organisation.deletePlan.mutationOptions({
+			onSuccess: () => {
+				toast.success('Plan deleted successfully')
+				queryClient.invalidateQueries({
+					queryKey: orpc.organisation.getAllPlansAdmin.key(),
+				})
+			},
+			onError: (error) => {
+				toast.error(error.message)
+			},
+		}),
+	)
+
+	const handleDelete = () => {
+		if (window.confirm(`Are you sure you want to delete "${plan.name}"?`)) {
+			deletePlan.mutate({ id: plan.id })
+		}
+	}
 
 	return (
 		<>
@@ -64,10 +89,19 @@ export function IngredientRowActions<TData>({
 							e.preventDefault()
 							e.stopPropagation()
 							setIsEditOpen(true)
-							console.log('hi')
 						}}
 					>
 						Edit
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						onMouseDown={(e) => {
+							e.preventDefault()
+							e.stopPropagation()
+							handleDelete()
+						}}
+						className='text-destructive'
+					>
+						Delete
 					</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
@@ -79,15 +113,10 @@ export function IngredientRowActions<TData>({
 			>
 				<DialogContent className='overflow-y-auto sm:max-w-2xl max-h-[90vh]'>
 					<DialogHeader>
-						<DialogTitle>Edit Ingredient</DialogTitle>
-						<DialogDescription>
-							Update the ingredient details.
-						</DialogDescription>
+						<DialogTitle>Edit Plan</DialogTitle>
+						<DialogDescription>Update the plan details.</DialogDescription>
 					</DialogHeader>
-					<IngredientEditForm
-						ingredient={ingredient}
-						onSuccess={() => setIsEditOpen(false)}
-					/>
+					<PlanEditForm plan={plan} onSuccess={() => setIsEditOpen(false)} />
 				</DialogContent>
 			</Dialog>
 		</>

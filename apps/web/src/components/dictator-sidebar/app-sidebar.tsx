@@ -18,7 +18,6 @@ import {
 	LifebuoyIcon,
 	PaperPlaneTiltIcon,
 	RobotIcon,
-	TerminalIcon,
 } from '@phosphor-icons/react'
 
 const data = {
@@ -43,6 +42,10 @@ const data = {
 					url: '/dictator/orgs',
 				},
 				{
+					title: 'Plans',
+					url: '/dictator/plans',
+				},
+				{
 					title: 'Generation',
 					url: '/dictator/generation',
 				},
@@ -58,8 +61,8 @@ const data = {
 					url: '/dictator/base-ingredients',
 				},
 				{
-					title: 'Base Exercises',
-					url: '/dictator/base-exercises',
+					title: 'Base Movements',
+					url: '/dictator/base-movements',
 				},
 			],
 		},
@@ -73,8 +76,12 @@ const data = {
 					url: '/dictator/org-ingredients',
 				},
 				{
-					title: 'Org Exercises',
-					url: '/dictator/org-exercises',
+					title: 'Org Movements',
+					url: '/dictator/org-movements',
+				},
+				{
+					title: 'Exercises',
+					url: '/dictator/exercises',
 				},
 			],
 		},

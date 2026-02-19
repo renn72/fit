@@ -9,38 +9,54 @@ export const ExerciseGetInput = z.object({
 	id: z.string().min(1),
 })
 
-export const ExerciseGetAllBaseInput = z.object({
-	limit: z.number().optional(),
-})
-
-export const ExerciseGetAllInput = z.object({
-	limit: z.number().optional(),
-})
-
 export const ExerciseCreateInput = z.object({
 	name: z.string().min(1),
-	force: z.string().optional().nullable(),
-	level: z.string().optional().nullable(),
-	mechanic: z.string().optional().nullable(),
-	equipment: z.string().optional().nullable(),
-	primaryMuscles: z.string().optional().nullable(),
-	secondaryMuscles: z.string().optional().nullable(),
-	instructions: z.string().optional().nullable(),
-	category: z.string().optional().nullable(),
-	images: z.string().optional().nullable(),
-	baseId: z.string().optional().nullable(),
+	movementId: z.string().optional().nullable(),
+	sets: z.number().int().optional().nullable(),
+	reps: z.number().int().optional().nullable(),
+	repUnit: z.string().optional().nullable(),
+	ormPercent: z.number().optional().nullable(),
+	targetRpe: z.number().optional().nullable(),
+	restTime: z.number().int().optional().nullable(),
+	restUnit: z.string().optional().nullable(),
+	tempoDown: z.number().int().optional().nullable(),
+	tempoPause: z.number().int().optional().nullable(),
+	tempoUp: z.number().int().optional().nullable(),
+	notes: z.string().optional().nullable(),
 })
 
 export const ExerciseUpdateInput = z.object({
 	id: z.string().min(1),
-	name: z.string().min(1),
-	force: z.string().optional().nullable(),
-	level: z.string().optional().nullable(),
-	mechanic: z.string().optional().nullable(),
-	equipment: z.string().optional().nullable(),
-	primaryMuscles: z.string().optional().nullable(),
-	secondaryMuscles: z.string().optional().nullable(),
-	instructions: z.string().optional().nullable(),
-	category: z.string().optional().nullable(),
-	images: z.string().optional().nullable(),
+	name: z.string().min(1).optional(),
+	movementId: z.string().optional().nullable(),
+	sets: z.number().int().optional().nullable(),
+	reps: z.number().int().optional().nullable(),
+	repUnit: z.string().optional().nullable(),
+	ormPercent: z.number().optional().nullable(),
+	targetRpe: z.number().optional().nullable(),
+	restTime: z.number().int().optional().nullable(),
+	restUnit: z.string().optional().nullable(),
+	tempoDown: z.number().int().optional().nullable(),
+	tempoPause: z.number().int().optional().nullable(),
+	tempoUp: z.number().int().optional().nullable(),
+	notes: z.string().optional().nullable(),
+})
+
+export const ExerciseDeleteInput = z.object({
+	id: z.string().min(1),
+})
+
+export const SuperSetAddExerciseInput = z.object({
+	superSetId: z.string().min(1),
+	exerciseId: z.string().min(1),
+	order: z.number().int().optional(),
+})
+
+export const SuperSetRemoveExerciseInput = z.object({
+	superSetId: z.string().min(1),
+	exerciseId: z.string().min(1),
+})
+
+export const SuperSetGetExercisesInput = z.object({
+	superSetId: z.string().min(1),
 })

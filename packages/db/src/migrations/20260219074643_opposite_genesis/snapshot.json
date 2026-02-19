@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "6097bcd1-7b83-4777-bce9-4cf5119b94b6",
+  "id": "4488a496-3b16-4ac7-b6a4-a805e81dfc0a",
   "prevIds": [
-    "00000000-0000-0000-0000-000000000000"
+    "a51f8d4d-c177-49d0-b380-4c12d5a56437"
   ],
   "ddl": [
     {
@@ -35,7 +35,15 @@
       "entityType": "tables"
     },
     {
+      "name": "super_set_to_exercise",
+      "entityType": "tables"
+    },
+    {
       "name": "ingredient",
+      "entityType": "tables"
+    },
+    {
+      "name": "movement",
       "entityType": "tables"
     },
     {
@@ -658,7 +666,27 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "force",
+      "name": "movement_id",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "sets",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "reps",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -668,7 +696,37 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "level",
+      "name": "rep_unit",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "orm_percent",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "real",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "target_rpe",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "rest_time",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -678,7 +736,37 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "mechanic",
+      "name": "rest_unit",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "tempo_down",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "tempo_pause",
+      "entityType": "columns",
+      "table": "exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "tempo_up",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -688,57 +776,7 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
-      "name": "equipment",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "primary_muscles",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "secondary_muscles",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "instructions",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "category",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "images",
+      "name": "notes",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -748,17 +786,7 @@
       "autoincrement": false,
       "default": "false",
       "generated": null,
-      "name": "is_base",
-      "entityType": "columns",
-      "table": "exercise"
-    },
-    {
-      "type": "text",
-      "notNull": false,
-      "autoincrement": false,
-      "default": null,
-      "generated": null,
-      "name": "base_id",
+      "name": "is_superset",
       "entityType": "columns",
       "table": "exercise"
     },
@@ -801,6 +829,56 @@
       "name": "updated_at",
       "entityType": "columns",
       "table": "exercise"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "super_set_id",
+      "entityType": "columns",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "exercise_id",
+      "entityType": "columns",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "order",
+      "entityType": "columns",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "super_set_to_exercise"
     },
     {
       "type": "text",
@@ -951,6 +1029,176 @@
       "name": "updated_at",
       "entityType": "columns",
       "table": "ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "force",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "level",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "mechanic",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "equipment",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "primary_muscles",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "secondary_muscles",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "instructions",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "images",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "false",
+      "generated": null,
+      "name": "is_base",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "base_id",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "movement"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "movement"
     },
     {
       "type": "text",
@@ -1504,16 +1752,16 @@
     },
     {
       "columns": [
-        "base_id"
+        "movement_id"
       ],
-      "tableTo": "exercise",
+      "tableTo": "movement",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
       "nameExplicit": false,
-      "name": "fk_exercise_base_id_exercise_id_fk",
+      "name": "fk_exercise_movement_id_movement_id_fk",
       "entityType": "fks",
       "table": "exercise"
     },
@@ -1546,6 +1794,36 @@
       "name": "fk_exercise_organisation_id_organisation_id_fk",
       "entityType": "fks",
       "table": "exercise"
+    },
+    {
+      "columns": [
+        "super_set_id"
+      ],
+      "tableTo": "exercise",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_super_set_to_exercise_super_set_id_exercise_id_fk",
+      "entityType": "fks",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "columns": [
+        "exercise_id"
+      ],
+      "tableTo": "exercise",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_super_set_to_exercise_exercise_id_exercise_id_fk",
+      "entityType": "fks",
+      "table": "super_set_to_exercise"
     },
     {
       "columns": [
@@ -1591,6 +1869,51 @@
       "name": "fk_ingredient_organisation_id_organisation_id_fk",
       "entityType": "fks",
       "table": "ingredient"
+    },
+    {
+      "columns": [
+        "base_id"
+      ],
+      "tableTo": "movement",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_movement_base_id_movement_id_fk",
+      "entityType": "fks",
+      "table": "movement"
+    },
+    {
+      "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_movement_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "movement"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_movement_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "movement"
     },
     {
       "columns": [
@@ -1780,8 +2103,26 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "super_set_to_exercise_pk",
+      "table": "super_set_to_exercise",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "ingredient_pk",
       "table": "ingredient",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "movement_pk",
+      "table": "movement",
       "entityType": "pks"
     },
     {
@@ -1897,6 +2238,20 @@
     {
       "columns": [
         {
+          "value": "movement_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "exercise_movementId_idx",
+      "entityType": "indexes",
+      "table": "exercise"
+    },
+    {
+      "columns": [
+        {
           "value": "organisation_id",
           "isExpression": false
         }
@@ -1911,16 +2266,62 @@
     {
       "columns": [
         {
-          "value": "is_base",
+          "value": "is_superset",
           "isExpression": false
         }
       ],
       "isUnique": false,
       "where": null,
       "origin": "manual",
-      "name": "exercise_isBase_idx",
+      "name": "exercise_isSuperSet_idx",
       "entityType": "indexes",
       "table": "exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "super_set_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "superset_superSetId_idx",
+      "entityType": "indexes",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "exercise_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "superset_exerciseId_idx",
+      "entityType": "indexes",
+      "table": "super_set_to_exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "super_set_id",
+          "isExpression": false
+        },
+        {
+          "value": "exercise_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "superset_unique_idx",
+      "entityType": "indexes",
+      "table": "super_set_to_exercise"
     },
     {
       "columns": [
@@ -1949,6 +2350,34 @@
       "name": "ingredient_isBase_idx",
       "entityType": "indexes",
       "table": "ingredient"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "movement_organisationId_idx",
+      "entityType": "indexes",
+      "table": "movement"
+    },
+    {
+      "columns": [
+        {
+          "value": "is_base",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "movement_isBase_idx",
+      "entityType": "indexes",
+      "table": "movement"
     },
     {
       "columns": [

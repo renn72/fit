@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ExerciseEditForm } from '@/components/admin/exercise-edit-form'
+import { ExerciseEditForm } from '@/components/admin/movement-edit-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -20,7 +20,7 @@ import {
 
 import type { Row } from '@tanstack/react-table'
 
-import { DotsThreeOutlineIcon } from '@phosphor-icons/react'
+import { DotsThreeOutlineVerticalIcon } from '@phosphor-icons/react'
 
 interface Exercise {
 	id: string
@@ -36,13 +36,13 @@ interface Exercise {
 	images: string | null
 }
 
-interface ExerciseRowActionsProps<TData> {
+interface MovementRowActionsProps<TData> {
 	row: Row<TData>
 }
 
-export function ExerciseRowActions<TData>({
+export function MovementRowActions<TData>({
 	row,
-}: ExerciseRowActionsProps<TData>) {
+}: MovementRowActionsProps<TData>) {
 	const [isEditOpen, setIsEditOpen] = useState(false)
 	const exercise = row.original as Exercise
 
@@ -52,12 +52,13 @@ export function ExerciseRowActions<TData>({
 				<DropdownMenuTrigger
 					render={
 						<Button
+							size='icon'
 							variant='ghost'
-							className='flex h-8 w-8 p-0 data-[state=open]:bg-muted'
+							className='flex items-start p-0 data-[state=open]:bg-muted'
 						/>
 					}
 				>
-					<DotsThreeOutlineIcon weight='bold' className='w-4 h-4' />
+					<DotsThreeOutlineVerticalIcon weight='bold' className='w-4 h-4' />
 					<span className='sr-only'>Open menu</span>
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align='end' className='w-[160px]'>

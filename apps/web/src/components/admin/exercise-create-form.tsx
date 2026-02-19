@@ -10,64 +10,47 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { TagsInput } from '@/components/ui-extended/tags-input'
+import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { toast } from 'sonner'
 import { z } from 'zod'
 
 const exerciseCreateSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
-	category: z.array(z.string()),
-	level: z.array(z.string()),
-	force: z.array(z.string()),
-	mechanic: z.array(z.string()),
-	equipment: z.array(z.string()),
-	primaryMuscles: z.array(z.string()),
-	secondaryMuscles: z.array(z.string()),
-	instructions: z.string(),
-	images: z.string(),
+	movementId: z.string().optional().nullable(),
+	sets: z.number().int().min(1).optional().nullable(),
+	reps: z.number().int().min(1).optional().nullable(),
+	repUnit: z.string().optional().nullable(),
+	ormPercent: z.number().min(0).max(100).optional().nullable(),
+	targetRpe: z.number().min(1).max(10).optional().nullable(),
+	restTime: z.number().int().min(0).optional().nullable(),
+	restUnit: z.string().optional().nullable(),
+	tempoDown: z.number().int().min(0).optional().nullable(),
+	tempoPause: z.number().int().min(0).optional().nullable(),
+	tempoUp: z.number().int().min(0).optional().nullable(),
+	notes: z.string().optional().nullable(),
 })
 
 export interface ExerciseCreateFormProps {
 	onSuccess?: () => void
+	organisationId: string
 }
 
-const categories = [
-	'strength',
-	'stretching',
-	'plyometrics',
-	'strongman',
-	'powerlifting',
-	'cardio',
-	'olympic weightlifting',
-]
-
-const levels = ['beginner', 'intermediate', 'expert']
-
-const forces = ['push', 'pull', 'static']
-
-const mechanics = ['compound', 'isolation']
-
-const equipments = [
-	'body only',
-	'machine',
-	'kettlebells',
-	'dumbbell',
-	'cable',
-	'barbell',
-	'bands',
-	'medicine ball',
-	'exercise ball',
-	'e-z curl bar',
-	'foam roll',
-]
-
-export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
+export function ExerciseCreateForm({
+	onSuccess,
+	organisationId,
+}: ExerciseCreateFormProps) {
 	const queryClient = useQueryClient()
+
+	const { data: movements } = useQuery(
+		orpc.movement.getAllOrg.queryOptions({
+			input: { organisationId },
+		}),
+	)
 
 	const createExercise = useMutation(
 		orpc.exercise.create.mutationOptions({
@@ -84,18 +67,27 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 		}),
 	)
 
+	const movementOptions =
+		movements?.map((m) => ({
+			value: m.id,
+			label: m.name,
+		})) ?? []
+
 	const form = useForm({
 		defaultValues: {
 			name: '',
-			category: [] as string[],
-			level: [] as string[],
-			force: [] as string[],
-			mechanic: [] as string[],
-			equipment: [] as string[],
-			primaryMuscles: [] as string[],
-			secondaryMuscles: [] as string[],
-			instructions: '',
-			images: '',
+			movementId: null as string | null,
+			sets: null as number | null,
+			reps: null as number | null,
+			repUnit: '' as string | null,
+			ormPercent: null as number | null,
+			targetRpe: null as number | null,
+			restTime: null as number | null,
+			restUnit: 'seconds' as string | null,
+			tempoDown: null as number | null,
+			tempoPause: null as number | null,
+			tempoUp: null as number | null,
+			notes: '' as string | null,
 		},
 		validators: {
 			onSubmit: exerciseCreateSchema,
@@ -103,22 +95,9 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 		onSubmit: async ({ value }) => {
 			await createExercise.mutateAsync({
 				...value,
-				category: value.category.length === 0 ? null : value.category.join(','),
-				level: value.level.length === 0 ? null : value.level.join(','),
-				force: value.force.length === 0 ? null : value.force.join(','),
-				mechanic: value.mechanic.length === 0 ? null : value.mechanic.join(','),
-				equipment:
-					value.equipment.length === 0 ? null : value.equipment.join(','),
-				primaryMuscles:
-					value.primaryMuscles.length === 0
-						? null
-						: value.primaryMuscles.join(','),
-				secondaryMuscles:
-					value.secondaryMuscles.length === 0
-						? null
-						: value.secondaryMuscles.join(','),
-				instructions: value.instructions === '' ? null : value.instructions,
-				images: value.images === '' ? null : value.images,
+				repUnit: value.repUnit || null,
+				restUnit: value.restUnit || null,
+				notes: value.notes || null,
 			})
 		},
 	})
@@ -136,154 +115,266 @@ export function ExerciseCreateForm({ onSuccess }: ExerciseCreateFormProps) {
 				<form.Field name='name'>
 					{(field) => (
 						<Field data-invalid={field.state.meta.errors.length > 0}>
-							<FieldLabel htmlFor={field.name}>Name</FieldLabel>
+							<FieldLabel htmlFor={field.name}>Name *</FieldLabel>
 							<Input
 								id={field.name}
 								name={field.name}
 								value={field.state.value}
 								onBlur={field.handleBlur}
 								onChange={(e) => field.handleChange(e.target.value)}
+								placeholder='e.g., Bench Press - Week 1'
 							/>
 							<FieldError errors={field.state.meta.errors} />
 						</Field>
 					)}
 				</form.Field>
 
-				<div className='grid grid-cols-2 gap-4'>
-					<form.Field name='category'>
+				<form.Field name='movementId'>
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Movement</FieldLabel>
+							<VirtualizedCombobox
+								options={movementOptions}
+								selectedOption={field.state.value || ''}
+								onSelectOption={(val) => field.handleChange(val || null)}
+								searchPlaceholder='Select a movement...'
+								width='100%'
+								height='200px'
+							/>
+							<FieldDescription>
+								Link this exercise to a base movement
+							</FieldDescription>
+						</Field>
+					)}
+				</form.Field>
+
+				<div className='grid grid-cols-3 gap-4'>
+					<form.Field name='sets'>
 						{(field) => (
 							<Field data-invalid={field.state.meta.errors.length > 0}>
-								<FieldLabel htmlFor={field.name}>Category</FieldLabel>
-								<TagsInput
-									value={field.state.value}
-									onValueChange={field.handleChange}
-									suggestions={categories}
-									placeholder='Select or type category...'
+								<FieldLabel htmlFor={field.name}>Sets</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
 								/>
 								<FieldError errors={field.state.meta.errors} />
 							</Field>
 						)}
 					</form.Field>
 
-					<form.Field name='level'>
+					<form.Field name='reps'>
 						{(field) => (
 							<Field data-invalid={field.state.meta.errors.length > 0}>
-								<FieldLabel htmlFor={field.name}>Level</FieldLabel>
-								<TagsInput
-									value={field.state.value}
-									onValueChange={field.handleChange}
-									suggestions={levels}
-									placeholder='Select or type level...'
+								<FieldLabel htmlFor={field.name}>Reps</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
 								/>
 								<FieldError errors={field.state.meta.errors} />
+							</Field>
+						)}
+					</form.Field>
+
+					<form.Field name='repUnit'>
+						{(field) => (
+							<Field>
+								<FieldLabel htmlFor={field.name}>Rep Unit</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value || null)}
+									placeholder='e.g., reps, seconds'
+								/>
+							</Field>
+						)}
+					</form.Field>
+				</div>
+
+				<div className='grid grid-cols-2 gap-4'>
+					<form.Field name='ormPercent'>
+						{(field) => (
+							<Field data-invalid={field.state.meta.errors.length > 0}>
+								<FieldLabel htmlFor={field.name}>% 1RM</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='0'
+									max='100'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(
+											val === '' ? null : Number.parseFloat(val),
+										)
+									}}
+								/>
+								<FieldError errors={field.state.meta.errors} />
+							</Field>
+						)}
+					</form.Field>
+
+					<form.Field name='targetRpe'>
+						{(field) => (
+							<Field data-invalid={field.state.meta.errors.length > 0}>
+								<FieldLabel htmlFor={field.name}>Target RPE</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='1'
+									max='10'
+									step='0.5'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(
+											val === '' ? null : Number.parseFloat(val),
+										)
+									}}
+								/>
+								<FieldDescription>
+									Rate of Perceived Exertion (1-10)
+								</FieldDescription>
+								<FieldError errors={field.state.meta.errors} />
+							</Field>
+						)}
+					</form.Field>
+				</div>
+
+				<div className='grid grid-cols-2 gap-4'>
+					<form.Field name='restTime'>
+						{(field) => (
+							<Field>
+								<FieldLabel htmlFor={field.name}>Rest Time</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='0'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
+								/>
+							</Field>
+						)}
+					</form.Field>
+
+					<form.Field name='restUnit'>
+						{(field) => (
+							<Field>
+								<FieldLabel htmlFor={field.name}>Rest Unit</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => field.handleChange(e.target.value || null)}
+									placeholder='e.g., seconds, minutes'
+								/>
 							</Field>
 						)}
 					</form.Field>
 				</div>
 
 				<div className='grid grid-cols-3 gap-4'>
-					<form.Field name='force'>
+					<form.Field name='tempoDown'>
 						{(field) => (
 							<Field>
-								<FieldLabel htmlFor={field.name}>Force</FieldLabel>
-								<TagsInput
-									value={field.state.value}
-									onValueChange={field.handleChange}
-									suggestions={forces}
-									placeholder='Select or type force...'
+								<FieldLabel htmlFor={field.name}>Tempo Down</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='0'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
+									placeholder='seconds'
 								/>
 							</Field>
 						)}
 					</form.Field>
 
-					<form.Field name='mechanic'>
+					<form.Field name='tempoPause'>
 						{(field) => (
 							<Field>
-								<FieldLabel htmlFor={field.name}>Mechanic</FieldLabel>
-								<TagsInput
-									value={field.state.value}
-									onValueChange={field.handleChange}
-									suggestions={mechanics}
-									placeholder='Select or type mechanic...'
+								<FieldLabel htmlFor={field.name}>Tempo Pause</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='0'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
+									placeholder='seconds'
 								/>
 							</Field>
 						)}
 					</form.Field>
 
-					<form.Field name='equipment'>
+					<form.Field name='tempoUp'>
 						{(field) => (
 							<Field>
-								<FieldLabel htmlFor={field.name}>Equipment</FieldLabel>
-								<TagsInput
-									value={field.state.value}
-									onValueChange={field.handleChange}
-									suggestions={equipments}
-									placeholder='Select or type equipment...'
+								<FieldLabel htmlFor={field.name}>Tempo Up</FieldLabel>
+								<Input
+									id={field.name}
+									name={field.name}
+									type='number'
+									min='0'
+									value={field.state.value ?? ''}
+									onBlur={field.handleBlur}
+									onChange={(e) => {
+										const val = e.target.value
+										field.handleChange(val === '' ? null : Number.parseInt(val))
+									}}
+									placeholder='seconds'
 								/>
 							</Field>
 						)}
 					</form.Field>
 				</div>
 
-				<form.Field name='primaryMuscles'>
-					{(field) => (
-						<Field data-invalid={field.state.meta.errors.length > 0}>
-							<FieldLabel htmlFor={field.name}>Primary Muscles</FieldLabel>
-							<TagsInput
-								value={field.state.value}
-								onValueChange={field.handleChange}
-								placeholder='e.g. chest, triceps'
-							/>
-							<FieldError errors={field.state.meta.errors} />
-						</Field>
-					)}
-				</form.Field>
-
-				<form.Field name='secondaryMuscles'>
+				<form.Field name='notes'>
 					{(field) => (
 						<Field>
-							<FieldLabel htmlFor={field.name}>Secondary Muscles</FieldLabel>
-							<TagsInput
-								value={field.state.value}
-								onValueChange={field.handleChange}
-								placeholder='e.g. shoulders'
-							/>
-						</Field>
-					)}
-				</form.Field>
-
-				<form.Field name='instructions'>
-					{(field) => (
-						<Field data-invalid={field.state.meta.errors.length > 0}>
-							<FieldLabel htmlFor={field.name}>Instructions</FieldLabel>
+							<FieldLabel htmlFor={field.name}>Notes</FieldLabel>
 							<Textarea
 								id={field.name}
 								name={field.name}
-								value={field.state.value}
+								value={field.state.value ?? ''}
 								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder='Enter instructions (comma separated steps)'
-								className='min-h-25'
-							/>
-							<FieldDescription>
-								Separate steps with commas or keep it as a single block.
-							</FieldDescription>
-							<FieldError errors={field.state.meta.errors} />
-						</Field>
-					)}
-				</form.Field>
-
-				<form.Field name='images'>
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>Images</FieldLabel>
-							<Textarea
-								id={field.name}
-								name={field.name}
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder='Image URLs (comma separated)'
+								onChange={(e) => field.handleChange(e.target.value || null)}
+								placeholder='Any additional notes...'
+								className='min-h-20'
 							/>
 						</Field>
 					)}

@@ -39,10 +39,6 @@ const data = {
 			isActive: true,
 			items: [
 				{
-					title: 'Meal Plans',
-					url: '#',
-				},
-				{
 					title: 'Recipes',
 					url: '/$orgSlug/recipes',
 				},
@@ -59,53 +55,14 @@ const data = {
 			isActive: true,
 			items: [
 				{
-					title: 'Genesis',
-					url: '#',
-				},
-				{
-					title: 'Explorer',
-					url: '#',
+					title: 'Movements',
+					url: '/$orgSlug/movements',
 				},
 				{
 					title: 'Exercises',
 					url: '/$orgSlug/exercises',
 				},
 			],
-		},
-		{
-			title: 'Root',
-			url: '#',
-			icon: <GearIcon />,
-			items: [
-				{
-					title: 'General',
-					url: '#',
-				},
-				{
-					title: 'Team',
-					url: '#',
-				},
-				{
-					title: 'Billing',
-					url: '#',
-				},
-				{
-					title: 'Limits',
-					url: '#',
-				},
-			],
-		},
-	],
-	navSecondary: [
-		{
-			title: 'Support',
-			url: '#',
-			icon: <LifebuoyIcon />,
-		},
-		{
-			title: 'Feedback',
-			url: '#',
-			icon: <PaperPlaneTiltIcon />,
 		},
 	],
 	projects: [
@@ -123,6 +80,18 @@ const data = {
 			name: 'Travel',
 			url: '#',
 			icon: <MapTrifoldIcon />,
+		},
+	],
+	navSecondary: [
+		{
+			title: 'Support',
+			url: '#',
+			icon: <LifebuoyIcon />,
+		},
+		{
+			title: 'Feedback',
+			url: '#',
+			icon: <PaperPlaneTiltIcon />,
 		},
 	],
 }

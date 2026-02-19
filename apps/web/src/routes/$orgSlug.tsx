@@ -26,7 +26,7 @@ export const Route = createFileRoute('/$orgSlug')({
 
 function LayoutRouteComponent() {
 	const { session } = Route.useRouteContext()
-	console.log('base layout route component')
+	console.log(session)
 	return (
 		<div className='[--header-height:calc(--spacing(14))]'>
 			<SidebarProvider className='flex flex-col'>

@@ -1,9 +1,12 @@
 import { adminSetupRouter } from './admin-setup'
 import { exerciseRouter } from './exercise'
 import { ingredientRouter } from './ingredient'
+import { movementRouter } from './movement'
 import { orgRouter } from './organisation'
 import { recipeRouter } from './recipe'
+import { sessionRouter } from './session'
 import { userRouter } from './user'
+import { warmupRouter } from './warmup'
 
 import type { RouterClient } from '@orpc/server'
 import { protectedProcedure, publicProcedure } from '../index'
@@ -35,9 +38,12 @@ export const appRouter = {
 	organisation: orgRouter,
 	user: userRouter,
 	adminSetup: adminSetupRouter,
+	movement: movementRouter,
 	exercise: exerciseRouter,
 	ingredient: ingredientRouter,
 	recipe: recipeRouter,
+	session: sessionRouter,
+	warmup: warmupRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>

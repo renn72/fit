@@ -2,6 +2,7 @@ import { db } from '@fit/db'
 import { user } from '@fit/db/schema/auth'
 import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
+import { movement } from '@fit/db/schema/movement'
 import { organisation } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 
@@ -78,7 +79,7 @@ export const adminSetupRouter = {
 				})
 			}
 
-			const baseExs = await db.query.exercise.findMany({
+			const baseExs = await db.query.movement.findMany({
 				where: { isBase: true },
 				limit: 5,
 			})
@@ -136,7 +137,7 @@ export const adminSetupRouter = {
 						const isOverwrite = k === 1
 						const baseEx = isOverwrite ? baseExs[i % baseExs.length] : null
 
-						await tx.insert(exercise).values({
+						await tx.insert(movement).values({
 							id: uuid(),
 							name: isOverwrite
 								? (baseEx?.name ?? 'Overwrite')
@@ -275,7 +276,7 @@ export const adminSetupRouter = {
 				let count = 0
 				for (const ex of exercises) {
 					await tx
-						.insert(exercise)
+						.insert(movement)
 						.values({
 							id: ex.id,
 							name: ex.name,
@@ -291,7 +292,7 @@ export const adminSetupRouter = {
 							isBase: true,
 						})
 						.onConflictDoUpdate({
-							target: exercise.id,
+							target: movement.id,
 							set: {
 								name: ex.name,
 								force: ex.force,
@@ -440,5 +441,97 @@ export const adminSetupRouter = {
 			})
 
 			return { message: '10 recipes generated successfully' }
+		}),
+
+	generateExercises: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-exercises',
+			summary: 'Generate random exercises for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate exercises',
+				})
+			}
+
+			const orgMovements = await db.query.movement.findMany({
+				where: { organisationId: input.organisationId },
+			})
+
+			const baseMovements = await db.query.movement.findMany({
+				where: { isBase: true },
+			})
+
+			const availableMovements = [...orgMovements, ...baseMovements]
+
+			if (availableMovements.length === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No movements found. Please import base movements first.',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const exerciseNames = [
+				'Squat Protocol',
+				'Bench Press Session',
+				'Deadlift Training',
+				'Overhead Press',
+				'Row Variation',
+				'Lunges Complex',
+				'Pull Up Routine',
+				'Dip Workout',
+				'Leg Press Session',
+				'Curl Variation',
+			]
+
+			const repUnits = ['reps', 'seconds', 'meters', 'each']
+			const restUnits = ['seconds', 'minutes']
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 10; i++) {
+					const movement =
+						availableMovements[
+							Math.floor(Math.random() * availableMovements.length)
+						]
+
+					await tx.insert(exercise).values({
+						name: exerciseNames[i] || `Exercise ${i + 1}`,
+						movementId: movement.id,
+						sets: Math.floor(Math.random() * 3) + 2,
+						reps: Math.floor(Math.random() * 8) + 3,
+						repUnit: repUnits[Math.floor(Math.random() * repUnits.length)],
+						ormPercent: Math.floor(Math.random() * 40) + 60,
+						targetRpe: Math.floor(Math.random() * 3) + 7,
+						restTime: Math.floor(Math.random() * 90) + 30,
+						restUnit: restUnits[Math.floor(Math.random() * restUnits.length)],
+						tempoDown: Math.floor(Math.random() * 3) + 1,
+						tempoPause: Math.floor(Math.random() * 2),
+						tempoUp: Math.floor(Math.random() * 2) + 1,
+						notes: `Generated exercise using ${movement.name} movement`,
+						creatorId: orgUser.id,
+						organisationId: input.organisationId,
+					})
+				}
+			})
+
+			return { message: '10 exercises generated successfully' }
 		}),
 }
