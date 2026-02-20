@@ -13,7 +13,7 @@ import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi, Link } from '@tanstack/react-router'
+import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
@@ -37,7 +37,7 @@ const columns = [
 			<Checkbox
 				checked={
 					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
+					(table.getIsSomePageRowsSelected() && undefined)
 				}
 				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
 				aria-label='Select all'

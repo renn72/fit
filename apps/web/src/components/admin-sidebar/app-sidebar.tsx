@@ -66,6 +66,10 @@ const data = {
 					title: 'Warmups',
 					url: '/$orgSlug/warmups',
 				},
+				{
+					title: 'Workouts',
+					url: '/$orgSlug/workouts',
+				},
 			],
 		},
 	],

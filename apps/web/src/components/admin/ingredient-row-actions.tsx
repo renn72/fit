@@ -58,7 +58,7 @@ export function IngredientRowActions<TData>({
 					<DotsThreeOutlineVerticalIcon weight='bold' className='w-4 h-4' />
 					<span className='sr-only'>Open menu</span>
 				</DropdownMenuTrigger>
-				<DropdownMenuContent align='end' className='w-[160px]'>
+				<DropdownMenuContent align='end' className='w-40'>
 					<DropdownMenuItem
 						onMouseDown={(e) => {
 							e.preventDefault()
