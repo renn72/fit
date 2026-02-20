@@ -31,6 +31,7 @@ function RouteComponent() {
 	const [isGeneratingData, setIsGeneratingData] = useState(false)
 	const [isGeneratingRecipes, setIsGeneratingRecipes] = useState(false)
 	const [isGeneratingExercises, setIsGeneratingExercises] = useState(false)
+	const [isGeneratingWarmups, setIsGeneratingWarmups] = useState(false)
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
@@ -76,6 +77,15 @@ function RouteComponent() {
 			onMutate: () => setIsGeneratingExercises(true),
 			onSettled: () => setIsGeneratingExercises(false),
 			onSuccess: () => toast.success('10 exercises generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateWarmups = useMutation(
+		orpc.adminSetup.generateWarmups.mutationOptions({
+			onMutate: () => setIsGeneratingWarmups(true),
+			onSettled: () => setIsGeneratingWarmups(false),
+			onSuccess: () => toast.success('5 warmup groups generated successfully'),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -151,51 +161,94 @@ function RouteComponent() {
 						Generate 10 Recipes
 					</LoadingButton>
 				</div>
+			</div>
 
-				<div className='pt-6 w-full max-w-md border-t'>
-					<h2 className='mb-4 text-xl font-semibold'>Generate Exercises</h2>
-					<p className='mb-4 text-sm text-muted-foreground'>
-						Select an organization to generate 10 random exercises with various
-						training parameters.
-					</p>
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Exercises</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10 random exercises with various
+					training parameters.
+				</p>
 
-					<div className='flex flex-col gap-4'>
-						<div className='flex flex-col gap-2'>
-							<label
-								htmlFor='org-select-exercises'
-								className='text-sm font-medium'
-							>
-								Select Organization
-							</label>
-							<select
-								id='org-select-exercises'
-								value={selectedOrgId}
-								onChange={(e) => setSelectedOrgId(e.target.value)}
-								className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
-							>
-								<option value=''>Select an organization...</option>
-								{organisations?.map((org) => (
-									<option key={org.id} value={org.id}>
-										{org.name}
-									</option>
-								))}
-							</select>
-						</div>
-
-						<LoadingButton
-							variant='default'
-							loading={isGeneratingExercises}
-							disabled={!selectedOrgId}
-							className='w-full cursor-pointer'
-							onMouseDown={() => {
-								if (selectedOrgId) {
-									generateExercises.mutate({ organisationId: selectedOrgId })
-								}
-							}}
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-exercises'
+							className='text-sm font-medium'
 						>
-							Generate 10 Exercises
-						</LoadingButton>
+							Select Organization
+						</label>
+						<select
+							id='org-select-exercises'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
 					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingExercises}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateExercises.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 10 Exercises
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Warmups</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 5 warmup groups with 2-4 exercises
+					each.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label htmlFor='org-select-warmups' className='text-sm font-medium'>
+							Select Organization
+						</label>
+						<select
+							id='org-select-warmups'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingWarmups}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateWarmups.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 5 Warmup Groups
+					</LoadingButton>
 				</div>
 			</div>
 		</div>

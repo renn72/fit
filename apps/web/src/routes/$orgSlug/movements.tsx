@@ -1,10 +1,10 @@
-import { MovementsTable } from '@/components/admin/movements-table'
+import { MovementsPage } from '@/components/admin/movements-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/movements')({
-	component: MovementsTable,
+	component: MovementsPage,
 	loader: async ({ context }) => {
 		const session = context.session
 		const userOrgId = session?.user?.organisationId

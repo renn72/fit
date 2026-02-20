@@ -5,6 +5,7 @@ import { ingredient } from '@fit/db/schema/ingredient'
 import { movement } from '@fit/db/schema/movement'
 import { organisation } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
+import { warmup, warmupGroup } from '@fit/db/schema/warmup'
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -533,5 +534,132 @@ export const adminSetupRouter = {
 			})
 
 			return { message: '10 exercises generated successfully' }
+		}),
+
+	generateWarmups: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-warmups',
+			summary: 'Generate random warmups for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate warmups',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const warmupGroupNames = [
+				'Upper Body Activation',
+				'Lower Body Prep',
+				'Full Body Warmup',
+				'Core Activation',
+				'Cardio Warmup',
+				'Mobility Flow',
+				'Dynamic Stretching',
+				'Strength Prep',
+				'Pre-Workout Routine',
+				'Joint Mobility',
+			]
+
+			const warmupExercises = [
+				{ name: 'Arm Circles', description: 'Rotate arms in circular motion' },
+				{ name: 'Leg Swings', description: 'Swing legs forward and backward' },
+				{
+					name: 'Hip Rotations',
+					description: 'Rotate hips in circular motion',
+				},
+				{
+					name: 'Shoulder Rolls',
+					description: 'Roll shoulders backward and forward',
+				},
+				{ name: 'Neck Stretches', description: 'Gently stretch neck muscles' },
+				{ name: 'Torso Twists', description: 'Rotate torso left and right' },
+				{
+					name: 'Walking Lunges',
+					description: 'Step forward into lunge position',
+				},
+				{ name: 'High Knees', description: 'March in place with high knees' },
+				{
+					name: 'Butt Kicks',
+					description: 'Jog in place kicking heels to glutes',
+				},
+				{
+					name: 'Jumping Jacks',
+					description: 'Jump with arms and legs extended',
+				},
+				{
+					name: 'Mountain Climbers',
+					description: 'Drive knees toward chest in plank',
+				},
+				{ name: 'Inchworms', description: 'Walk hands out to plank and back' },
+				{
+					name: 'Cat-Cow Stretch',
+					description: 'Alternate between arching and rounding back',
+				},
+				{
+					name: "World's Greatest Stretch",
+					description: 'Lunge with rotation and reach',
+				},
+				{
+					name: 'Spider-Man Stretch',
+					description: 'Lunge with foot outside hand',
+				},
+			]
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 5; i++) {
+					const [newGroup] = await tx
+						.insert(warmupGroup)
+						.values({
+							name: warmupGroupNames[i] || `Warmup ${i + 1}`,
+							description:
+								'A comprehensive warmup routine with multiple exercises',
+							creatorId: orgUser.id,
+							organisationId: input.organisationId,
+						})
+						.returning()
+
+					if (!newGroup) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create warmup group',
+						})
+					}
+
+					// Generate 2-4 warmups per group
+					const warmupCount = Math.floor(Math.random() * 3) + 2
+					const shuffled = [...warmupExercises].sort(() => Math.random() - 0.5)
+					const selectedWarmups = shuffled.slice(0, warmupCount)
+
+					await tx.insert(warmup).values(
+						selectedWarmups.map((w) => ({
+							name: w.name,
+							description: w.description,
+							warmupGroupId: newGroup.id,
+							images: null,
+							link: null,
+						})),
+					)
+				}
+			})
+
+			return { message: '5 warmup groups generated successfully' }
 		}),
 }

@@ -49,7 +49,7 @@ export function WarmupGroupCreateForm({
 	const createGroup = useMutation(
 		orpc.warmup.createGroupWithWarmups.mutationOptions({
 			onSuccess: () => {
-				toast.success('Warmup group created successfully')
+				toast.success('Warmup created successfully')
 				queryClient.invalidateQueries({
 					queryKey: orpc.warmup.getAllGroups.key(),
 				})
@@ -117,7 +117,7 @@ export function WarmupGroupCreateForm({
 				<form.Field name='name'>
 					{(field) => (
 						<Field data-invalid={field.state.meta.errors.length > 0}>
-							<FieldLabel htmlFor={field.name}>Group Name *</FieldLabel>
+							<FieldLabel htmlFor={field.name}>Warmup Name *</FieldLabel>
 							<Input
 								id={field.name}
 								name={field.name}
@@ -141,7 +141,7 @@ export function WarmupGroupCreateForm({
 								value={field.state.value ?? ''}
 								onBlur={field.handleBlur}
 								onChange={(e) => field.handleChange(e.target.value || null)}
-								placeholder='Optional description for this warmup group...'
+								placeholder='Optional description for this warmup...'
 								className='min-h-20'
 							/>
 						</Field>
@@ -150,14 +150,14 @@ export function WarmupGroupCreateForm({
 
 				<div className='space-y-2'>
 					<div className='flex items-center justify-between'>
-						<FieldLabel>Warmups</FieldLabel>
+						<FieldLabel>Warmup Exercises</FieldLabel>
 						<Button
 							type='button'
 							variant='outline'
 							size='sm'
 							onClick={addWarmup}
 						>
-							Add Warmup
+							Add Exercise
 						</Button>
 					</div>
 
@@ -182,7 +182,7 @@ export function WarmupGroupCreateForm({
 										)}
 
 										<div className='font-medium text-sm text-muted-foreground'>
-											Warmup {index + 1}
+											Exercise {index + 1}
 										</div>
 
 										<form.Field name={`warmups[${index}].name`}>
@@ -289,7 +289,7 @@ export function WarmupGroupCreateForm({
 				>
 					{([canSubmit, isSubmitting]) => (
 						<Button type='submit' disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? 'Creating...' : 'Create Warmup Group'}
+							{isSubmitting ? 'Creating...' : 'Create Warmup'}
 						</Button>
 					)}
 				</form.Subscribe>

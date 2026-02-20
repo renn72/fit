@@ -21,13 +21,13 @@ export function WarmupGroupCreateDialog() {
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size='sm' className='gap-2' />}>
-				<PlusIcon /> Add Warmup Group
+				<PlusIcon /> Add Warmup
 			</DialogTrigger>
 			<DialogContent className='overflow-y-auto sm:max-w-2xl max-h-[90vh]'>
 				<DialogHeader>
-					<DialogTitle>Create Warmup Group</DialogTitle>
+					<DialogTitle>Create Warmup</DialogTitle>
 					<DialogDescription>
-						Create a warmup group with one or more warmup exercises.
+						Create a warmup with one or more exercises.
 					</DialogDescription>
 				</DialogHeader>
 				<WarmupGroupCreateForm onSuccess={() => setOpen(false)} />

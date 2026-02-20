@@ -1,10 +1,10 @@
-import { RecipesTable } from '@/components/admin/recipes-table'
+import { RecipesPage } from '@/components/admin/recipes-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/recipes')({
-	component: RecipesTable,
+	component: RecipesPage,
 	loader: async ({ context }) => {
 		const session = context.session
 		const userOrgId = session?.user?.organisationId

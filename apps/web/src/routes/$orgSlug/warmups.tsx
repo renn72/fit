@@ -1,10 +1,10 @@
-import { WarmupsTable } from '@/components/admin/warmups-table'
+import { WarmupsPage } from '@/components/admin/warmups-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/warmups')({
-	component: WarmupsTable,
+	component: WarmupsPage,
 	loader: async ({ context }) => {
 		const session = context.session
 		const userOrgId = session?.user?.organisationId

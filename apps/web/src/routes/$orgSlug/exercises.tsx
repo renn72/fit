@@ -1,10 +1,10 @@
-import { ExercisesTable } from '@/components/admin/exercises-table'
+import { ExercisesPage } from '@/components/admin/exercises-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/exercises')({
-	component: ExercisesTable,
+	component: ExercisesPage,
 	loader: async ({ context }) => {
 		const session = context.session
 		const userOrgId = session?.user?.organisationId
