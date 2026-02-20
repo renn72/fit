@@ -1,42 +1,42 @@
 import { db } from '@fit/db'
 import {
-	session,
-	sessionToExercise,
-	sessionToSuperSet,
-} from '@fit/db/schema/session'
+	workout,
+	workoutToExercise,
+	workoutToSuperSet,
+} from '@fit/db/schema/workout'
 
 import { ORPCError } from '@orpc/server'
 import { and, eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
-	SessionAddExerciseInput,
-	SessionAddSuperSetInput,
-	SessionCreateInput,
-	SessionDeleteInput,
-	SessionGetAllOrgInput,
-	SessionGetInput,
-	SessionRemoveExerciseInput,
-	SessionRemoveSuperSetInput,
-	SessionUpdateInput,
-} from '../schemas/session'
+	WorkoutAddExerciseInput,
+	WorkoutAddSuperSetInput,
+	WorkoutCreateInput,
+	WorkoutDeleteInput,
+	WorkoutGetAllOrgInput,
+	WorkoutGetInput,
+	WorkoutRemoveExerciseInput,
+	WorkoutRemoveSuperSetInput,
+	WorkoutUpdateInput,
+} from '../schemas/workout'
 
-export const sessionRouter = {
+export const workoutRouter = {
 	getAll: protectedProcedure
 		.route({
 			method: 'GET',
-			path: '/session/all',
-			summary: 'Get all sessions across all organisations (dictator only)',
-			tags: ['Session'],
+			path: '/workout/all',
+			summary: 'Get all workouts across all organisations (dictator only)',
+			tags: ['Workout'],
 		})
 		.handler(async ({ context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'Only dictators can view all sessions',
+					message: 'Only dictators can view all workouts',
 				})
 			}
 
-			const sessions = await db.query.session.findMany({
+			const workouts = await db.query.workout.findMany({
 				with: {
 					creator: {
 						columns: {
@@ -51,26 +51,26 @@ export const sessionRouter = {
 						},
 					},
 				},
-				orderBy: (session, { desc }) => [desc(session.createdAt)],
+				orderBy: (workout, { desc }) => [desc(workout.createdAt)],
 			})
 
-			return sessions.map((s) => ({
-				...s,
-				creatorName: s.creator?.name ?? null,
-				creatorEmail: s.creator?.email ?? null,
-				organisationName: s.organisation?.name ?? null,
-				organisationSlug: s.organisation?.slug ?? null,
+			return workouts.map((w) => ({
+				...w,
+				creatorName: w.creator?.name ?? null,
+				creatorEmail: w.creator?.email ?? null,
+				organisationName: w.organisation?.name ?? null,
+				organisationSlug: w.organisation?.slug ?? null,
 			}))
 		}),
 
 	getAllOrg: protectedProcedure
 		.route({
 			method: 'GET',
-			path: '/session/org',
-			summary: 'Get all sessions for an organisation',
-			tags: ['Session'],
+			path: '/workout/org',
+			summary: 'Get all workouts for an organisation',
+			tags: ['Workout'],
 		})
-		.input(SessionGetAllOrgInput)
+		.input(WorkoutGetAllOrgInput)
 		.handler(async ({ input, context }) => {
 			const userOrgId = context.session.user.organisationId
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
@@ -79,11 +79,11 @@ export const sessionRouter = {
 			if (input.organisationId !== userOrgId && !isDictator) {
 				throw new ORPCError('FORBIDDEN', {
 					message:
-						'You do not have permission to view sessions for this organisation',
+						'You do not have permission to view workouts for this organisation',
 				})
 			}
 
-			const sessions = await db.query.session.findMany({
+			const workouts = await db.query.workout.findMany({
 				where: { organisationId: input.organisationId },
 				with: {
 					creator: {
@@ -92,22 +92,22 @@ export const sessionRouter = {
 						},
 					},
 				},
-				orderBy: (session, { desc }) => [desc(session.createdAt)],
+				orderBy: (workout, { desc }) => [desc(workout.createdAt)],
 			})
 
-			return sessions
+			return workouts
 		}),
 
 	get: protectedProcedure
 		.route({
 			method: 'GET',
-			path: '/session/:id',
-			summary: 'Get a session by ID with all exercises and supersets',
-			tags: ['Session'],
+			path: '/workout/:id',
+			summary: 'Get a workout by ID with all exercises and supersets',
+			tags: ['Workout'],
 		})
-		.input(SessionGetInput)
+		.input(WorkoutGetInput)
 		.handler(async ({ input, context }) => {
-			const sessionData = await db.query.session.findFirst({
+			const workoutData = await db.query.workout.findFirst({
 				where: { id: input.id },
 				with: {
 					exercises: {
@@ -159,9 +159,9 @@ export const sessionRouter = {
 				},
 			})
 
-			if (!sessionData) {
+			if (!workoutData) {
 				throw new ORPCError('NOT_FOUND', {
-					message: 'Session not found',
+					message: 'Workout not found',
 				})
 			}
 
@@ -169,28 +169,28 @@ export const sessionRouter = {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			const isDictator = metaTags.includes('dictator')
 
-			if (sessionData.organisationId !== userOrgId && !isDictator) {
+			if (workoutData.organisationId !== userOrgId && !isDictator) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to view this session',
+					message: 'You do not have permission to view this workout',
 				})
 			}
 
-			return sessionData
+			return workoutData
 		}),
 
 	create: protectedProcedure
 		.route({
 			method: 'POST',
-			path: '/session',
-			summary: 'Create a session',
-			tags: ['Session'],
+			path: '/workout',
+			summary: 'Create a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionCreateInput)
+		.input(WorkoutCreateInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to create sessions',
+					message: 'You do not have permission to create workouts',
 				})
 			}
 
@@ -200,8 +200,8 @@ export const sessionRouter = {
 				})
 			}
 
-			const [newSession] = await db
-				.insert(session)
+			const [newWorkout] = await db
+				.insert(workout)
 				.values({
 					...input,
 					creatorId: context.session.user.id,
@@ -209,36 +209,36 @@ export const sessionRouter = {
 				})
 				.returning()
 
-			return newSession
+			return newWorkout
 		}),
 
 	update: protectedProcedure
 		.route({
 			method: 'PATCH',
-			path: '/session',
-			summary: 'Update a session',
-			tags: ['Session'],
+			path: '/workout',
+			summary: 'Update a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionUpdateInput)
+		.input(WorkoutUpdateInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to update sessions',
+					message: 'You do not have permission to update workouts',
 				})
 			}
 
 			const { id, ...updateData } = input
 
 			const [updated] = await db
-				.update(session)
+				.update(workout)
 				.set(updateData)
-				.where(eq(session.id, id))
+				.where(eq(workout.id, id))
 				.returning()
 
 			if (!updated) {
 				throw new ORPCError('NOT_FOUND', {
-					message: 'Session not found',
+					message: 'Workout not found',
 				})
 			}
 
@@ -248,48 +248,48 @@ export const sessionRouter = {
 	delete: protectedProcedure
 		.route({
 			method: 'DELETE',
-			path: '/session/:id',
-			summary: 'Delete a session',
-			tags: ['Session'],
+			path: '/workout/:id',
+			summary: 'Delete a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionDeleteInput)
+		.input(WorkoutDeleteInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to delete sessions',
+					message: 'You do not have permission to delete workouts',
 				})
 			}
 
-			await db.delete(session).where(eq(session.id, input.id))
+			await db.delete(workout).where(eq(workout.id, input.id))
 			return { success: true, id: input.id }
 		}),
 
-	// ***************** Session Exercise Operations *******************
+	// ***************** Workout Exercise Operations *******************
 	addExercise: protectedProcedure
 		.route({
 			method: 'POST',
-			path: '/session/exercise/add',
-			summary: 'Add an exercise to a session',
-			tags: ['Session'],
+			path: '/workout/exercise/add',
+			summary: 'Add an exercise to a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionAddExerciseInput)
+		.input(WorkoutAddExerciseInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to modify sessions',
+					message: 'You do not have permission to modify workouts',
 				})
 			}
 
-			// Verify session exists
-			const sessionData = await db.query.session.findFirst({
-				where: { id: input.sessionId },
+			// Verify workout exists
+			const workoutData = await db.query.workout.findFirst({
+				where: { id: input.workoutId },
 			})
 
-			if (!sessionData) {
+			if (!workoutData) {
 				throw new ORPCError('NOT_FOUND', {
-					message: 'Session not found',
+					message: 'Workout not found',
 				})
 			}
 
@@ -305,9 +305,9 @@ export const sessionRouter = {
 			}
 
 			const [link] = await db
-				.insert(sessionToExercise)
+				.insert(workoutToExercise)
 				.values({
-					sessionId: input.sessionId,
+					workoutId: input.workoutId,
 					exerciseId: input.exerciseId,
 					index: input.index,
 				})
@@ -319,56 +319,56 @@ export const sessionRouter = {
 	removeExercise: protectedProcedure
 		.route({
 			method: 'DELETE',
-			path: '/session/exercise/remove',
-			summary: 'Remove an exercise from a session',
-			tags: ['Session'],
+			path: '/workout/exercise/remove',
+			summary: 'Remove an exercise from a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionRemoveExerciseInput)
+		.input(WorkoutRemoveExerciseInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to modify sessions',
+					message: 'You do not have permission to modify workouts',
 				})
 			}
 
 			await db
-				.delete(sessionToExercise)
+				.delete(workoutToExercise)
 				.where(
 					and(
-						eq(sessionToExercise.sessionId, input.sessionId),
-						eq(sessionToExercise.exerciseId, input.exerciseId),
+						eq(workoutToExercise.workoutId, input.workoutId),
+						eq(workoutToExercise.exerciseId, input.exerciseId),
 					),
 				)
 
 			return { success: true }
 		}),
 
-	// ***************** Session SuperSet Operations *******************
+	// ***************** Workout SuperSet Operations *******************
 	addSuperSet: protectedProcedure
 		.route({
 			method: 'POST',
-			path: '/session/superset/add',
-			summary: 'Add a superset to a session',
-			tags: ['Session'],
+			path: '/workout/superset/add',
+			summary: 'Add a superset to a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionAddSuperSetInput)
+		.input(WorkoutAddSuperSetInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to modify sessions',
+					message: 'You do not have permission to modify workouts',
 				})
 			}
 
-			// Verify session exists
-			const sessionData = await db.query.session.findFirst({
-				where: { id: input.sessionId },
+			// Verify workout exists
+			const workoutData = await db.query.workout.findFirst({
+				where: { id: input.workoutId },
 			})
 
-			if (!sessionData) {
+			if (!workoutData) {
 				throw new ORPCError('NOT_FOUND', {
-					message: 'Session not found',
+					message: 'Workout not found',
 				})
 			}
 
@@ -390,9 +390,9 @@ export const sessionRouter = {
 			}
 
 			const [link] = await db
-				.insert(sessionToSuperSet)
+				.insert(workoutToSuperSet)
 				.values({
-					sessionId: input.sessionId,
+					workoutId: input.workoutId,
 					superSetId: input.superSetId,
 					index: input.index,
 				})
@@ -404,25 +404,25 @@ export const sessionRouter = {
 	removeSuperSet: protectedProcedure
 		.route({
 			method: 'DELETE',
-			path: '/session/superset/remove',
-			summary: 'Remove a superset from a session',
-			tags: ['Session'],
+			path: '/workout/superset/remove',
+			summary: 'Remove a superset from a workout',
+			tags: ['Workout'],
 		})
-		.input(SessionRemoveSuperSetInput)
+		.input(WorkoutRemoveSuperSetInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to modify sessions',
+					message: 'You do not have permission to modify workouts',
 				})
 			}
 
 			await db
-				.delete(sessionToSuperSet)
+				.delete(workoutToSuperSet)
 				.where(
 					and(
-						eq(sessionToSuperSet.sessionId, input.sessionId),
-						eq(sessionToSuperSet.superSetId, input.superSetId),
+						eq(workoutToSuperSet.workoutId, input.workoutId),
+						eq(workoutToSuperSet.superSetId, input.superSetId),
 					),
 				)
 

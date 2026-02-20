@@ -4,8 +4,8 @@ import * as ingredient from './schema/ingredient'
 import * as movement from './schema/movement'
 import * as org from './schema/org'
 import * as recipe from './schema/recipe'
-import * as workoutSession from './schema/session'
 import * as warmup from './schema/warmup'
+import * as workout from './schema/workout'
 
 import { defineRelations } from 'drizzle-orm'
 
@@ -16,7 +16,7 @@ const schema = {
 	...ingredient,
 	...recipe,
 	...exercise,
-	...workoutSession,
+	...workout,
 	...warmup,
 }
 
@@ -59,6 +59,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.user.id,
 			to: r.exercise.creatorId,
 		}),
+		workouts: r.many.workout({
+			from: r.user.id,
+			to: r.workout.creatorId,
+		}),
 	},
 
 	// ***************** User Settings *******************
@@ -81,6 +85,13 @@ export const relations = defineRelations(schema, (r) => ({
 	account: {
 		user: r.one.user({
 			from: r.account.userId,
+			to: r.user.id,
+		}),
+	},
+
+	session: {
+		user: r.one.user({
+			from: r.session.userId,
 			to: r.user.id,
 		}),
 	},
@@ -116,6 +127,10 @@ export const relations = defineRelations(schema, (r) => ({
 		exercises: r.many.exercise({
 			from: r.organisation.id,
 			to: r.exercise.organisationId,
+		}),
+		workouts: r.many.workout({
+			from: r.organisation.id,
+			to: r.workout.organisationId,
 		}),
 	},
 
@@ -239,50 +254,50 @@ export const relations = defineRelations(schema, (r) => ({
 		}),
 	},
 
-	// ***************** Workout Session *******************
-	workoutSession: {
+	// ***************** Workout *******************
+	workout: {
 		creator: r.one.user({
-			from: r.session.creatorId,
+			from: r.workout.creatorId,
 			to: r.user.id,
 		}),
 		organisation: r.one.organisation({
-			from: r.session.organisationId,
+			from: r.workout.organisationId,
 			to: r.organisation.id,
 		}),
 		warmupGroup: r.one.warmupGroup({
-			from: r.session.warmupGroupId,
+			from: r.workout.warmupGroupId,
 			to: r.warmupGroup.id,
 		}),
-		exercises: r.many.sessionToExercise({
-			from: r.session.id,
-			to: r.sessionToExercise.sessionId,
+		exercises: r.many.workoutToExercise({
+			from: r.workout.id,
+			to: r.workoutToExercise.workoutId,
 		}),
-		superSets: r.many.sessionToSuperSet({
-			from: r.session.id,
-			to: r.sessionToSuperSet.sessionId,
+		superSets: r.many.workoutToSuperSet({
+			from: r.workout.id,
+			to: r.workoutToSuperSet.workoutId,
 		}),
 	},
 
-	// ***************** Session To Exercise *******************
-	sessionToExercise: {
-		session: r.one.session({
-			from: r.sessionToExercise.sessionId,
-			to: r.session.id,
+	// ***************** Workout To Exercise *******************
+	workoutToExercise: {
+		workout: r.one.workout({
+			from: r.workoutToExercise.workoutId,
+			to: r.workout.id,
 		}),
 		exercise: r.one.exercise({
-			from: r.sessionToExercise.exerciseId,
+			from: r.workoutToExercise.exerciseId,
 			to: r.exercise.id,
 		}),
 	},
 
-	// ***************** Session To SuperSet *******************
-	sessionToSuperSet: {
-		session: r.one.session({
-			from: r.sessionToSuperSet.sessionId,
-			to: r.session.id,
+	// ***************** Workout To SuperSet *******************
+	workoutToSuperSet: {
+		workout: r.one.workout({
+			from: r.workoutToSuperSet.workoutId,
+			to: r.workout.id,
 		}),
 		superSet: r.one.exercise({
-			from: r.sessionToSuperSet.superSetId,
+			from: r.workoutToSuperSet.superSetId,
 			to: r.exercise.id,
 		}),
 	},
@@ -301,9 +316,9 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.warmupGroup.id,
 			to: r.warmup.warmupGroupId,
 		}),
-		sessions: r.many.session({
+		workouts: r.many.workout({
 			from: r.warmupGroup.id,
-			to: r.session.warmupGroupId,
+			to: r.workout.warmupGroupId,
 		}),
 	},
 
