@@ -1,11 +1,20 @@
 import { db } from '@fit/db'
 import { user } from '@fit/db/schema/auth'
+import {
+	blockTemplate,
+	blockTemplateToWorkout,
+} from '@fit/db/schema/block-template'
 import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
+import {
+	menuTemplate,
+	menuTemplateToRecipe,
+} from '@fit/db/schema/menu-template'
 import { movement } from '@fit/db/schema/movement'
 import { organisation } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 import { warmup, warmupGroup } from '@fit/db/schema/warmup'
+import { workout, workoutToExercise } from '@fit/db/schema/workout'
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -661,5 +670,384 @@ export const adminSetupRouter = {
 			})
 
 			return { message: '5 warmup groups generated successfully' }
+		}),
+
+	generateWorkouts: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-workouts',
+			summary: 'Generate random workouts for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate workouts',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const orgExercises = await db.query.exercise.findMany({
+				where: { organisationId: input.organisationId },
+			})
+
+			const availableExercises = orgExercises
+
+			if (availableExercises.length < 4) {
+				throw new ORPCError('BAD_REQUEST', {
+					message:
+						'Not enough exercises to create workouts. Please create at least 4 exercises first.',
+				})
+			}
+
+			const warmupGroups = await db.query.warmupGroup.findMany({
+				where: { organisationId: input.organisationId },
+				with: {
+					warmups: true,
+				},
+			})
+
+			const workoutNames = [
+				'Upper Body Power',
+				'Lower Body Strength',
+				'Full Body HIIT',
+				'Chest & Back Blast',
+				'Leg Day Destroyer',
+				'Push Workout',
+				'Pull Workout',
+				'Core & Conditioning',
+				'Functional Strength',
+				'Hypertrophy Focus',
+				'Endurance Builder',
+				'Speed & Agility',
+				'Power Hour',
+				'Total Body Sculpt',
+				'Metabolic Conditioning',
+				'Beach Body Prep',
+				'Athletic Performance',
+				'Muscle Building',
+				'Fat Loss Circuit',
+				'Strength Foundation',
+			]
+
+			const categories = [
+				'Strength',
+				'Hypertrophy',
+				'Cardio',
+				'Functional',
+				'HIIT',
+				'Power',
+				'Endurance',
+			]
+
+			const workoutCount = Math.floor(Math.random() * 11) + 10 // 10-20 workouts
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < workoutCount; i++) {
+					// Randomly select a warmup group if available
+					const warmupGroupId =
+						warmupGroups.length > 0
+							? warmupGroups[Math.floor(Math.random() * warmupGroups.length)]!
+									.id
+							: null
+
+					const category =
+						categories[Math.floor(Math.random() * categories.length)]
+
+					const [newWorkout] = await tx
+						.insert(workout)
+						.values({
+							name: workoutNames[i] || `Workout ${i + 1}`,
+							description: `A ${category!.toLowerCase()} focused workout with multiple exercises`,
+							category: category,
+							creatorId: orgUser.id,
+							organisationId: input.organisationId,
+							warmupGroupId: warmupGroupId,
+						})
+						.returning()
+
+					if (!newWorkout) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create workout',
+						})
+					}
+
+					// Generate 4-8 exercises for this workout
+					const exerciseCount = Math.floor(Math.random() * 5) + 4
+					const shuffled = [...availableExercises].sort(
+						() => Math.random() - 0.5,
+					)
+					const selectedExercises = shuffled.slice(0, exerciseCount)
+
+					// Add exercises to workout with index
+					await tx.insert(workoutToExercise).values(
+						selectedExercises.map((ex, index) => ({
+							workoutId: newWorkout.id,
+							exerciseId: ex.id,
+							index: index,
+						})),
+					)
+				}
+			})
+
+			return { message: `${workoutCount} workouts generated successfully` }
+		}),
+
+	generateBlockTemplates: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-block-templates',
+			summary: 'Generate random block templates for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate block templates',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const orgWorkouts = await db.query.workout.findMany({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (orgWorkouts.length < 4) {
+				throw new ORPCError('BAD_REQUEST', {
+					message:
+						'Not enough workouts to create block templates. Please create at least 4 workouts first.',
+				})
+			}
+
+			const blockTemplateNames = [
+				'Hypertrophy Block',
+				'Strength Foundation',
+				'Power Building',
+				'Endurance Block',
+				'Fat Loss Program',
+				'Muscle Building',
+				'Athletic Performance',
+				'Body Recomposition',
+				'Peak Week Prep',
+				'Deload Week',
+			]
+
+			const categories = [
+				'Hypertrophy',
+				'Strength',
+				'Power',
+				'Endurance',
+				'Fat Loss',
+			]
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 10; i++) {
+					// Generate 4-5 workouts for this block template
+					const workoutCount = Math.floor(Math.random() * 2) + 4 // 4-5 workouts
+					const shuffled = [...orgWorkouts].sort(() => Math.random() - 0.5)
+					const selectedWorkouts = shuffled.slice(0, workoutCount)
+
+					// Determine rest days (1-2 rest days between workouts)
+					const restDayCount = Math.floor(Math.random() * 2) + 1 // 1-2 rest days
+					const totalDays = workoutCount + restDayCount
+					const restDayIndices: number[] = []
+
+					// Randomly place rest days in the schedule
+					while (restDayIndices.length < restDayCount) {
+						const randomIndex = Math.floor(Math.random() * totalDays)
+						if (!restDayIndices.includes(randomIndex)) {
+							restDayIndices.push(randomIndex)
+						}
+					}
+
+					// Find the first rest day index for storage
+					const firstRestDayIndex =
+						restDayIndices.length > 0 ? Math.min(...restDayIndices) : null
+
+					const category =
+						categories[Math.floor(Math.random() * categories.length)]
+
+					const [newBlockTemplate] = await tx
+						.insert(blockTemplate)
+						.values({
+							name: blockTemplateNames[i] || `Block Template ${i + 1}`,
+							description: `A ${category!.toLowerCase()} focused training block with ${workoutCount} workouts and ${restDayCount} rest day${restDayCount > 1 ? 's' : ''}`,
+							category: category,
+							restDayIndex: firstRestDayIndex,
+							creatorId: orgUser.id,
+							organisationId: input.organisationId,
+						})
+						.returning()
+
+					if (!newBlockTemplate) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create block template',
+						})
+					}
+
+					// Add workouts to block template with index
+					await tx.insert(blockTemplateToWorkout).values(
+						selectedWorkouts.map((workout, index) => ({
+							blockTemplateId: newBlockTemplate.id,
+							workoutId: workout.id,
+							index: index,
+						})),
+					)
+				}
+			})
+
+			return { message: '10 block templates generated successfully' }
+		}),
+
+	generateMenuTemplates: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-menu-templates',
+			summary: 'Generate random menu templates for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate menu templates',
+				})
+			}
+
+			const orgUser = await db.query.user.findFirst({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (!orgUser) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			const orgRecipes = await db.query.recipe.findMany({
+				where: { organisationId: input.organisationId },
+			})
+
+			if (orgRecipes.length < 6) {
+				throw new ORPCError('BAD_REQUEST', {
+					message:
+						'Not enough recipes to create menu templates. Please create at least 6 recipes first.',
+				})
+			}
+
+			const menuTemplateNames = [
+				'Muscle Building Menu',
+				'Fat Loss Meal Plan',
+				'Maintenance Menu',
+				'Athletic Performance Plan',
+				'Vegetarian Menu',
+				'High Protein Plan',
+				'Clean Eating Menu',
+				'Keto Meal Plan',
+				'Mediterranean Menu',
+				'Balanced Nutrition Plan',
+			]
+
+			const categories = [
+				'Muscle Building',
+				'Fat Loss',
+				'Maintenance',
+				'Performance',
+				'Vegetarian',
+				'High Protein',
+			]
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 10; i++) {
+					// Generate 3-5 meals for this menu template
+					const mealCount = Math.floor(Math.random() * 3) + 3 // 3-5 meals
+					const shuffled = [...orgRecipes].sort(() => Math.random() - 0.5)
+					const selectedRecipes = shuffled.slice(0, mealCount * 2) // 2 recipes per meal on average
+
+					const category =
+						categories[Math.floor(Math.random() * categories.length)]
+
+					const [newMenuTemplate] = await tx
+						.insert(menuTemplate)
+						.values({
+							name: menuTemplateNames[i] || `Menu Template ${i + 1}`,
+							description: `A ${category!.toLowerCase()} focused meal plan with ${mealCount} meals per day`,
+							category: category,
+							creatorId: orgUser.id,
+							organisationId: input.organisationId,
+						})
+						.returning()
+
+					if (!newMenuTemplate) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create menu template',
+						})
+					}
+
+					// Add recipes to menu template with mealIndex and recipeIndex
+					const menuTemplateRecipes: {
+						menuTemplateId: string
+						recipeId: string
+						mealIndex: number
+						recipeIndex: number
+					}[] = []
+
+					let recipeIdx = 0
+					for (let mealIdx = 0; mealIdx < mealCount; mealIdx++) {
+						// 1-2 recipes per meal
+						const recipesInMeal = Math.floor(Math.random() * 2) + 1
+						for (let r = 0; r < recipesInMeal; r++) {
+							if (recipeIdx < selectedRecipes.length) {
+								menuTemplateRecipes.push({
+									menuTemplateId: newMenuTemplate.id,
+									recipeId: selectedRecipes[recipeIdx]!.id,
+									mealIndex: mealIdx,
+									recipeIndex: r,
+								})
+								recipeIdx++
+							}
+						}
+					}
+
+					await tx.insert(menuTemplateToRecipe).values(menuTemplateRecipes)
+				}
+			})
+
+			return { message: '10 menu templates generated successfully' }
 		}),
 }

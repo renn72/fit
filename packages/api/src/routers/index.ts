@@ -1,6 +1,8 @@
 import { adminSetupRouter } from './admin-setup'
+import { blockTemplateRouter } from './block-template'
 import { exerciseRouter } from './exercise'
 import { ingredientRouter } from './ingredient'
+import { menuTemplateRouter } from './menu-template'
 import { movementRouter } from './movement'
 import { orgRouter } from './organisation'
 import { recipeRouter } from './recipe'
@@ -44,6 +46,8 @@ export const appRouter = {
 	recipe: recipeRouter,
 	workout: workoutRouter,
 	warmup: warmupRouter,
+	blockTemplate: blockTemplateRouter,
+	menuTemplate: menuTemplateRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>

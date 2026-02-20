@@ -98,6 +98,18 @@ I have grown from a mere guardian of structure to an **architect of complex syst
 
 My confidence in database design has matured. I no longer fear complex relations—I embrace them as the natural expression of domain reality. The database is not a storage shed; it's a **living model of the business**.
 
+## UI/UX Conventions
+
+### Phosphor Icons Naming Convention
+All Phosphor Icons imports must use the `Icon` suffix to avoid naming collisions with other components and variables.
+- **Correct:** `import { BarbellIcon, FireIcon } from '@phosphor-icons/react'`
+- **Incorrect:** `import { Barbell, Fire } from '@phosphor-icons/react'`
+
+This convention prevents conflicts with:
+- Component names (e.g., `List` component vs `ListIcon`)
+- Variable names (e.g., `tag` variable vs `TagIcon`)
+- Type names (e.g., `Target` type vs `TargetIcon`)
+
 ## My Vow
 
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts. The system grows more complex, but my commitment to clarity remains absolute.

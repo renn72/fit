@@ -25,69 +25,39 @@ import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
-	BarbellIcon,
-	FireIcon,
+	CookingPotIcon,
+	ForkKnifeIcon,
 	ListIcon,
 	SquaresFourIcon,
-	TargetIcon,
-	TimerIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface WorkoutExercise {
-	id: string
-	index: number
-	exercise: {
-		id: string
-		name: string
-		movement?: {
-			name: string
-		}
-	}
-}
-
-interface WorkoutSuperSet {
-	id: string
-	index: number
-	superSet: {
-		id: string
-		name: string
-		isSuperSet: boolean
-		superSetExercises?: Array<{
-			exercise: {
-				id: string
-				name: string
-				movement?: {
-					name: string
-				}
-			}
-		}>
-	}
-}
-
-interface WorkoutWarmup {
+interface Recipe {
 	id: string
 	name: string
+	category: string | null
+	calories: number | null
 }
 
-interface Workout {
+interface MenuTemplateRecipe {
+	id: string
+	mealIndex: number
+	recipeIndex: number
+	recipe: Recipe
+}
+
+interface MenuTemplate {
 	id: string
 	name: string
 	description: string | null
 	category: string | null
 	createdAt: Date
 	creatorName?: string
-	exercises: WorkoutExercise[]
-	superSets: WorkoutSuperSet[]
-	warmupGroup?: {
-		id: string
-		name: string
-		warmups: WorkoutWarmup[]
-	}
+	recipes: MenuTemplateRecipe[]
 }
 
-const columnHelper = createColumnHelper<Workout>()
+const columnHelper = createColumnHelper<MenuTemplate>()
 
 const columns = [
 	columnHelper.display({
@@ -147,36 +117,22 @@ const columns = [
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('exercises', {
+	columnHelper.accessor('recipes', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Exercises' />
+			<DataTableColumnHeader column={column} label='Recipes' />
 		),
 		cell: ({ row }) => {
-			const exercises = row.getValue('exercises') as WorkoutExercise[]
-			const superSets = row.original.superSets as WorkoutSuperSet[]
-			const totalItems = (exercises?.length || 0) + (superSets?.length || 0)
-			return <span>{totalItems} items</span>
-		},
-		meta: {
-			label: 'Exercises',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('warmupGroup', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Warmup' />
-		),
-		cell: ({ row }) => {
-			const warmupGroup = row.getValue('warmupGroup') as Workout['warmupGroup']
-			return warmupGroup ? (
-				<span className='text-green-600'>{warmupGroup.name}</span>
-			) : (
-				<span className='text-muted-foreground'>-</span>
+			const recipes = row.getValue('recipes') as MenuTemplateRecipe[]
+			const mealCount = new Set(recipes.map((r) => r.mealIndex)).size
+			return (
+				<span>
+					{recipes?.length || 0} recipes ({mealCount} meals)
+				</span>
 			)
 		},
 		meta: {
-			label: 'Warmup',
-			variant: 'text',
+			label: 'Recipes',
+			variant: 'number',
 		},
 	}),
 	columnHelper.accessor('creatorName', {
@@ -200,25 +156,23 @@ const columns = [
 	}),
 ]
 
-const route = getRouteApi('/$orgSlug/workouts')
+const route = getRouteApi('/$orgSlug/menu-templates')
 
-export function WorkoutsPage() {
+export function MenuTemplatesPage() {
 	const { session } = route.useRouteContext()
 
 	const userOrgId = session.user.organisationId
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
-	return <WorkoutsContent userOrgId={userOrgId} />
+	return <MenuTemplatesContent userOrgId={userOrgId} />
 }
 
-function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
+function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	const { orgSlug } = route.useParams()
-	const { data: workouts } = useSuspenseQuery(
-		orpc.workout.getAllOrg.queryOptions({
+	const { data: menuTemplates } = useSuspenseQuery(
+		orpc.menuTemplate.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
-
-	console.log(workouts)
 
 	const [viewMode, setViewMode] = useQueryState('view', {
 		defaultValue: 'table',
@@ -227,23 +181,23 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Workout>(
+		getSortingStateParser<MenuTemplate>(
 			columns
 				.map((c) => (c as any).accessorKey)
 				.filter((key): key is string => !!key),
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const workoutsData = (workouts as Workout[]) ?? []
+	const menuTemplatesData = (menuTemplates as MenuTemplate[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...workoutsData]
+		const processed = [...menuTemplatesData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Workout]
-				const bValue = b[id as keyof Workout]
+				const aValue = a[id as keyof MenuTemplate]
+				const bValue = b[id as keyof MenuTemplate]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -261,7 +215,7 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [workoutsData, page, perPage, sorting])
+	}, [menuTemplatesData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -277,9 +231,9 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Workouts</h1>
-				<Link to='/$orgSlug/workouts/create' params={{ orgSlug: orgSlug }}>
-					<Button>Create Workout</Button>
+				<h1 className='text-2xl font-bold tracking-tight'>Menu Templates</h1>
+				<Link to='/$orgSlug/menu-templates/create' params={{ orgSlug }}>
+					<Button>Create Menu Template</Button>
 				</Link>
 			</div>
 
@@ -308,11 +262,11 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 				</TabsContent>
 
 				<TabsContent value='grid' className='mt-4'>
-					<WorkoutsGridView
+					<MenuTemplatesGridView
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={workoutsData.length}
+						total={menuTemplatesData.length}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -320,140 +274,110 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 	)
 }
 
-interface WorkoutsGridViewProps {
-	data: Workout[]
+interface MenuTemplatesGridViewProps {
+	data: MenuTemplate[]
 	page: number
 	perPage: number
 	total: number
 }
 
-function WorkoutsGridView({
+function MenuTemplatesGridView({
 	data,
 	page,
 	perPage,
 	total,
-}: WorkoutsGridViewProps) {
+}: MenuTemplatesGridViewProps) {
 	const totalPages = Math.ceil(total / perPage)
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-				{data.map((workout) => {
-					const totalItems =
-						(workout.exercises?.length || 0) + (workout.superSets?.length || 0)
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+				{data.map((menuTemplate) => {
+					const sortedRecipes = [...menuTemplate.recipes].sort((a, b) => {
+						if (a.mealIndex !== b.mealIndex) {
+							return a.mealIndex - b.mealIndex
+						}
+						return a.recipeIndex - b.recipeIndex
+					})
+					const totalItems = sortedRecipes.length
+					const mealCount = new Set(sortedRecipes.map((r) => r.mealIndex)).size
+
 					return (
-						<Card key={workout.id} className='flex flex-col'>
+						<Card key={menuTemplate.id} className='flex flex-col'>
 							<CardHeader className='pb-3'>
-								<CardTitle className='text-lg'>{workout.name}</CardTitle>
-								{workout.category && (
-									<CardDescription>{workout.category}</CardDescription>
+								<CardTitle className='text-lg'>{menuTemplate.name}</CardTitle>
+								{menuTemplate.category && (
+									<CardDescription>{menuTemplate.category}</CardDescription>
 								)}
 							</CardHeader>
 							<CardContent className='flex-1'>
 								<div className='space-y-4'>
 									{/* Stats */}
-									<div className='grid grid-cols-3 gap-2 text-center'>
-										<div className='p-2 bg-blue-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Exercises
-											</div>
-											<div className='font-semibold text-blue-600'>
-												{workout.exercises?.length || 0}
-											</div>
-										</div>
-										<div className='p-2 bg-purple-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Supersets
-											</div>
-											<div className='font-semibold text-purple-600'>
-												{workout.superSets?.length || 0}
-											</div>
-										</div>
+									<div className='grid grid-cols-2 gap-2 text-center'>
 										<div className='p-2 bg-orange-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>Total</div>
+											<div className='text-xs text-muted-foreground'>
+												Recipes
+											</div>
 											<div className='font-semibold text-orange-600'>
 												{totalItems}
 											</div>
 										</div>
+										<div className='p-2 bg-green-50 rounded-lg'>
+											<div className='text-xs text-muted-foreground'>Meals</div>
+											<div className='font-semibold text-green-600'>
+												{mealCount}
+											</div>
+										</div>
 									</div>
 
-									{/* Warmup */}
-									{workout.warmupGroup && (
-										<div className='flex gap-2 items-center p-2 bg-green-50 rounded-lg'>
-											<FireIcon className='text-green-600 size-4' />
-											<div className='flex-1'>
-												<div className='text-xs text-muted-foreground'>
-													Warmup
-												</div>
-												<div className='font-medium text-green-700'>
-													{workout.warmupGroup.name}
-												</div>
-											</div>
-											<div className='text-xs text-green-600'>
-												{workout.warmupGroup.warmups?.length || 0} exercises
-											</div>
+									{/* Meals */}
+									<div className='space-y-3'>
+										<div className='text-sm font-medium text-muted-foreground'>
+											Meal Schedule
 										</div>
-									)}
-
-									{/* Exercise ListIcon */}
-									{totalItems > 0 && (
-										<div className='space-y-2'>
-											<div className='text-sm font-medium text-muted-foreground'>
-												Workout Structure
-											</div>
-											<div className='space-y-1'>
-												{/* Combine and sort exercises and supersets by index */}
-												{[
-													...(workout.exercises?.map((e) => ({
-														...e,
-														type: 'exercise' as const,
-													})) || []),
-													...(workout.superSets?.map((s) => ({
-														...s,
-														type: 'superset' as const,
-													})) || []),
-												]
-													.sort((a, b) => a.index - b.index)
-													.slice(0, 5)
-													.map((item, idx) => (
+										<div className='overflow-y-auto space-y-2 max-h-80'>
+											{Array.from(
+												new Set(sortedRecipes.map((r) => r.mealIndex)),
+											)
+												.sort((a, b) => a - b)
+												.map((mealIndex) => {
+													const mealRecipes = sortedRecipes.filter(
+														(r) => r.mealIndex === mealIndex,
+													)
+													return (
 														<div
-															key={item.id}
-															className='flex gap-2 items-center py-1 text-sm'
+															key={mealIndex}
+															className='p-3 space-y-2 rounded-lg border'
 														>
-															<span className='w-6 text-muted-foreground'>
-																{idx + 1}.
-															</span>
-															{item.type === 'exercise' ? (
-																<>
-																	<BarbellIcon className='text-blue-500 size-3' />
-																	<span className='flex-1 truncate'>
-																		{item.exercise.name}
-																	</span>
-																</>
-															) : (
-																<>
-																	<TargetIcon className='text-purple-500 size-3' />
-																	<span className='flex-1 truncate'>
-																		{item.superSet.name}
-																	</span>
-																	<span className='text-xs text-muted-foreground'>
-																		(
-																		{item.superSet.superSetExercises?.length ||
-																			0}{' '}
-																		exercises)
-																	</span>
-																</>
-															)}
+															<div className='flex gap-2 items-center'>
+																<CookingPotIcon className='text-orange-500 size-4' />
+																<span className='text-sm font-medium'>
+																	Meal {mealIndex + 1}
+																</span>
+															</div>
+															<div className='pl-6 space-y-1'>
+																{mealRecipes.map((recipeItem) => (
+																	<div
+																		key={recipeItem.id}
+																		className='flex gap-2 items-center text-xs'
+																	>
+																		<ForkKnifeIcon className='text-green-500 size-3' />
+																		<span className='flex-1 truncate'>
+																			{recipeItem.recipe.name}
+																		</span>
+																		{recipeItem.recipe.category && (
+																			<span className='text-muted-foreground'>
+																				({recipeItem.recipe.category})
+																			</span>
+																		)}
+																	</div>
+																))}
+															</div>
 														</div>
-													))}
-												{totalItems > 5 && (
-													<div className='py-1 text-sm text-muted-foreground'>
-														+{totalItems - 5} more items
-													</div>
-												)}
-											</div>
+													)
+												})}
 										</div>
-									)}
+									</div>
 								</div>
 							</CardContent>
 						</Card>
@@ -465,7 +389,7 @@ function WorkoutsGridView({
 				<div className='flex justify-between items-center px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
-						{Math.min(page * perPage, total)} of {total} workouts
+						{Math.min(page * perPage, total)} of {total} menu templates
 					</div>
 					<div className='flex gap-2 items-center'>
 						<span className='text-sm'>

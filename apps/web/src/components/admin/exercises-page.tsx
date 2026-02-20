@@ -25,12 +25,12 @@ import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
-	Barbell,
+	BarbellIcon,
 	Clock,
-	List,
-	SquaresFour,
-	Target,
-	Timer,
+	ListIcon,
+	SquaresFourIcon,
+	TargetIcon,
+	TimerIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
@@ -138,10 +138,10 @@ const columns = [
 	}),
 	columnHelper.accessor('targetRpe', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Target RPE' />
+			<DataTableColumnHeader column={column} label='TargetIcon RPE' />
 		),
 		meta: {
-			label: 'Target RPE',
+			label: 'TargetIcon RPE',
 			variant: 'number',
 		},
 	}),
@@ -256,11 +256,11 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
-						<List className='size-4' />
+						<ListIcon className='size-4' />
 						Table
 					</TabsTrigger>
 					<TabsTrigger value='grid' className='gap-2'>
-						<SquaresFour className='size-4' />
+						<SquaresFourIcon className='size-4' />
 						Grid
 					</TabsTrigger>
 				</TabsList>
@@ -310,7 +310,7 @@ function ExercisesGridView({
 							<CardTitle className='text-lg'>{exercise.name}</CardTitle>
 							{exercise.movementName && (
 								<CardDescription className='flex items-center gap-1'>
-									<Barbell className='size-3' />
+									<BarbellIcon className='size-3' />
 									{exercise.movementName}
 								</CardDescription>
 							)}
@@ -318,7 +318,7 @@ function ExercisesGridView({
 						<CardContent className='flex-1'>
 							<div className='grid grid-cols-2 gap-3'>
 								<div className='flex items-center gap-2'>
-									<Target className='size-4 text-blue-500' />
+									<TargetIcon className='size-4 text-blue-500' />
 									<span className='text-sm'>
 										{exercise.sets ?? '-'} x {exercise.reps ?? '-'}{' '}
 										{exercise.repUnit}
@@ -326,19 +326,19 @@ function ExercisesGridView({
 								</div>
 								{exercise.ormPercent && (
 									<div className='flex items-center gap-2'>
-										<Barbell className='size-4 text-green-500' />
+										<BarbellIcon className='size-4 text-green-500' />
 										<span className='text-sm'>{exercise.ormPercent}% 1RM</span>
 									</div>
 								)}
 								{exercise.targetRpe && (
 									<div className='flex items-center gap-2'>
-										<Target className='size-4 text-orange-500' />
+										<TargetIcon className='size-4 text-orange-500' />
 										<span className='text-sm'>RPE {exercise.targetRpe}</span>
 									</div>
 								)}
 								{exercise.restTime && (
 									<div className='flex items-center gap-2'>
-										<Timer className='size-4 text-purple-500' />
+										<TimerIcon className='size-4 text-purple-500' />
 										<span className='text-sm'>
 											{exercise.restTime} {exercise.restUnit || 's'}
 										</span>

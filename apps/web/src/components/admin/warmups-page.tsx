@@ -25,7 +25,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { List, PlayCircle, SquaresFour } from '@phosphor-icons/react'
+import { ListIcon, PlayCircleIcon, SquaresFourIcon } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
@@ -231,11 +231,11 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
-						<List className='size-4' />
+						<ListIcon className='size-4' />
 						Table
 					</TabsTrigger>
 					<TabsTrigger value='grid' className='gap-2'>
-						<SquaresFour className='size-4' />
+						<SquaresFourIcon className='size-4' />
 						Grid
 					</TabsTrigger>
 				</TabsList>
@@ -306,7 +306,7 @@ function WarmupGridView({
 											key={warmup.id}
 											className='flex items-center gap-2 text-sm'
 										>
-											<PlayCircle className='size-3 text-muted-foreground' />
+											<PlayCircleIcon className='size-3 text-muted-foreground' />
 											<span className='truncate'>{warmup.name}</span>
 										</div>
 									))}

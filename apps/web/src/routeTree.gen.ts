@@ -29,9 +29,12 @@ import { Route as OrgSlugWorkoutsRouteImport } from './routes/$orgSlug/workouts'
 import { Route as OrgSlugWarmupsRouteImport } from './routes/$orgSlug/warmups'
 import { Route as OrgSlugRecipesRouteImport } from './routes/$orgSlug/recipes'
 import { Route as OrgSlugMovementsRouteImport } from './routes/$orgSlug/movements'
+import { Route as OrgSlugMenuTemplatesRouteImport } from './routes/$orgSlug/menu-templates'
 import { Route as OrgSlugIngredientsRouteImport } from './routes/$orgSlug/ingredients'
 import { Route as OrgSlugExercisesRouteImport } from './routes/$orgSlug/exercises'
 import { Route as OrgSlugDashboardRouteImport } from './routes/$orgSlug/dashboard'
+import { Route as OrgSlugBlockTemplatesRouteImport } from './routes/$orgSlug/block-templates'
+import { Route as OrgSlugWorkoutsCreateRouteImport } from './routes/$orgSlug/workouts.create'
 import { Route as OrgSlugRecipesCreateRouteImport } from './routes/$orgSlug/recipes.create'
 
 const OnboardRoute = OnboardRouteImport.update({
@@ -134,6 +137,11 @@ const OrgSlugMovementsRoute = OrgSlugMovementsRouteImport.update({
   path: '/movements',
   getParentRoute: () => OrgSlugRoute,
 } as any)
+const OrgSlugMenuTemplatesRoute = OrgSlugMenuTemplatesRouteImport.update({
+  id: '/menu-templates',
+  path: '/menu-templates',
+  getParentRoute: () => OrgSlugRoute,
+} as any)
 const OrgSlugIngredientsRoute = OrgSlugIngredientsRouteImport.update({
   id: '/ingredients',
   path: '/ingredients',
@@ -149,6 +157,16 @@ const OrgSlugDashboardRoute = OrgSlugDashboardRouteImport.update({
   path: '/dashboard',
   getParentRoute: () => OrgSlugRoute,
 } as any)
+const OrgSlugBlockTemplatesRoute = OrgSlugBlockTemplatesRouteImport.update({
+  id: '/block-templates',
+  path: '/block-templates',
+  getParentRoute: () => OrgSlugRoute,
+} as any)
+const OrgSlugWorkoutsCreateRoute = OrgSlugWorkoutsCreateRouteImport.update({
+  id: '/create',
+  path: '/create',
+  getParentRoute: () => OrgSlugWorkoutsRoute,
+} as any)
 const OrgSlugRecipesCreateRoute = OrgSlugRecipesCreateRouteImport.update({
   id: '/create',
   path: '/create',
@@ -163,13 +181,15 @@ export interface FileRoutesByFullPath {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
   '/$orgSlug/ingredients': typeof OrgSlugIngredientsRoute
+  '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
-  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
@@ -180,6 +200,7 @@ export interface FileRoutesByFullPath {
   '/dictator/plans': typeof DictatorPlansRoute
   '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
+  '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -189,13 +210,15 @@ export interface FileRoutesByTo {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
   '/$orgSlug/ingredients': typeof OrgSlugIngredientsRoute
+  '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
-  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
@@ -206,6 +229,7 @@ export interface FileRoutesByTo {
   '/dictator/plans': typeof DictatorPlansRoute
   '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
+  '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -216,13 +240,15 @@ export interface FileRoutesById {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
   '/$orgSlug/ingredients': typeof OrgSlugIngredientsRoute
+  '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
-  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
@@ -233,6 +259,7 @@ export interface FileRoutesById {
   '/dictator/plans': typeof DictatorPlansRoute
   '/dictator/users': typeof DictatorUsersRoute
   '/$orgSlug/recipes/create': typeof OrgSlugRecipesCreateRoute
+  '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -244,9 +271,11 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
     | '/$orgSlug/ingredients'
+    | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
     | '/$orgSlug/warmups'
@@ -261,6 +290,7 @@ export interface FileRouteTypes {
     | '/dictator/plans'
     | '/dictator/users'
     | '/$orgSlug/recipes/create'
+    | '/$orgSlug/workouts/create'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -270,9 +300,11 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
     | '/$orgSlug/ingredients'
+    | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
     | '/$orgSlug/warmups'
@@ -287,6 +319,7 @@ export interface FileRouteTypes {
     | '/dictator/plans'
     | '/dictator/users'
     | '/$orgSlug/recipes/create'
+    | '/$orgSlug/workouts/create'
   id:
     | '__root__'
     | '/'
@@ -296,9 +329,11 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
     | '/$orgSlug/ingredients'
+    | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
     | '/$orgSlug/warmups'
@@ -313,6 +348,7 @@ export interface FileRouteTypes {
     | '/dictator/plans'
     | '/dictator/users'
     | '/$orgSlug/recipes/create'
+    | '/$orgSlug/workouts/create'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -467,6 +503,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugMovementsRouteImport
       parentRoute: typeof OrgSlugRoute
     }
+    '/$orgSlug/menu-templates': {
+      id: '/$orgSlug/menu-templates'
+      path: '/menu-templates'
+      fullPath: '/$orgSlug/menu-templates'
+      preLoaderRoute: typeof OrgSlugMenuTemplatesRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
     '/$orgSlug/ingredients': {
       id: '/$orgSlug/ingredients'
       path: '/ingredients'
@@ -487,6 +530,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/$orgSlug/dashboard'
       preLoaderRoute: typeof OrgSlugDashboardRouteImport
       parentRoute: typeof OrgSlugRoute
+    }
+    '/$orgSlug/block-templates': {
+      id: '/$orgSlug/block-templates'
+      path: '/block-templates'
+      fullPath: '/$orgSlug/block-templates'
+      preLoaderRoute: typeof OrgSlugBlockTemplatesRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
+    '/$orgSlug/workouts/create': {
+      id: '/$orgSlug/workouts/create'
+      path: '/create'
+      fullPath: '/$orgSlug/workouts/create'
+      preLoaderRoute: typeof OrgSlugWorkoutsCreateRouteImport
+      parentRoute: typeof OrgSlugWorkoutsRoute
     }
     '/$orgSlug/recipes/create': {
       id: '/$orgSlug/recipes/create'
@@ -510,24 +567,40 @@ const OrgSlugRecipesRouteWithChildren = OrgSlugRecipesRoute._addFileChildren(
   OrgSlugRecipesRouteChildren,
 )
 
+interface OrgSlugWorkoutsRouteChildren {
+  OrgSlugWorkoutsCreateRoute: typeof OrgSlugWorkoutsCreateRoute
+}
+
+const OrgSlugWorkoutsRouteChildren: OrgSlugWorkoutsRouteChildren = {
+  OrgSlugWorkoutsCreateRoute: OrgSlugWorkoutsCreateRoute,
+}
+
+const OrgSlugWorkoutsRouteWithChildren = OrgSlugWorkoutsRoute._addFileChildren(
+  OrgSlugWorkoutsRouteChildren,
+)
+
 interface OrgSlugRouteChildren {
+  OrgSlugBlockTemplatesRoute: typeof OrgSlugBlockTemplatesRoute
   OrgSlugDashboardRoute: typeof OrgSlugDashboardRoute
   OrgSlugExercisesRoute: typeof OrgSlugExercisesRoute
   OrgSlugIngredientsRoute: typeof OrgSlugIngredientsRoute
+  OrgSlugMenuTemplatesRoute: typeof OrgSlugMenuTemplatesRoute
   OrgSlugMovementsRoute: typeof OrgSlugMovementsRoute
   OrgSlugRecipesRoute: typeof OrgSlugRecipesRouteWithChildren
   OrgSlugWarmupsRoute: typeof OrgSlugWarmupsRoute
-  OrgSlugWorkoutsRoute: typeof OrgSlugWorkoutsRoute
+  OrgSlugWorkoutsRoute: typeof OrgSlugWorkoutsRouteWithChildren
 }
 
 const OrgSlugRouteChildren: OrgSlugRouteChildren = {
+  OrgSlugBlockTemplatesRoute: OrgSlugBlockTemplatesRoute,
   OrgSlugDashboardRoute: OrgSlugDashboardRoute,
   OrgSlugExercisesRoute: OrgSlugExercisesRoute,
   OrgSlugIngredientsRoute: OrgSlugIngredientsRoute,
+  OrgSlugMenuTemplatesRoute: OrgSlugMenuTemplatesRoute,
   OrgSlugMovementsRoute: OrgSlugMovementsRoute,
   OrgSlugRecipesRoute: OrgSlugRecipesRouteWithChildren,
   OrgSlugWarmupsRoute: OrgSlugWarmupsRoute,
-  OrgSlugWorkoutsRoute: OrgSlugWorkoutsRoute,
+  OrgSlugWorkoutsRoute: OrgSlugWorkoutsRouteWithChildren,
 }
 
 const OrgSlugRouteWithChildren =

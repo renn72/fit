@@ -46,6 +46,10 @@ const data = {
 					title: 'Ingredients',
 					url: '/$orgSlug/ingredients',
 				},
+				{
+					title: 'Menu Templates',
+					url: '/$orgSlug/menu-templates',
+				},
 			],
 		},
 		{
@@ -69,6 +73,10 @@ const data = {
 				{
 					title: 'Workouts',
 					url: '/$orgSlug/workouts',
+				},
+				{
+					title: 'Block Templates',
+					url: '/$orgSlug/block-templates',
 				},
 			],
 		},

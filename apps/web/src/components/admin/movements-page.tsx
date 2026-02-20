@@ -25,7 +25,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { Barbell, List, SquaresFour, Target } from '@phosphor-icons/react'
+import { BarbellIcon, ListIcon, SquaresFourIcon, TargetIcon } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
@@ -283,11 +283,11 @@ function MovementsContent({ userOrgId }: { userOrgId: string }) {
 			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
-						<List className='size-4' />
+						<ListIcon className='size-4' />
 						Table
 					</TabsTrigger>
 					<TabsTrigger value='grid' className='gap-2'>
-						<SquaresFour className='size-4' />
+						<SquaresFourIcon className='size-4' />
 						Grid
 					</TabsTrigger>
 				</TabsList>
@@ -336,7 +336,7 @@ function MovementsGridView({
 						<CardHeader className='pb-3'>
 							<CardTitle className='text-lg'>{movement.name}</CardTitle>
 							<CardDescription className='flex items-center gap-1'>
-								<Target className='size-3' />
+								<TargetIcon className='size-3' />
 								{movement.category}
 								{movement.level && ` • ${movement.level}`}
 							</CardDescription>
@@ -345,7 +345,7 @@ function MovementsGridView({
 							<div className='space-y-2'>
 								{movement.equipment && (
 									<div className='flex items-center gap-2 text-sm'>
-										<Barbell className='size-4 text-muted-foreground' />
+										<BarbellIcon className='size-4 text-muted-foreground' />
 										<span>{movement.equipment}</span>
 									</div>
 								)}

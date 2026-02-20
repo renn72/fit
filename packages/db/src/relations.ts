@@ -1,6 +1,8 @@
 import * as auth from './schema/auth'
+import * as blockTemplate from './schema/block-template'
 import * as exercise from './schema/exercise'
 import * as ingredient from './schema/ingredient'
+import * as menuTemplate from './schema/menu-template'
 import * as movement from './schema/movement'
 import * as org from './schema/org'
 import * as recipe from './schema/recipe'
@@ -18,6 +20,8 @@ const schema = {
 	...exercise,
 	...workout,
 	...warmup,
+	...blockTemplate,
+	...menuTemplate,
 }
 
 export const relations = defineRelations(schema, (r) => ({
@@ -222,6 +226,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.recipe.id,
 			to: r.recipeToIngredient.recipeId,
 		}),
+		menuTemplates: r.many.menuTemplateToRecipe({
+			from: r.recipe.id,
+			to: r.menuTemplateToRecipe.recipeId,
+		}),
 	},
 
 	// ***************** Recipe To Ingredient *******************
@@ -275,6 +283,10 @@ export const relations = defineRelations(schema, (r) => ({
 		superSets: r.many.workoutToSuperSet({
 			from: r.workout.id,
 			to: r.workoutToSuperSet.workoutId,
+		}),
+		blockTemplates: r.many.blockTemplateToWorkout({
+			from: r.workout.id,
+			to: r.blockTemplateToWorkout.workoutId,
 		}),
 	},
 
@@ -359,6 +371,62 @@ export const relations = defineRelations(schema, (r) => ({
 		plan: r.one.plan({
 			from: r.planCode.planId,
 			to: r.plan.id,
+		}),
+	},
+
+	// ***************** Block Template *******************
+	blockTemplate: {
+		creator: r.one.user({
+			from: r.blockTemplate.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.blockTemplate.organisationId,
+			to: r.organisation.id,
+		}),
+		workouts: r.many.blockTemplateToWorkout({
+			from: r.blockTemplate.id,
+			to: r.blockTemplateToWorkout.blockTemplateId,
+		}),
+	},
+
+	// ***************** Block Template To Workout *******************
+	blockTemplateToWorkout: {
+		blockTemplate: r.one.blockTemplate({
+			from: r.blockTemplateToWorkout.blockTemplateId,
+			to: r.blockTemplate.id,
+		}),
+		workout: r.one.workout({
+			from: r.blockTemplateToWorkout.workoutId,
+			to: r.workout.id,
+		}),
+	},
+
+	// ***************** Menu Template *******************
+	menuTemplate: {
+		creator: r.one.user({
+			from: r.menuTemplate.creatorId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.menuTemplate.organisationId,
+			to: r.organisation.id,
+		}),
+		recipes: r.many.menuTemplateToRecipe({
+			from: r.menuTemplate.id,
+			to: r.menuTemplateToRecipe.menuTemplateId,
+		}),
+	},
+
+	// ***************** Menu Template To Recipe *******************
+	menuTemplateToRecipe: {
+		menuTemplate: r.one.menuTemplate({
+			from: r.menuTemplateToRecipe.menuTemplateId,
+			to: r.menuTemplate.id,
+		}),
+		recipe: r.one.recipe({
+			from: r.menuTemplateToRecipe.recipeId,
+			to: r.recipe.id,
 		}),
 	},
 }))

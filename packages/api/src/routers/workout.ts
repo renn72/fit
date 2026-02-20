@@ -86,6 +86,47 @@ export const workoutRouter = {
 			const workouts = await db.query.workout.findMany({
 				where: { organisationId: input.organisationId },
 				with: {
+					exercises: {
+						with: {
+							exercise: {
+								with: {
+									movement: {
+										columns: {
+											name: true,
+										},
+									},
+								},
+							},
+						},
+						orderBy: (link, { asc }) => [asc(link.index)],
+					},
+					superSets: {
+						with: {
+							superSet: {
+								with: {
+									superSetExercises: {
+										with: {
+											exercise: {
+												with: {
+													movement: {
+														columns: {
+															name: true,
+														},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+						orderBy: (link, { asc }) => [asc(link.index)],
+					},
+					warmupGroup: {
+						with: {
+							warmups: true,
+						},
+					},
 					creator: {
 						columns: {
 							name: true,

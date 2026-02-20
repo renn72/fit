@@ -24,7 +24,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { ChefHat, Fire, List, SquaresFour, Tag } from '@phosphor-icons/react'
+import { ChefHatIcon, FireIcon, ListIcon, SquaresFourIcon, TagIcon } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
@@ -311,11 +311,11 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
-						<List className='size-4' />
+						<ListIcon className='size-4' />
 						Table
 					</TabsTrigger>
 					<TabsTrigger value='grid' className='gap-2'>
-						<SquaresFour className='size-4' />
+						<SquaresFourIcon className='size-4' />
 						Grid
 					</TabsTrigger>
 				</TabsList>
@@ -360,7 +360,7 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 							<CardTitle className='text-lg'>{recipe.name}</CardTitle>
 							{recipe.category && (
 								<CardDescription className='flex items-center gap-1'>
-									<ChefHat className='size-3' />
+									<ChefHatIcon className='size-3' />
 									{recipe.category}
 								</CardDescription>
 							)}
@@ -395,7 +395,7 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 									</div>
 								</div>
 
-								{/* Ingredients List */}
+								{/* Ingredients ListIcon */}
 								{recipe.ingredients.length > 0 && (
 									<div className='space-y-2'>
 										<div className='text-sm font-medium text-muted-foreground'>
@@ -451,7 +451,7 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 								{/* Tags */}
 								{recipe.metaTags && (
 									<div className='flex flex-wrap gap-1 pt-2'>
-										<Tag className='size-3 text-muted-foreground mt-0.5' />
+										<TagIcon className='size-3 text-muted-foreground mt-0.5' />
 										{recipe.metaTags
 											.split(',')
 											.filter(Boolean)

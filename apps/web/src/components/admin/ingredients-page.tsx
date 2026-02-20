@@ -20,7 +20,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { Fire, List, SquaresFour } from '@phosphor-icons/react'
+import { FireIcon, ListIcon, SquaresFourIcon } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
@@ -257,11 +257,11 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
-						<List className='size-4' />
+						<ListIcon className='size-4' />
 						Table
 					</TabsTrigger>
 					<TabsTrigger value='grid' className='gap-2'>
-						<SquaresFour className='size-4' />
+						<SquaresFourIcon className='size-4' />
 						Grid
 					</TabsTrigger>
 				</TabsList>
@@ -313,7 +313,7 @@ function IngredientsGridView({
 						<CardContent className='flex-1'>
 							<div className='space-y-3'>
 								<div className='flex items-center gap-2'>
-									<Fire className='size-4 text-orange-500' />
+									<FireIcon className='size-4 text-orange-500' />
 									<span className='text-sm font-medium'>
 										{ingredient.calories.toFixed(1)} kcal
 									</span>

@@ -32,6 +32,11 @@ function RouteComponent() {
 	const [isGeneratingRecipes, setIsGeneratingRecipes] = useState(false)
 	const [isGeneratingExercises, setIsGeneratingExercises] = useState(false)
 	const [isGeneratingWarmups, setIsGeneratingWarmups] = useState(false)
+	const [isGeneratingWorkouts, setIsGeneratingWorkouts] = useState(false)
+	const [isGeneratingBlockTemplates, setIsGeneratingBlockTemplates] =
+		useState(false)
+	const [isGeneratingMenuTemplates, setIsGeneratingMenuTemplates] =
+		useState(false)
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
@@ -86,6 +91,35 @@ function RouteComponent() {
 			onMutate: () => setIsGeneratingWarmups(true),
 			onSettled: () => setIsGeneratingWarmups(false),
 			onSuccess: () => toast.success('5 warmup groups generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateWorkouts = useMutation(
+		orpc.adminSetup.generateWorkouts.mutationOptions({
+			onMutate: () => setIsGeneratingWorkouts(true),
+			onSettled: () => setIsGeneratingWorkouts(false),
+			onSuccess: () => toast.success('10-20 workouts generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateBlockTemplates = useMutation(
+		orpc.adminSetup.generateBlockTemplates.mutationOptions({
+			onMutate: () => setIsGeneratingBlockTemplates(true),
+			onSettled: () => setIsGeneratingBlockTemplates(false),
+			onSuccess: () =>
+				toast.success('10 block templates generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateMenuTemplates = useMutation(
+		orpc.adminSetup.generateMenuTemplates.mutationOptions({
+			onMutate: () => setIsGeneratingMenuTemplates(true),
+			onSettled: () => setIsGeneratingMenuTemplates(false),
+			onSuccess: () =>
+				toast.success('10 menu templates generated successfully'),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -248,6 +282,144 @@ function RouteComponent() {
 						}}
 					>
 						Generate 5 Warmup Groups
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Workouts</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10-20 random workouts with 4-8
+					exercises each and optional warmup.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-workouts'
+							className='text-sm font-medium'
+						>
+							Select Organization
+						</label>
+						<select
+							id='org-select-workouts'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingWorkouts}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateWorkouts.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 10-20 Workouts
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Block Templates</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10 block templates with 4-5
+					workouts each and 1-2 rest days.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-block-templates'
+							className='text-sm font-medium'
+						>
+							Select Organization
+						</label>
+						<select
+							id='org-select-block-templates'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingBlockTemplates}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateBlockTemplates.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 10 Block Templates
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Menu Templates</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10 menu templates with 3-5 meals
+					each and 1-2 recipes per meal.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-menu-templates'
+							className='text-sm font-medium'
+						>
+							Select Organization
+						</label>
+						<select
+							id='org-select-menu-templates'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingMenuTemplates}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateMenuTemplates.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 10 Menu Templates
 					</LoadingButton>
 				</div>
 			</div>
