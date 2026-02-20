@@ -106,3 +106,56 @@
     - Added permission checks (itemUpdater/dictator) for all modification endpoints
     - Proper organisation scoping for all tenant-specific data
 
+# 2026-02-20
+
+- **Session → Workout Rename:**
+    - Renamed `session` table to `workout` to resolve naming collision with Better Auth's `session` table
+    - Updated all related tables: `session_to_exercise` → `workout_to_exercise`, `session_to_superset` → `workout_to_super_set`
+    - Updated all API endpoints, schemas, and relations from `/session/*` to `/workout/*`
+    - Updated frontend components and routes to use new naming
+
+- **Warmup Management Interface:**
+    - Created complete warmup management system with groups and individual warmups
+    - Built `warmups-page.tsx` with table/grid views showing warmup groups and their exercises
+    - Created `warmup-group-create-dialog.tsx` and `warmup-group-create-form.tsx` for creating groups with nested warmups
+    - Added API endpoint `createGroupWithWarmups` for transactional creation
+    - Added route at `/$orgSlug/warmups` with prefetching
+
+- **Workout Management System:**
+    - Created `workouts-page.tsx` with table and comprehensive grid views
+    - Grid view shows workout details including warmup groups, exercises, and supersets with ordering
+    - Created `workout-create-dialog.tsx` and `workout-create-form.tsx` with interactive workout builder
+    - Builder supports adding exercises and supersets with drag-and-drop ordering
+    - Added warmup group selector to attach warmups to workouts
+    - Added route at `/$orgSlug/workouts`
+
+- **Block Templates System:**
+    - Created `block_template` and `block_template_to_workout` tables with index-based ordering
+    - Built complete API with CRUD operations and workout add/remove endpoints
+    - Created `block-templates-page.tsx` with table and detailed grid views
+    - Grid view shows complete training schedule with rest days, workouts, warmups, exercises, and supersets
+    - Added route at `/$orgSlug/block-templates`
+
+- **Menu Templates System (Nutrition):**
+    - Created `menu_template` and `menu_template_to_recipe` tables with dual-index pattern
+    - **Dual Index Pattern**: `mealIndex` (which meal slot) + `recipeIndex` (order within meal)
+    - Example: mealIndex=2, recipeIndex=1 = "2nd recipe in meal 3"
+    - Built complete API with CRUD and recipe add/remove operations
+    - Created `menu-templates-page.tsx` with table and grid views organized by meals
+    - Grid view shows meal schedule with recipes grouped by mealIndex
+    - Added route at `/$orgSlug/menu-templates`
+    - Added sidebar navigation link under Nutrition section
+
+- **Dictator Generators:**
+    - Added `generateWarmups` - Creates 5 warmup groups with 2-4 exercises each
+    - Added `generateWorkouts` - Creates 10-20 workouts with 4-8 exercises and optional warmup
+    - Added `generateBlockTemplates` - Creates 10 block templates with 4-5 workouts and 1-2 rest days
+    - Added `generateMenuTemplates` - Creates 10 menu templates with 3-5 meals and 1-2 recipes per meal
+    - All generators available in `/dictator/generation` UI with organization selection
+
+- **UI/UX Improvements:**
+    - Fixed Phosphor Icons naming convention across all components (added `Icon` suffix)
+    - Updated imports: `Barbell` → `BarbellIcon`, `Fire` → `FireIcon`, etc.
+    - Prevents naming collisions with components, variables, and types
+    - Documented convention in SOUL.md for future reference
+
