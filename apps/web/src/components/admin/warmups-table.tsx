@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { ExerciseCreateDialog } from '@/components/admin/exercise-create-dialog'
+import { WarmupGroupCreateDialog } from '@/components/admin/warmup-group-create-dialog'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -13,34 +13,28 @@ import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface Exercise {
+interface WarmupGroup {
 	id: string
 	name: string
-	movementName: string | null
-	sets: number | null
-	reps: number | null
-	repUnit: string | null
-	ormPercent: number | null
-	targetRpe: number | null
-	restTime: number | null
-	restUnit: string | null
+	description: string | null
+	warmupCount: number
+	creatorName: string | null
 	createdAt: Date
 }
 
-const columnHelper = createColumnHelper<Exercise>()
+const columnHelper = createColumnHelper<WarmupGroup>()
 
 const columns = [
 	columnHelper.display({
 		id: 'select',
 		header: ({ table }) => (
 			<Checkbox
-				//@ts-ignore
 				checked={
 					table.getIsAllPageRowsSelected() ||
 					(table.getIsSomePageRowsSelected() && 'indeterminate')
@@ -72,75 +66,34 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('movementName', {
+	columnHelper.accessor('description', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Movement' />
+			<DataTableColumnHeader column={column} label='Description' />
 		),
+		cell: ({ row }) => {
+			const desc = row.getValue('description') as string | null
+			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
+		},
 		meta: {
-			label: 'Movement',
+			label: 'Description',
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('sets', {
+	columnHelper.accessor('warmupCount', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Sets' />
+			<DataTableColumnHeader column={column} label='Warmups' />
 		),
 		meta: {
-			label: 'Sets',
+			label: 'Warmups',
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('reps', {
+	columnHelper.accessor('creatorName', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Reps' />
+			<DataTableColumnHeader column={column} label='Creator' />
 		),
 		meta: {
-			label: 'Reps',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('repUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rep Unit' />
-		),
-		meta: {
-			label: 'Rep Unit',
-			variant: 'text',
-		},
-	}),
-	columnHelper.accessor('ormPercent', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='% 1RM' />
-		),
-		cell: ({ row }) => {
-			const value = row.getValue('ormPercent') as number | null
-			return value ? `${value}%` : '-'
-		},
-		meta: {
-			label: '% 1RM',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('targetRpe', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Target RPE' />
-		),
-		meta: {
-			label: 'Target RPE',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('restTime', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest' />
-		),
-		cell: ({ row }) => {
-			const time = row.getValue('restTime') as number | null
-			const unit = row.original.repUnit
-			return time ? `${time} ${unit || 's'}` : '-'
-		},
-		meta: {
-			label: 'Rest',
+			label: 'Creator',
 			variant: 'text',
 		},
 	}),
@@ -155,20 +108,29 @@ const columns = [
 		},
 	}),
 ]
+const route = getRouteApi('/$orgSlug/warmups')
 
-const route = getRouteApi('/$orgSlug/exercises')
-
-export function ExercisesTable() {
+export function WarmupsTable() {
 	const { session } = route.useRouteContext()
-
 	const userOrgId = session.user.organisationId
+
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
 	return <Table userOrgId={userOrgId} />
 }
 
+WarmupsTable.useRouteContext = () => {
+	return {
+		session: {
+			user: {
+				organisationId: null as string | null,
+			},
+		},
+	}
+}
+
 const Table = ({ userOrgId }: { userOrgId: string }) => {
-	const { data: exercises } = useSuspenseQuery(
-		orpc.exercise.getAllOrg.queryOptions({
+	const { data: groups } = useSuspenseQuery(
+		orpc.warmup.getAllGroups.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -177,24 +139,32 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Exercise>(
+		getSortingStateParser<WarmupGroup>(
 			columns
-				// TODO any
 				.map((c) => (c as any).accessorKey)
 				.filter((key): key is string => !!key),
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const exercisesData = (exercises as Exercise[]) ?? []
+	const groupsData: WarmupGroup[] = React.useMemo(() => {
+		return (groups ?? []).map((g) => ({
+			id: g.id,
+			name: g.name,
+			description: g.description,
+			warmupCount: g.warmups?.length ?? 0,
+			creatorName: g.creator?.name ?? null,
+			createdAt: g.createdAt,
+		}))
+	}, [groups])
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...exercisesData]
+		const processed = [...groupsData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Exercise]
-				const bValue = b[id as keyof Exercise]
+				const aValue = a[id as keyof WarmupGroup]
+				const bValue = b[id as keyof WarmupGroup]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -212,7 +182,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [exercisesData, page, perPage, sorting])
+	}, [groupsData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -228,8 +198,8 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
+				<h1 className='text-2xl font-bold tracking-tight'>Warmup Groups</h1>
+				<WarmupGroupCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

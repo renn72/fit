@@ -14,6 +14,7 @@ import {
 	WarmupGroupGetAllInput,
 	WarmupGroupGetInput,
 	WarmupGroupUpdateInput,
+	WarmupGroupWithWarmupsCreateInput,
 	WarmupUpdateInput,
 } from '../schemas/warmup'
 
@@ -127,6 +128,57 @@ export const warmupRouter = {
 				.returning()
 
 			return newGroup
+		}),
+
+	createGroupWithWarmups: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/warmup/group/with-warmups',
+			summary: 'Create a warmup group with warmups in one transaction',
+			tags: ['Warmup'],
+		})
+		.input(WarmupGroupWithWarmupsCreateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to create warmup groups',
+				})
+			}
+
+			if (!context.session.user.organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			const [newGroup] = await db
+				.insert(warmupGroup)
+				.values({
+					name: input.name,
+					description: input.description,
+					creatorId: context.session.user.id,
+					organisationId: context.session.user.organisationId,
+				})
+				.returning()
+
+			if (!newGroup) {
+				throw new ORPCError('INTERNAL_SERVER_ERROR', {
+					message: 'Failed to create warmup group',
+				})
+			}
+
+			const warmupsData = input.warmups.map((w) => ({
+				...w,
+				warmupGroupId: newGroup.id,
+			}))
+
+			await db.insert(warmup).values(warmupsData)
+
+			return {
+				...newGroup,
+				warmups: warmupsData,
+			}
 		}),
 
 	updateGroup: protectedProcedure

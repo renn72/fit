@@ -52,3 +52,16 @@ export const WarmupUpdateInput = z.object({
 export const WarmupDeleteInput = z.object({
 	id: z.string().min(1),
 })
+
+export const WarmupItemInput = z.object({
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	images: z.string().optional().nullable(),
+	link: z.string().optional().nullable(),
+})
+
+export const WarmupGroupWithWarmupsCreateInput = z.object({
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	warmups: z.array(WarmupItemInput).min(1, 'At least one warmup is required'),
+})
