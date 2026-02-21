@@ -28,6 +28,7 @@
 		"@types/node": "catalog:",
 		"tsdown": "^0.16.5",
 		"tsx": "^4.19.2",
-		"typescript": "catalog:"
+		"typescript": "catalog:",
+		"vitest": "catalog:"
 	}
 }
