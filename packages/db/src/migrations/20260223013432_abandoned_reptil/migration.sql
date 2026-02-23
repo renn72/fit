@@ -77,6 +77,30 @@ CREATE TABLE `verification` (
 	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `block_template` (
+	`id` text PRIMARY KEY,
+	`name` text NOT NULL,
+	`description` text,
+	`category` text,
+	`rest_day_index` integer,
+	`creator_id` text,
+	`organisation_id` text,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_block_template_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+	CONSTRAINT `fk_block_template_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `block_template_to_workout` (
+	`id` text PRIMARY KEY,
+	`block_template_id` text NOT NULL,
+	`workout_id` text NOT NULL,
+	`index` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_block_template_to_workout_block_template_id_block_template_id_fk` FOREIGN KEY (`block_template_id`) REFERENCES `block_template`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_block_template_to_workout_workout_id_workout_id_fk` FOREIGN KEY (`workout_id`) REFERENCES `workout`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
 CREATE TABLE `exercise` (
 	`id` text PRIMARY KEY,
 	`name` text NOT NULL,
@@ -92,6 +116,7 @@ CREATE TABLE `exercise` (
 	`tempo_pause` integer,
 	`tempo_up` integer,
 	`notes` text,
+	`is_superset` integer DEFAULT false NOT NULL,
 	`creator_id` text,
 	`organisation_id` text,
 	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
@@ -99,6 +124,16 @@ CREATE TABLE `exercise` (
 	CONSTRAINT `fk_exercise_movement_id_movement_id_fk` FOREIGN KEY (`movement_id`) REFERENCES `movement`(`id`) ON DELETE SET NULL,
 	CONSTRAINT `fk_exercise_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
 	CONSTRAINT `fk_exercise_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `super_set_to_exercise` (
+	`id` text PRIMARY KEY,
+	`super_set_id` text NOT NULL,
+	`exercise_id` text NOT NULL,
+	`order` integer DEFAULT 0 NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_super_set_to_exercise_super_set_id_exercise_id_fk` FOREIGN KEY (`super_set_id`) REFERENCES `exercise`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_super_set_to_exercise_exercise_id_exercise_id_fk` FOREIGN KEY (`exercise_id`) REFERENCES `exercise`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
 CREATE TABLE `ingredient` (
@@ -120,6 +155,30 @@ CREATE TABLE `ingredient` (
 	CONSTRAINT `fk_ingredient_base_id_ingredient_id_fk` FOREIGN KEY (`base_id`) REFERENCES `ingredient`(`id`) ON DELETE SET NULL,
 	CONSTRAINT `fk_ingredient_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
 	CONSTRAINT `fk_ingredient_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `menu_template` (
+	`id` text PRIMARY KEY,
+	`name` text NOT NULL,
+	`description` text,
+	`category` text,
+	`creator_id` text,
+	`organisation_id` text,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_menu_template_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+	CONSTRAINT `fk_menu_template_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `menu_template_to_recipe` (
+	`id` text PRIMARY KEY,
+	`menu_template_id` text NOT NULL,
+	`recipe_id` text NOT NULL,
+	`meal_index` integer NOT NULL,
+	`recipe_index` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_menu_template_to_recipe_menu_template_id_menu_template_id_fk` FOREIGN KEY (`menu_template_id`) REFERENCES `menu_template`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_menu_template_to_recipe_recipe_id_recipe_id_fk` FOREIGN KEY (`recipe_id`) REFERENCES `recipe`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
 CREATE TABLE `movement` (
@@ -189,6 +248,16 @@ CREATE TABLE `subscription` (
 	`plan_id` text NOT NULL,
 	`status` text NOT NULL,
 	`current_period_end` integer,
+	`discount_type` text,
+	`discount_value` integer,
+	`discount_reason` text,
+	`discount_expires_at` integer,
+	`bonus_members` integer DEFAULT 0 NOT NULL,
+	`bonus_trainers` integer DEFAULT 0 NOT NULL,
+	`bonus_reason` text,
+	`bonus_expires_at` integer,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
 	CONSTRAINT `fk_subscription_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
@@ -220,16 +289,103 @@ CREATE TABLE `recipe_to_ingredient` (
 	CONSTRAINT `fk_recipe_to_ingredient_alt_ingredient_id_ingredient_id_fk` FOREIGN KEY (`alt_ingredient_id`) REFERENCES `ingredient`(`id`) ON DELETE SET NULL
 );
 --> statement-breakpoint
+CREATE TABLE `warmup` (
+	`id` text PRIMARY KEY,
+	`name` text NOT NULL,
+	`description` text,
+	`images` text,
+	`link` text,
+	`warmup_group_id` text NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_warmup_warmup_group_id_warmup_group_id_fk` FOREIGN KEY (`warmup_group_id`) REFERENCES `warmup_group`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `warmup_group` (
+	`id` text PRIMARY KEY,
+	`name` text NOT NULL,
+	`description` text,
+	`creator_id` text,
+	`organisation_id` text,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_warmup_group_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+	CONSTRAINT `fk_warmup_group_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `workout` (
+	`id` text PRIMARY KEY,
+	`name` text NOT NULL,
+	`description` text,
+	`category` text,
+	`creator_id` text,
+	`organisation_id` text,
+	`warmup_group_id` text,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	`updated_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_workout_creator_id_user_id_fk` FOREIGN KEY (`creator_id`) REFERENCES `user`(`id`) ON DELETE SET NULL,
+	CONSTRAINT `fk_workout_organisation_id_organisation_id_fk` FOREIGN KEY (`organisation_id`) REFERENCES `organisation`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_workout_warmup_group_id_warmup_group_id_fk` FOREIGN KEY (`warmup_group_id`) REFERENCES `warmup_group`(`id`) ON DELETE SET NULL
+);
+--> statement-breakpoint
+CREATE TABLE `workout_to_exercise` (
+	`id` text PRIMARY KEY,
+	`workout_id` text NOT NULL,
+	`exercise_id` text NOT NULL,
+	`index` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_workout_to_exercise_workout_id_workout_id_fk` FOREIGN KEY (`workout_id`) REFERENCES `workout`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_workout_to_exercise_exercise_id_exercise_id_fk` FOREIGN KEY (`exercise_id`) REFERENCES `exercise`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
+CREATE TABLE `workout_to_superset` (
+	`id` text PRIMARY KEY,
+	`workout_id` text NOT NULL,
+	`superset_id` text NOT NULL,
+	`index` integer NOT NULL,
+	`created_at` integer DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)) NOT NULL,
+	CONSTRAINT `fk_workout_to_superset_workout_id_workout_id_fk` FOREIGN KEY (`workout_id`) REFERENCES `workout`(`id`) ON DELETE CASCADE,
+	CONSTRAINT `fk_workout_to_superset_superset_id_exercise_id_fk` FOREIGN KEY (`superset_id`) REFERENCES `exercise`(`id`) ON DELETE CASCADE
+);
+--> statement-breakpoint
 CREATE INDEX `account_userId_idx` ON `account` (`user_id`);--> statement-breakpoint
 CREATE INDEX `session_userId_idx` ON `session` (`user_id`);--> statement-breakpoint
 CREATE INDEX `user_organisationId_idx` ON `user` (`organisation_id`);--> statement-breakpoint
 CREATE INDEX `verification_identifier_idx` ON `verification` (`identifier`);--> statement-breakpoint
+CREATE INDEX `block_template_creatorId_idx` ON `block_template` (`creator_id`);--> statement-breakpoint
+CREATE INDEX `block_template_organisationId_idx` ON `block_template` (`organisation_id`);--> statement-breakpoint
+CREATE INDEX `block_template_workout_blockTemplateId_idx` ON `block_template_to_workout` (`block_template_id`);--> statement-breakpoint
+CREATE INDEX `block_template_workout_workoutId_idx` ON `block_template_to_workout` (`workout_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `block_template_workout_unique_idx` ON `block_template_to_workout` (`block_template_id`,`workout_id`);--> statement-breakpoint
 CREATE INDEX `exercise_movementId_idx` ON `exercise` (`movement_id`);--> statement-breakpoint
 CREATE INDEX `exercise_organisationId_idx` ON `exercise` (`organisation_id`);--> statement-breakpoint
+CREATE INDEX `exercise_isSuperSet_idx` ON `exercise` (`is_superset`);--> statement-breakpoint
+CREATE INDEX `superset_superSetId_idx` ON `super_set_to_exercise` (`super_set_id`);--> statement-breakpoint
+CREATE INDEX `superset_exerciseId_idx` ON `super_set_to_exercise` (`exercise_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `superset_unique_idx` ON `super_set_to_exercise` (`super_set_id`,`exercise_id`);--> statement-breakpoint
 CREATE INDEX `ingredient_organisationId_idx` ON `ingredient` (`organisation_id`);--> statement-breakpoint
 CREATE INDEX `ingredient_isBase_idx` ON `ingredient` (`is_base`);--> statement-breakpoint
+CREATE INDEX `menu_template_creatorId_idx` ON `menu_template` (`creator_id`);--> statement-breakpoint
+CREATE INDEX `menu_template_organisationId_idx` ON `menu_template` (`organisation_id`);--> statement-breakpoint
+CREATE INDEX `menu_template_recipe_menuTemplateId_idx` ON `menu_template_to_recipe` (`menu_template_id`);--> statement-breakpoint
+CREATE INDEX `menu_template_recipe_recipeId_idx` ON `menu_template_to_recipe` (`recipe_id`);--> statement-breakpoint
+CREATE INDEX `menu_template_recipe_mealIndex_idx` ON `menu_template_to_recipe` (`meal_index`);--> statement-breakpoint
+CREATE INDEX `menu_template_recipe_recipeIndex_idx` ON `menu_template_to_recipe` (`recipe_index`);--> statement-breakpoint
+CREATE UNIQUE INDEX `menu_template_recipe_unique_idx` ON `menu_template_to_recipe` (`menu_template_id`,`recipe_id`,`meal_index`,`recipe_index`);--> statement-breakpoint
 CREATE INDEX `movement_organisationId_idx` ON `movement` (`organisation_id`);--> statement-breakpoint
 CREATE INDEX `movement_isBase_idx` ON `movement` (`is_base`);--> statement-breakpoint
 CREATE INDEX `user_organisationSlug_idx` ON `organisation` (`slug`);--> statement-breakpoint
 CREATE INDEX `recipe_organisationId_idx` ON `recipe` (`organisation_id`);--> statement-breakpoint
-CREATE INDEX `recipe_creatorId_idx` ON `recipe` (`creator_id`);
+CREATE INDEX `recipe_creatorId_idx` ON `recipe` (`creator_id`);--> statement-breakpoint
+CREATE INDEX `warmup_warmupGroupId_idx` ON `warmup` (`warmup_group_id`);--> statement-breakpoint
+CREATE INDEX `warmup_group_creatorId_idx` ON `warmup_group` (`creator_id`);--> statement-breakpoint
+CREATE INDEX `warmup_group_organisationId_idx` ON `warmup_group` (`organisation_id`);--> statement-breakpoint
+CREATE INDEX `workout_creatorId_idx` ON `workout` (`creator_id`);--> statement-breakpoint
+CREATE INDEX `workout_organisationId_idx` ON `workout` (`organisation_id`);--> statement-breakpoint
+CREATE INDEX `workout_warmupGroupId_idx` ON `workout` (`warmup_group_id`);--> statement-breakpoint
+CREATE INDEX `workout_exercise_workoutId_idx` ON `workout_to_exercise` (`workout_id`);--> statement-breakpoint
+CREATE INDEX `workout_exercise_exerciseId_idx` ON `workout_to_exercise` (`exercise_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `workout_exercise_unique_idx` ON `workout_to_exercise` (`workout_id`,`exercise_id`);--> statement-breakpoint
+CREATE INDEX `workout_superset_workoutId_idx` ON `workout_to_superset` (`workout_id`);--> statement-breakpoint
+CREATE INDEX `workout_superset_supersetId_idx` ON `workout_to_superset` (`superset_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `workout_superset_unique_idx` ON `workout_to_superset` (`workout_id`,`superset_id`);

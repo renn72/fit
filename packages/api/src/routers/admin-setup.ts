@@ -11,7 +11,7 @@ import {
 	menuTemplateToRecipe,
 } from '@fit/db/schema/menu-template'
 import { movement } from '@fit/db/schema/movement'
-import { organisation } from '@fit/db/schema/org'
+import { organisation, plan, subscription } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 import { warmup, warmupGroup } from '@fit/db/schema/warmup'
 import { workout, workoutToExercise } from '@fit/db/schema/workout'
@@ -104,6 +104,17 @@ export const adminSetupRouter = {
 				})
 			}
 
+			// Fetch available plans
+			const availablePlans = await db.query.plan.findMany({
+				where: { hidden: false },
+			})
+
+			if (availablePlans.length === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No plans found. Please generate plans first.',
+				})
+			}
+
 			await db.transaction(async (tx) => {
 				for (let i = 1; i <= 3; i++) {
 					const creatorId = uuid()
@@ -127,6 +138,20 @@ export const adminSetupRouter = {
 						slug: orgSlug,
 						creatorId: creatorId,
 						state: 'active',
+					})
+
+					// Assign a random plan
+					const randomPlan =
+						availablePlans[Math.floor(Math.random() * availablePlans.length)]
+					const oneYearFromNow = new Date()
+					oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1)
+
+					await tx.insert(subscription).values({
+						id: uuid(),
+						organisationId: orgId,
+						planId: randomPlan!.id,
+						status: 'active',
+						currentPeriodEnd: oneYearFromNow,
 					})
 
 					// Create members (5-10)
@@ -1049,5 +1074,87 @@ export const adminSetupRouter = {
 			})
 
 			return { message: '10 menu templates generated successfully' }
+		}),
+
+	generatePlans: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-plans',
+			summary: 'Generate 4 random plans (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.handler(async ({ context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate plans',
+				})
+			}
+
+			const planTemplates = [
+				{
+					name: 'Starter',
+					description:
+						'Perfect for individuals getting started with fitness tracking',
+					features: 'Basic tracking, 5 recipes, 3 workouts',
+					cta: 'Get Started',
+					priceMonthly: 0,
+					priceYearly: 0,
+					maxMembers: 1,
+					maxTrainers: 0,
+					tags: 'free,basic',
+					hidden: false,
+				},
+				{
+					name: 'Pro',
+					description: 'For serious athletes and fitness enthusiasts',
+					features:
+						'Advanced analytics, unlimited recipes, custom workouts, priority support',
+					cta: 'Upgrade Now',
+					priceMonthly: 2900,
+					priceYearly: 29000,
+					maxMembers: 5,
+					maxTrainers: 2,
+					tags: 'popular,analytics',
+					hidden: false,
+				},
+				{
+					name: 'Elite',
+					description: 'Complete solution for personal trainers and small gyms',
+					features:
+						'Client management, team collaboration, API access, white-label options',
+					cta: 'Go Elite',
+					priceMonthly: 9900,
+					priceYearly: 99000,
+					maxMembers: 25,
+					maxTrainers: 5,
+					tags: 'business,api,team',
+					hidden: false,
+				},
+				{
+					name: 'Enterprise',
+					description:
+						'Custom solutions for large organizations and gym chains',
+					features:
+						'Dedicated support, custom integrations, SLA guarantee, unlimited storage',
+					cta: 'Contact Sales',
+					priceMonthly: 29900,
+					priceYearly: 299000,
+					maxMembers: 100,
+					maxTrainers: 20,
+					tags: 'enterprise,dedicated',
+					hidden: true,
+				},
+			]
+
+			await db.transaction(async (tx) => {
+				for (const planTemplate of planTemplates) {
+					await tx.insert(plan).values({
+						...planTemplate,
+					})
+				}
+			})
+
+			return { message: '4 plans generated successfully' }
 		}),
 }

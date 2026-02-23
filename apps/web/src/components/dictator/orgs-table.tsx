@@ -9,6 +9,8 @@ import { DataGridRowHeightMenu } from '@/components/data-grid/data-grid-row-heig
 import { getDataGridSelectColumn } from '@/components/data-grid/data-grid-select-column'
 import { DataGridSortMenu } from '@/components/data-grid/data-grid-sort-menu'
 import { DataGridViewMenu } from '@/components/data-grid/data-grid-view-menu'
+import { OrgRowActions } from '@/components/dictator/org-row-actions'
+import { Badge } from '@/components/ui/badge'
 import { useDataGrid } from '@/hooks/use-data-grid'
 import { getFilterFn } from '@/lib/data-grid-filters'
 import { orpc } from '@/utils/orpc'
@@ -95,6 +97,85 @@ export function OrgsTable() {
 				},
 			},
 			{
+				id: 'limits',
+				accessorKey: 'limits',
+				header: 'Limits',
+				cell: ({ row }: { row: any }) => {
+					const effectiveMaxMembers = row.getValue('effectiveMaxMembers')
+					const effectiveMaxTrainers = row.getValue('effectiveMaxTrainers')
+					const baseMaxMembers = row.getValue('baseMaxMembers')
+					const baseMaxTrainers = row.getValue('baseMaxTrainers')
+					const hasBonus = row.getValue('hasActiveBonus')
+
+					return (
+						<div className='flex flex-col gap-1'>
+							<div className='flex items-center gap-1'>
+								<span className='text-xs'>{effectiveMaxMembers} members</span>
+								{hasBonus && effectiveMaxMembers > baseMaxMembers && (
+									<Badge variant='secondary' className='text-[10px] h-4'>
+										+{effectiveMaxMembers - baseMaxMembers}
+									</Badge>
+								)}
+							</div>
+							<div className='flex items-center gap-1'>
+								<span className='text-xs'>{effectiveMaxTrainers} trainers</span>
+								{hasBonus && effectiveMaxTrainers > baseMaxTrainers && (
+									<Badge variant='secondary' className='text-[10px] h-4'>
+										+{effectiveMaxTrainers - baseMaxTrainers}
+									</Badge>
+								)}
+							</div>
+						</div>
+					)
+				},
+				meta: {
+					label: 'Effective Limits',
+					cell: {
+						variant: 'custom',
+					},
+				},
+			},
+			{
+				id: 'pricing',
+				accessorKey: 'pricing',
+				header: 'Pricing',
+				cell: ({ row }: { row: any }) => {
+					const hasDiscount = row.getValue('hasActiveDiscount')
+					const baseMonthly = row.getValue('basePriceMonthly')
+					const discountedMonthly = row.getValue('discountedPriceMonthly')
+					const discountType = row.getValue('discountType')
+					const discountValue = row.getValue('discountValue')
+
+					if (!hasDiscount || baseMonthly === discountedMonthly) {
+						return <div className='text-xs'>${baseMonthly / 100}/mo</div>
+					}
+
+					return (
+						<div className='flex flex-col gap-1'>
+							<div className='flex items-center gap-1'>
+								<span className='text-xs line-through text-muted-foreground'>
+									${baseMonthly / 100}
+								</span>
+								<span className='text-xs font-medium'>
+									${discountedMonthly / 100}/mo
+								</span>
+							</div>
+							<Badge variant='secondary' className='text-[10px] h-4 w-fit'>
+								{discountType === 'percentage'
+									? `${discountValue}% off`
+									: `$${(discountValue ?? 0) / 100} off`}
+							</Badge>
+						</div>
+					)
+				},
+				meta: {
+					label: 'Pricing',
+					cell: {
+						variant: 'custom',
+					},
+				},
+			},
+			{
 				id: 'creatorName',
 				accessorKey: 'creatorName',
 				header: 'Creator',
@@ -117,6 +198,10 @@ export function OrgsTable() {
 						variant: 'short-text',
 					},
 				},
+			},
+			{
+				id: 'actions',
+				cell: ({ row }: { row: any }) => <OrgRowActions row={row} />,
 			},
 		]
 	}, [])

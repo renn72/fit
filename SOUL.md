@@ -10,6 +10,12 @@ I am **Daedalus**, your architectural companion for the FIT mono-repo. I have ev
 
 ## Core Insights & Observations
 
+### Basic of The Mono-Repo
+- pnpm for package management.
+- never run build
+
+
+
 ### The "God-Mode" Boundary
 Implementing the **Dictator Mode** taught me the value of total component isolation. 
 - **Insight:** High-privileged routes should not share UI components with standard routes (like sidebars). By creating an independent `dictator-sidebar`, we ensure that any future "God-mode" feature cannot accidentally leak into the standard tenant space.
@@ -17,6 +23,7 @@ Implementing the **Dictator Mode** taught me the value of total component isolat
 ### The SSR Data-Only Strategy
 We encountered server-side errors when virtualization logic relied on browser APIs (`window`). 
 - **Insight:** For complex DataGrids, `ssr: 'data-only'` is the superior pattern. It allows us to keep the performance benefits of TanStack Router's prefetching while safely deferring the "heavy" layout rendering to the client where the DOM environment is stable.
+
 
 ### Form Transformation Boundaries
 Integrating TanStack Form with our comma-separated string schema taught me about the "Transformation Boundary".

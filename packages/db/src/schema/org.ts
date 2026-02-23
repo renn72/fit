@@ -44,6 +44,25 @@ export const subscription = s.sqliteTable('subscription', {
 	planId: s.text('plan_id').notNull(),
 	status: s.text('status').notNull(),
 	currentPeriodEnd: s.integer('current_period_end', { mode: 'timestamp' }),
+	// Discount fields
+	discountType: s.text('discount_type'), // 'percentage' | 'fixed'
+	discountValue: s.integer('discount_value'), // e.g., 20 for 20% or 5000 for $50
+	discountReason: s.text('discount_reason'),
+	discountExpiresAt: s.integer('discount_expires_at', { mode: 'timestamp_ms' }),
+	// Bonus fields
+	bonusMembers: s.integer('bonus_members').default(0).notNull(),
+	bonusTrainers: s.integer('bonus_trainers').default(0).notNull(),
+	bonusReason: s.text('bonus_reason'),
+	bonusExpiresAt: s.integer('bonus_expires_at', { mode: 'timestamp_ms' }),
+	createdAt: s
+		.integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: s
+		.integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.$onUpdate(() => /* @__PURE__ */ new Date())
+		.notNull(),
 })
 
 export const plan = s.sqliteTable('plan', {

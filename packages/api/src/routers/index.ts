@@ -6,6 +6,7 @@ import { menuTemplateRouter } from './menu-template'
 import { movementRouter } from './movement'
 import { orgRouter } from './organisation'
 import { recipeRouter } from './recipe'
+import { subscriptionRouter } from './subscription'
 import { userRouter } from './user'
 import { warmupRouter } from './warmup'
 import { workoutRouter } from './workout'
@@ -48,6 +49,7 @@ export const appRouter = {
 	warmup: warmupRouter,
 	blockTemplate: blockTemplateRouter,
 	menuTemplate: menuTemplateRouter,
+	subscription: subscriptionRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>

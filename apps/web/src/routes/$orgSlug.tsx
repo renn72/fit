@@ -11,11 +11,13 @@ export const Route = createFileRoute('/$orgSlug')({
 		const userOrgSlug = session?.user?.organisationSlug
 
 		if (userOrgSlug !== orgSlug) {
+			console.log('redirecting')
 			throw redirect({
 				to: '/',
 			})
 		}
 		if (!session?.user?.organisationId) {
+			console.log('redirecting')
 			throw redirect({
 				to: '/',
 			})

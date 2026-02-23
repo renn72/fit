@@ -132,9 +132,8 @@ export function OnboardingForm() {
 	const createOrg = useMutation(
 		orpc.organisation.create.mutationOptions({
 			onSuccess: () => {
-				toast.success('Organisation created successfully')
 				navigate({
-					to: '/$orgSlug',
+					to: '/login',
 					params: { orgSlug: organisationSlug },
 				})
 			},

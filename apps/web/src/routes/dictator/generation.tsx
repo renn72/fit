@@ -37,6 +37,7 @@ function RouteComponent() {
 		useState(false)
 	const [isGeneratingMenuTemplates, setIsGeneratingMenuTemplates] =
 		useState(false)
+	const [isGeneratingPlans, setIsGeneratingPlans] = useState(false)
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
@@ -124,6 +125,15 @@ function RouteComponent() {
 		}),
 	)
 
+	const generatePlans = useMutation(
+		orpc.adminSetup.generatePlans.mutationOptions({
+			onMutate: () => setIsGeneratingPlans(true),
+			onSettled: () => setIsGeneratingPlans(false),
+			onSuccess: () => toast.success('4 plans generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
 	return (
 		<div className='flex flex-col gap-6 justify-center items-center p-8'>
 			<div className='flex flex-col gap-4 w-full max-w-md'>
@@ -151,6 +161,15 @@ function RouteComponent() {
 					onMouseDown={() => generateDummyData.mutate({})}
 				>
 					Generate Org Dummy Data
+				</LoadingButton>
+
+				<LoadingButton
+					variant='outline'
+					loading={isGeneratingPlans}
+					className='w-full cursor-pointer'
+					onMouseDown={() => generatePlans.mutate({})}
+				>
+					Generate 4 Plans
 				</LoadingButton>
 			</div>
 

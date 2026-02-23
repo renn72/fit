@@ -159,3 +159,18 @@
     - Prevents naming collisions with components, variables, and types
     - Documented convention in SOUL.md for future reference
 
+# 2026-02-23
+
+- **Subscription Management System:**
+    - Added discount fields to `subscription` table: `discountType`, `discountValue`, `discountReason`, `discountExpiresAt`
+    - Added bonus fields to `subscription` table: `bonusMembers`, `bonusTrainers`, `bonusReason`, `bonusExpiresAt`
+    - Created `subscriptionRouter` with endpoints: `get`, `getByOrganisation`, `update`, `getAll`
+    - Updated `organisation.getAll` to include subscription data with calculated effective limits and discounted prices
+    - Created dictator UI for managing discounts and bonuses via `org-row-actions.tsx`
+
+- **Plan Generation:**
+    - Added `generatePlans` endpoint to create 4 random plans (Starter, Pro, Elite, Enterprise)
+    - Updated `generateDummyData` to assign a random plan to each created organization
+    - Added "Generate 4 Plans" button to `/dictator/generation` page
+    - Plans include various price points: Free ($0), Pro ($29/mo), Elite ($99/mo), Enterprise ($299/mo)
+

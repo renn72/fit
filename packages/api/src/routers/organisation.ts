@@ -205,6 +205,10 @@ export const orgRouter = {
 							plan: {
 								columns: {
 									name: true,
+									maxMembers: true,
+									maxTrainers: true,
+									priceMonthly: true,
+									priceYearly: true,
 								},
 							},
 						},
@@ -212,13 +216,80 @@ export const orgRouter = {
 				},
 			})
 
-			return orgs.map((o) => ({
-				...o,
-				creatorName: o.creator?.name ?? 'Unknown',
-				creatorEmail: o.creator?.email ?? '',
-				memberCount: o.members?.length ?? 0,
-				planName: o.subscriptions?.[0]?.plan?.name ?? 'No Plan',
-			}))
+			return orgs.map((o) => {
+				const sub = o.subscriptions?.[0]
+				const plan = sub?.plan
+
+				// Calculate effective limits
+				const baseMembers = plan?.maxMembers ?? 0
+				const baseTrainers = plan?.maxTrainers ?? 0
+				const bonusMembers = sub?.bonusMembers ?? 0
+				const bonusTrainers = sub?.bonusTrainers ?? 0
+				const effectiveMaxMembers = baseMembers + bonusMembers
+				const effectiveMaxTrainers = baseTrainers + bonusTrainers
+
+				// Calculate discounted prices
+				const baseMonthly = plan?.priceMonthly ?? 0
+				const baseYearly = plan?.priceYearly ?? 0
+				let discountedMonthly = baseMonthly
+				let discountedYearly = baseYearly
+
+				if (sub?.discountType && sub.discountValue) {
+					if (sub.discountType === 'percentage') {
+						discountedMonthly = Math.round(
+							baseMonthly * (1 - sub.discountValue / 100),
+						)
+						discountedYearly = Math.round(
+							baseYearly * (1 - sub.discountValue / 100),
+						)
+					} else {
+						discountedMonthly = Math.max(0, baseMonthly - sub.discountValue)
+						discountedYearly = Math.max(0, baseYearly - sub.discountValue)
+					}
+				}
+
+				// Check if discount/bonus is active
+				const hasActiveDiscount = !!(
+					sub?.discountType &&
+					(!sub.discountExpiresAt ||
+						new Date(sub.discountExpiresAt) > new Date())
+				)
+				const hasActiveBonus = !!(
+					(bonusMembers > 0 || bonusTrainers > 0) &&
+					(!sub?.bonusExpiresAt || new Date(sub.bonusExpiresAt) > new Date())
+				)
+
+				return {
+					...o,
+					creatorName: o.creator?.name ?? 'Unknown',
+					creatorEmail: o.creator?.email ?? '',
+					memberCount: o.members?.length ?? 0,
+					planName: plan?.name ?? 'No Plan',
+					// Subscription details
+					subscriptionId: sub?.id,
+					// Discount info
+					discountType: sub?.discountType,
+					discountValue: sub?.discountValue,
+					discountReason: sub?.discountReason,
+					discountExpiresAt: sub?.discountExpiresAt,
+					hasActiveDiscount,
+					discountedPriceMonthly: discountedMonthly,
+					discountedPriceYearly: discountedYearly,
+					// Bonus info
+					bonusMembers,
+					bonusTrainers,
+					bonusReason: sub?.bonusReason,
+					bonusExpiresAt: sub?.bonusExpiresAt,
+					hasActiveBonus,
+					effectiveMaxMembers,
+					effectiveMaxTrainers,
+					// Base plan info for reference
+					baseMaxMembers: baseMembers,
+					baseMaxTrainers: baseTrainers,
+					basePriceMonthly: baseMonthly,
+					basePriceYearly: baseYearly,
+				}
+			})
 		}),
 
 	// ***************** Plan Management (Dictator Only) *******************

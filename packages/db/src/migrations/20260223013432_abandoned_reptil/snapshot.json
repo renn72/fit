@@ -1,9 +1,9 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "4488a496-3b16-4ac7-b6a4-a805e81dfc0a",
+  "id": "efb01ffc-e166-4fad-8769-d617ed386a3b",
   "prevIds": [
-    "a51f8d4d-c177-49d0-b380-4c12d5a56437"
+    "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
@@ -31,6 +31,14 @@
       "entityType": "tables"
     },
     {
+      "name": "block_template",
+      "entityType": "tables"
+    },
+    {
+      "name": "block_template_to_workout",
+      "entityType": "tables"
+    },
+    {
       "name": "exercise",
       "entityType": "tables"
     },
@@ -40,6 +48,14 @@
     },
     {
       "name": "ingredient",
+      "entityType": "tables"
+    },
+    {
+      "name": "menu_template",
+      "entityType": "tables"
+    },
+    {
+      "name": "menu_template_to_recipe",
       "entityType": "tables"
     },
     {
@@ -68,6 +84,26 @@
     },
     {
       "name": "recipe_to_ingredient",
+      "entityType": "tables"
+    },
+    {
+      "name": "warmup",
+      "entityType": "tables"
+    },
+    {
+      "name": "warmup_group",
+      "entityType": "tables"
+    },
+    {
+      "name": "workout",
+      "entityType": "tables"
+    },
+    {
+      "name": "workout_to_exercise",
+      "entityType": "tables"
+    },
+    {
+      "name": "workout_to_superset",
       "entityType": "tables"
     },
     {
@@ -648,6 +684,146 @@
       "generated": null,
       "name": "id",
       "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "rest_day_index",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "block_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "block_template_to_workout"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "block_template_id",
+      "entityType": "columns",
+      "table": "block_template_to_workout"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "workout_id",
+      "entityType": "columns",
+      "table": "block_template_to_workout"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "index",
+      "entityType": "columns",
+      "table": "block_template_to_workout"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "block_template_to_workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
       "table": "exercise"
     },
     {
@@ -1029,6 +1205,146 @@
       "name": "updated_at",
       "entityType": "columns",
       "table": "ingredient"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "menu_template"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "menu_template_id",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recipe_id",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "meal_index",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "recipe_index",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "menu_template_to_recipe"
     },
     {
       "type": "text",
@@ -1526,6 +1842,106 @@
       "autoincrement": false,
       "default": null,
       "generated": null,
+      "name": "discount_type",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "discount_value",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "discount_reason",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "discount_expires_at",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "bonus_members",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "0",
+      "generated": null,
+      "name": "bonus_trainers",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "bonus_reason",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "bonus_expires_at",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "subscription"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "recipe"
@@ -1691,6 +2107,346 @@
       "table": "recipe_to_ingredient"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "images",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "link",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "warmup_group_id",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "warmup"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "warmup_group"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "description",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "category",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "creator_id",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "organisation_id",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "warmup_group_id",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "updated_at",
+      "entityType": "columns",
+      "table": "workout"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "workout_to_exercise"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "workout_id",
+      "entityType": "columns",
+      "table": "workout_to_exercise"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "exercise_id",
+      "entityType": "columns",
+      "table": "workout_to_exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "index",
+      "entityType": "columns",
+      "table": "workout_to_exercise"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "workout_to_exercise"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "workout_to_superset"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "workout_id",
+      "entityType": "columns",
+      "table": "workout_to_superset"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "superset_id",
+      "entityType": "columns",
+      "table": "workout_to_superset"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "index",
+      "entityType": "columns",
+      "table": "workout_to_superset"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "(cast(unixepoch('subsecond') * 1000 as integer))",
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "workout_to_superset"
+    },
+    {
       "columns": [
         "user_id"
       ],
@@ -1749,6 +2505,66 @@
       "name": "fk_user_toggles_user_id_user_id_fk",
       "entityType": "fks",
       "table": "user_toggles"
+    },
+    {
+      "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_block_template_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "block_template"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_block_template_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "block_template"
+    },
+    {
+      "columns": [
+        "block_template_id"
+      ],
+      "tableTo": "block_template",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_block_template_to_workout_block_template_id_block_template_id_fk",
+      "entityType": "fks",
+      "table": "block_template_to_workout"
+    },
+    {
+      "columns": [
+        "workout_id"
+      ],
+      "tableTo": "workout",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_block_template_to_workout_workout_id_workout_id_fk",
+      "entityType": "fks",
+      "table": "block_template_to_workout"
     },
     {
       "columns": [
@@ -1869,6 +2685,66 @@
       "name": "fk_ingredient_organisation_id_organisation_id_fk",
       "entityType": "fks",
       "table": "ingredient"
+    },
+    {
+      "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_menu_template_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "menu_template"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_menu_template_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "menu_template"
+    },
+    {
+      "columns": [
+        "menu_template_id"
+      ],
+      "tableTo": "menu_template",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_menu_template_to_recipe_menu_template_id_menu_template_id_fk",
+      "entityType": "fks",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        "recipe_id"
+      ],
+      "tableTo": "recipe",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_menu_template_to_recipe_recipe_id_recipe_id_fk",
+      "entityType": "fks",
+      "table": "menu_template_to_recipe"
     },
     {
       "columns": [
@@ -2037,6 +2913,156 @@
     },
     {
       "columns": [
+        "warmup_group_id"
+      ],
+      "tableTo": "warmup_group",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_warmup_warmup_group_id_warmup_group_id_fk",
+      "entityType": "fks",
+      "table": "warmup"
+    },
+    {
+      "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_warmup_group_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "warmup_group"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_warmup_group_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "warmup_group"
+    },
+    {
+      "columns": [
+        "creator_id"
+      ],
+      "tableTo": "user",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_workout_creator_id_user_id_fk",
+      "entityType": "fks",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        "organisation_id"
+      ],
+      "tableTo": "organisation",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_workout_organisation_id_organisation_id_fk",
+      "entityType": "fks",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        "warmup_group_id"
+      ],
+      "tableTo": "warmup_group",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_workout_warmup_group_id_warmup_group_id_fk",
+      "entityType": "fks",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        "workout_id"
+      ],
+      "tableTo": "workout",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_workout_to_exercise_workout_id_workout_id_fk",
+      "entityType": "fks",
+      "table": "workout_to_exercise"
+    },
+    {
+      "columns": [
+        "exercise_id"
+      ],
+      "tableTo": "exercise",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_workout_to_exercise_exercise_id_exercise_id_fk",
+      "entityType": "fks",
+      "table": "workout_to_exercise"
+    },
+    {
+      "columns": [
+        "workout_id"
+      ],
+      "tableTo": "workout",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_workout_to_superset_workout_id_workout_id_fk",
+      "entityType": "fks",
+      "table": "workout_to_superset"
+    },
+    {
+      "columns": [
+        "superset_id"
+      ],
+      "tableTo": "exercise",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_workout_to_superset_superset_id_exercise_id_fk",
+      "entityType": "fks",
+      "table": "workout_to_superset"
+    },
+    {
+      "columns": [
         "id"
       ],
       "nameExplicit": false,
@@ -2094,6 +3120,24 @@
         "id"
       ],
       "nameExplicit": false,
+      "name": "block_template_pk",
+      "table": "block_template",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "block_template_to_workout_pk",
+      "table": "block_template_to_workout",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
       "name": "exercise_pk",
       "table": "exercise",
       "entityType": "pks"
@@ -2114,6 +3158,24 @@
       "nameExplicit": false,
       "name": "ingredient_pk",
       "table": "ingredient",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "menu_template_pk",
+      "table": "menu_template",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "menu_template_to_recipe_pk",
+      "table": "menu_template_to_recipe",
       "entityType": "pks"
     },
     {
@@ -2181,6 +3243,51 @@
     },
     {
       "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "warmup_pk",
+      "table": "warmup",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "warmup_group_pk",
+      "table": "warmup_group",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "workout_pk",
+      "table": "workout",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "workout_to_exercise_pk",
+      "table": "workout_to_exercise",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "workout_to_superset_pk",
+      "table": "workout_to_superset",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
         {
           "value": "user_id",
           "isExpression": false
@@ -2234,6 +3341,80 @@
       "name": "verification_identifier_idx",
       "entityType": "indexes",
       "table": "verification"
+    },
+    {
+      "columns": [
+        {
+          "value": "creator_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "block_template_creatorId_idx",
+      "entityType": "indexes",
+      "table": "block_template"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "block_template_organisationId_idx",
+      "entityType": "indexes",
+      "table": "block_template"
+    },
+    {
+      "columns": [
+        {
+          "value": "block_template_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "block_template_workout_blockTemplateId_idx",
+      "entityType": "indexes",
+      "table": "block_template_to_workout"
+    },
+    {
+      "columns": [
+        {
+          "value": "workout_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "block_template_workout_workoutId_idx",
+      "entityType": "indexes",
+      "table": "block_template_to_workout"
+    },
+    {
+      "columns": [
+        {
+          "value": "block_template_id",
+          "isExpression": false
+        },
+        {
+          "value": "workout_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "block_template_workout_unique_idx",
+      "entityType": "indexes",
+      "table": "block_template_to_workout"
     },
     {
       "columns": [
@@ -2354,6 +3535,116 @@
     {
       "columns": [
         {
+          "value": "creator_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_creatorId_idx",
+      "entityType": "indexes",
+      "table": "menu_template"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_organisationId_idx",
+      "entityType": "indexes",
+      "table": "menu_template"
+    },
+    {
+      "columns": [
+        {
+          "value": "menu_template_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_recipe_menuTemplateId_idx",
+      "entityType": "indexes",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "recipe_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_recipe_recipeId_idx",
+      "entityType": "indexes",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "meal_index",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_recipe_mealIndex_idx",
+      "entityType": "indexes",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "recipe_index",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_recipe_recipeIndex_idx",
+      "entityType": "indexes",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "menu_template_id",
+          "isExpression": false
+        },
+        {
+          "value": "recipe_id",
+          "isExpression": false
+        },
+        {
+          "value": "meal_index",
+          "isExpression": false
+        },
+        {
+          "value": "recipe_index",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "menu_template_recipe_unique_idx",
+      "entityType": "indexes",
+      "table": "menu_template_to_recipe"
+    },
+    {
+      "columns": [
+        {
           "value": "organisation_id",
           "isExpression": false
         }
@@ -2420,6 +3711,182 @@
       "name": "recipe_creatorId_idx",
       "entityType": "indexes",
       "table": "recipe"
+    },
+    {
+      "columns": [
+        {
+          "value": "warmup_group_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "warmup_warmupGroupId_idx",
+      "entityType": "indexes",
+      "table": "warmup"
+    },
+    {
+      "columns": [
+        {
+          "value": "creator_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "warmup_group_creatorId_idx",
+      "entityType": "indexes",
+      "table": "warmup_group"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "warmup_group_organisationId_idx",
+      "entityType": "indexes",
+      "table": "warmup_group"
+    },
+    {
+      "columns": [
+        {
+          "value": "creator_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_creatorId_idx",
+      "entityType": "indexes",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        {
+          "value": "organisation_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_organisationId_idx",
+      "entityType": "indexes",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        {
+          "value": "warmup_group_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_warmupGroupId_idx",
+      "entityType": "indexes",
+      "table": "workout"
+    },
+    {
+      "columns": [
+        {
+          "value": "workout_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_exercise_workoutId_idx",
+      "entityType": "indexes",
+      "table": "workout_to_exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "exercise_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_exercise_exerciseId_idx",
+      "entityType": "indexes",
+      "table": "workout_to_exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "workout_id",
+          "isExpression": false
+        },
+        {
+          "value": "exercise_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_exercise_unique_idx",
+      "entityType": "indexes",
+      "table": "workout_to_exercise"
+    },
+    {
+      "columns": [
+        {
+          "value": "workout_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_superset_workoutId_idx",
+      "entityType": "indexes",
+      "table": "workout_to_superset"
+    },
+    {
+      "columns": [
+        {
+          "value": "superset_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_superset_supersetId_idx",
+      "entityType": "indexes",
+      "table": "workout_to_superset"
+    },
+    {
+      "columns": [
+        {
+          "value": "workout_id",
+          "isExpression": false
+        },
+        {
+          "value": "superset_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "workout_superset_unique_idx",
+      "entityType": "indexes",
+      "table": "workout_to_superset"
     },
     {
       "columns": [

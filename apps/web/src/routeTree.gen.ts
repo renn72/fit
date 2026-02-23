@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SigninRouteImport } from './routes/signin'
 import { Route as OnboardRouteImport } from './routes/onboard'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DictatorRouteImport } from './routes/dictator'
@@ -37,6 +38,11 @@ import { Route as OrgSlugBlockTemplatesRouteImport } from './routes/$orgSlug/blo
 import { Route as OrgSlugWorkoutsCreateRouteImport } from './routes/$orgSlug/workouts.create'
 import { Route as OrgSlugRecipesCreateRouteImport } from './routes/$orgSlug/recipes.create'
 
+const SigninRoute = SigninRouteImport.update({
+  id: '/signin',
+  path: '/signin',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OnboardRoute = OnboardRouteImport.update({
   id: '/onboard',
   path: '/onboard',
@@ -181,6 +187,7 @@ export interface FileRoutesByFullPath {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/signin': typeof SigninRoute
   '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
@@ -210,6 +217,7 @@ export interface FileRoutesByTo {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/signin': typeof SigninRoute
   '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
@@ -240,6 +248,7 @@ export interface FileRoutesById {
   '/dictator': typeof DictatorRouteWithChildren
   '/login': typeof LoginRoute
   '/onboard': typeof OnboardRoute
+  '/signin': typeof SigninRoute
   '/$orgSlug/block-templates': typeof OrgSlugBlockTemplatesRoute
   '/$orgSlug/dashboard': typeof OrgSlugDashboardRoute
   '/$orgSlug/exercises': typeof OrgSlugExercisesRoute
@@ -271,6 +280,7 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/signin'
     | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
@@ -300,6 +310,7 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/signin'
     | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
@@ -329,6 +340,7 @@ export interface FileRouteTypes {
     | '/dictator'
     | '/login'
     | '/onboard'
+    | '/signin'
     | '/$orgSlug/block-templates'
     | '/$orgSlug/dashboard'
     | '/$orgSlug/exercises'
@@ -359,10 +371,18 @@ export interface RootRouteChildren {
   DictatorRoute: typeof DictatorRouteWithChildren
   LoginRoute: typeof LoginRoute
   OnboardRoute: typeof OnboardRoute
+  SigninRoute: typeof SigninRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/signin': {
+      id: '/signin'
+      path: '/signin'
+      fullPath: '/signin'
+      preLoaderRoute: typeof SigninRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/onboard': {
       id: '/onboard'
       path: '/onboard'
@@ -642,6 +662,7 @@ const rootRouteChildren: RootRouteChildren = {
   DictatorRoute: DictatorRouteWithChildren,
   LoginRoute: LoginRoute,
   OnboardRoute: OnboardRoute,
+  SigninRoute: SigninRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
