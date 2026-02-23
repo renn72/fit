@@ -1,4 +1,4 @@
-import { BaseIngredientsTable } from '@/components/dictator/base-ingredients-table'
+import { BaseIngredientsTable } from '@/components/dictator/orgs/base-ingredients-table'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

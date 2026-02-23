@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { PlanCreateForm } from '@/components/dictator/plan-create-form'
+import { PlanCreateForm } from '@/components/dictator/plans/plan-create-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,

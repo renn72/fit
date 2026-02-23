@@ -1,4 +1,4 @@
-import { WorkoutsPage } from '@/components/admin/workouts-page'
+import { WorkoutsPage } from '@/components/admin/workout/workouts-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

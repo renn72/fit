@@ -1,4 +1,4 @@
-import { RecipeCreateForm } from '@/components/admin/recipe-create-form'
+import { RecipeCreateForm } from '@/components/admin/recipe/recipe-create-form'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute, useRouteContext } from '@tanstack/react-router'

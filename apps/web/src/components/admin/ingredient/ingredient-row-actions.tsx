@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { IngredientEditForm } from '@/components/admin/ingredient-edit-form'
+import { IngredientEditForm } from '@/components/admin/ingredient/ingredient-edit-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,

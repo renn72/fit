@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 
-import { MovementCreateDialog } from '@/components/admin/movement-create-dialog'
-import { MovementRowActions } from '@/components/admin/movement-row-actions'
+import { MovementCreateDialog } from '@/components/admin/movement/movement-create-dialog'
+import { MovementRowActions } from '@/components/admin/movement/movement-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'

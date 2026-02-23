@@ -1,4 +1,4 @@
-import { IngredientsPage } from '@/components/admin/ingredients-page'
+import { IngredientsPage } from '@/components/admin/ingredient/ingredients-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

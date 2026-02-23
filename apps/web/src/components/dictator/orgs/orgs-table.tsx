@@ -9,7 +9,7 @@ import { DataGridRowHeightMenu } from '@/components/data-grid/data-grid-row-heig
 import { getDataGridSelectColumn } from '@/components/data-grid/data-grid-select-column'
 import { DataGridSortMenu } from '@/components/data-grid/data-grid-sort-menu'
 import { DataGridViewMenu } from '@/components/data-grid/data-grid-view-menu'
-import { OrgRowActions } from '@/components/dictator/org-row-actions'
+import { OrgRowActions } from '@/components/dictator/orgs/org-row-actions'
 import { Badge } from '@/components/ui/badge'
 import { useDataGrid } from '@/hooks/use-data-grid'
 import { getFilterFn } from '@/lib/data-grid-filters'

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { ExerciseCreateForm } from '@/components/admin/exercise-create-form'
+import { ExerciseCreateForm } from '@/components/admin/exercise/exercise-create-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,

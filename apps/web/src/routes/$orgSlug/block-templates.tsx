@@ -1,4 +1,4 @@
-import { BlockTemplatesPage } from '@/components/admin/block-templates-page'
+import { BlockTemplatesPage } from '@/components/admin/block-template/block-templates-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

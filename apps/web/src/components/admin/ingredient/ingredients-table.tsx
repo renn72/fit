@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 
-import { ExerciseCreateDialog } from '@/components/admin/exercise-create-dialog'
+import { IngredientCreateDialog } from '@/components/admin/ingredient/ingredient-create-dialog'
+import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -19,48 +20,24 @@ import { createColumnHelper } from '@tanstack/react-table'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface Exercise {
+// Define the shape of our data
+interface Ingredient {
 	id: string
 	name: string
-	movementName: string | null
-	sets: number | null
-	reps: number | null
-	repUnit: string | null
-	ormPercent: number | null
-	targetRpe: number | null
-	restTime: number | null
-	restUnit: string | null
+	calories: number
+	protein: number
+	fat: number
+	carbohydrate: number
+	serveSize: number
+	serveUnit: string
 	createdAt: Date
+	isBase: boolean
+	isOverwriteBase: boolean
 }
 
-const columnHelper = createColumnHelper<Exercise>()
+const columnHelper = createColumnHelper<Ingredient>()
 
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				//@ts-ignore
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -72,75 +49,73 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('movementName', {
+	columnHelper.accessor('calories', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Movement' />
+			<DataTableColumnHeader column={column} label='Calories' />
 		),
 		meta: {
-			label: 'Movement',
-			variant: 'text',
-		},
-	}),
-	columnHelper.accessor('sets', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Sets' />
-		),
-		meta: {
-			label: 'Sets',
+			label: 'Calories',
 			variant: 'number',
 		},
-	}),
-	columnHelper.accessor('reps', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Reps' />
-		),
-		meta: {
-			label: 'Reps',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('repUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rep Unit' />
-		),
-		meta: {
-			label: 'Rep Unit',
-			variant: 'text',
-		},
-	}),
-	columnHelper.accessor('ormPercent', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='% 1RM' />
-		),
 		cell: ({ row }) => {
-			const value = row.getValue('ormPercent') as number | null
-			return value ? `${value}%` : '-'
-		},
-		meta: {
-			label: '% 1RM',
-			variant: 'number',
+			const value = row.getValue('calories') as number
+			return value.toFixed(1)
 		},
 	}),
-	columnHelper.accessor('targetRpe', {
+	columnHelper.accessor('protein', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Target RPE' />
+			<DataTableColumnHeader column={column} label='Protein' />
 		),
 		meta: {
-			label: 'Target RPE',
+			label: 'Protein',
 			variant: 'number',
 		},
-	}),
-	columnHelper.accessor('restTime', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest' />
-		),
 		cell: ({ row }) => {
-			const time = row.getValue('restTime') as number | null
-			const unit = row.original.repUnit
-			return time ? `${time} ${unit || 's'}` : '-'
+			const value = row.getValue('protein') as number
+			return value.toFixed(1)
 		},
+	}),
+	columnHelper.accessor('fat', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Fat' />
+		),
 		meta: {
-			label: 'Rest',
+			label: 'Fat',
+			variant: 'number',
+		},
+		cell: ({ row }) => {
+			const value = row.getValue('fat') as number
+			return value.toFixed(1)
+		},
+	}),
+	columnHelper.accessor('carbohydrate', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Carbs' />
+		),
+		meta: {
+			label: 'Carbs',
+			variant: 'number',
+		},
+		cell: ({ row }) => {
+			const value = row.getValue('carbohydrate') as number
+			return value.toFixed(1)
+		},
+	}),
+	columnHelper.accessor('serveSize', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Serve Size' />
+		),
+		meta: {
+			label: 'Serve Size',
+			variant: 'number',
+		},
+	}),
+	columnHelper.accessor('serveUnit', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Unit' />
+		),
+		meta: {
+			label: 'Unit',
 			variant: 'text',
 		},
 	}),
@@ -154,11 +129,49 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.accessor('isBase', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Is Base' />
+		),
+		cell: ({ row }) => (
+			<div className='w-10'>
+				<Checkbox
+					checked={row.getValue('isBase')}
+					disabled
+					aria-label='Is Base'
+				/>
+			</div>
+		),
+		meta: {
+			label: 'Is Base',
+			variant: 'boolean',
+		},
+	}),
+	columnHelper.accessor('isOverwriteBase', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Overwrite Base' />
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getValue('isOverwriteBase')}
+				disabled
+				aria-label='Overwrite Base'
+			/>
+		),
+		meta: {
+			label: 'Overwrite Base',
+			variant: 'boolean',
+		},
+	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <IngredientRowActions row={row} />,
+	}),
 ]
 
-const route = getRouteApi('/$orgSlug/exercises')
+const route = getRouteApi('/$orgSlug/ingredients')
 
-export function ExercisesTable() {
+export function IngredientsTable() {
 	const { session } = route.useRouteContext()
 
 	const userOrgId = session.user.organisationId
@@ -167,8 +180,8 @@ export function ExercisesTable() {
 }
 
 const Table = ({ userOrgId }: { userOrgId: string }) => {
-	const { data: exercises } = useSuspenseQuery(
-		orpc.exercise.getAllOrg.queryOptions({
+	const { data: ingredients } = useSuspenseQuery(
+		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -177,24 +190,23 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Exercise>(
+		getSortingStateParser<Ingredient>(
 			columns
-				// TODO any
 				.map((c) => (c as any).accessorKey)
 				.filter((key): key is string => !!key),
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const exercisesData = (exercises as Exercise[]) ?? []
+	const ingredientsData = (ingredients as Ingredient[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...exercisesData]
+		const processed = [...ingredientsData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Exercise]
-				const bValue = b[id as keyof Exercise]
+				const aValue = a[id as keyof Ingredient]
+				const bValue = b[id as keyof Ingredient]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -212,7 +224,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [exercisesData, page, perPage, sorting])
+	}, [ingredientsData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -226,10 +238,10 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 	})
 
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
+		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
+				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
+				<IngredientCreateDialog />
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>

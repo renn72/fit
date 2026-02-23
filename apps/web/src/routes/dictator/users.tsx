@@ -1,4 +1,4 @@
-import { UsersTable } from '@/components/dictator/users-table'
+import { UsersTable } from '@/components/dictator/users/users-table'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

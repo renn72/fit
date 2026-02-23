@@ -1,4 +1,4 @@
-import { RecipesPage } from '@/components/admin/recipes-page'
+import { RecipesPage } from '@/components/admin/recipe/recipes-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

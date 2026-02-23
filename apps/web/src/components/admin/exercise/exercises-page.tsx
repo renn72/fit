@@ -2,14 +2,18 @@
 
 import * as React from 'react'
 
-import { IngredientCreateDialog } from '@/components/admin/ingredient-create-dialog'
-import { IngredientRowActions } from '@/components/admin/ingredient-row-actions'
+import { ExerciseCreateDialog } from '@/components/admin/exercise/exercise-create-dialog'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
+} from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
@@ -20,27 +24,58 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { FireIcon, ListIcon, SquaresFourIcon } from '@phosphor-icons/react'
+import {
+	BarbellIcon,
+	Clock,
+	ListIcon,
+	SquaresFourIcon,
+	TargetIcon,
+	TimerIcon,
+} from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface Ingredient {
+interface Exercise {
 	id: string
 	name: string
-	calories: number
-	protein: number
-	fat: number
-	carbohydrate: number
-	serveSize: number
-	serveUnit: string
+	movementName: string | null
+	sets: number | null
+	reps: number | null
+	repUnit: string | null
+	ormPercent: number | null
+	targetRpe: number | null
+	restTime: number | null
+	restUnit: string | null
 	createdAt: Date
-	isBase: boolean
-	isOverwriteBase: boolean
 }
 
-const columnHelper = createColumnHelper<Ingredient>()
+const columnHelper = createColumnHelper<Exercise>()
 
 const columns = [
+	columnHelper.display({
+		id: 'select',
+		header: ({ table }) => (
+			<Checkbox
+				checked={
+					table.getIsAllPageRowsSelected() ||
+					(table.getIsSomePageRowsSelected() && 'indeterminate')
+				}
+				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
+				aria-label='Select all'
+				className='translate-y-0.5'
+			/>
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getIsSelected()}
+				onCheckedChange={(value) => row.toggleSelected(!!value)}
+				aria-label='Select row'
+				className='translate-y-0.5'
+			/>
+		),
+		enableSorting: false,
+		enableHiding: false,
+	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -52,73 +87,75 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('calories', {
+	columnHelper.accessor('movementName', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Calories' />
+			<DataTableColumnHeader column={column} label='Movement' />
 		),
 		meta: {
-			label: 'Calories',
+			label: 'Movement',
+			variant: 'text',
+		},
+	}),
+	columnHelper.accessor('sets', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Sets' />
+		),
+		meta: {
+			label: 'Sets',
 			variant: 'number',
 		},
+	}),
+	columnHelper.accessor('reps', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Reps' />
+		),
+		meta: {
+			label: 'Reps',
+			variant: 'number',
+		},
+	}),
+	columnHelper.accessor('repUnit', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Rep Unit' />
+		),
+		meta: {
+			label: 'Rep Unit',
+			variant: 'text',
+		},
+	}),
+	columnHelper.accessor('ormPercent', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='% 1RM' />
+		),
 		cell: ({ row }) => {
-			const value = row.getValue('calories') as number
-			return value.toFixed(1)
+			const value = row.getValue('ormPercent') as number | null
+			return value ? `${value}%` : '-'
 		},
-	}),
-	columnHelper.accessor('protein', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Protein' />
-		),
 		meta: {
-			label: 'Protein',
+			label: '% 1RM',
 			variant: 'number',
 		},
+	}),
+	columnHelper.accessor('targetRpe', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='TargetIcon RPE' />
+		),
+		meta: {
+			label: 'TargetIcon RPE',
+			variant: 'number',
+		},
+	}),
+	columnHelper.accessor('restTime', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Rest' />
+		),
 		cell: ({ row }) => {
-			const value = row.getValue('protein') as number
-			return value.toFixed(1)
+			const time = row.getValue('restTime') as number | null
+			const unit = row.original.repUnit
+			return time ? `${time} ${unit || 's'}` : '-'
 		},
-	}),
-	columnHelper.accessor('fat', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Fat' />
-		),
 		meta: {
-			label: 'Fat',
-			variant: 'number',
-		},
-		cell: ({ row }) => {
-			const value = row.getValue('fat') as number
-			return value.toFixed(1)
-		},
-	}),
-	columnHelper.accessor('carbohydrate', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Carbs' />
-		),
-		meta: {
-			label: 'Carbs',
-			variant: 'number',
-		},
-		cell: ({ row }) => {
-			const value = row.getValue('carbohydrate') as number
-			return value.toFixed(1)
-		},
-	}),
-	columnHelper.accessor('serveSize', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Serve Size' />
-		),
-		meta: {
-			label: 'Serve Size',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('serveUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Unit' />
-		),
-		meta: {
-			label: 'Unit',
+			label: 'Rest',
 			variant: 'text',
 		},
 	}),
@@ -132,59 +169,21 @@ const columns = [
 			variant: 'date',
 		},
 	}),
-	columnHelper.accessor('isBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Is Base' />
-		),
-		cell: ({ row }) => (
-			<div className='w-10'>
-				<Checkbox
-					checked={row.getValue('isBase')}
-					disabled
-					aria-label='Is Base'
-				/>
-			</div>
-		),
-		meta: {
-			label: 'Is Base',
-			variant: 'boolean',
-		},
-	}),
-	columnHelper.accessor('isOverwriteBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Overwrite Base' />
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isOverwriteBase')}
-				disabled
-				aria-label='Overwrite Base'
-			/>
-		),
-		meta: {
-			label: 'Overwrite Base',
-			variant: 'boolean',
-		},
-	}),
-	columnHelper.display({
-		id: 'actions',
-		cell: ({ row }) => <IngredientRowActions row={row} />,
-	}),
 ]
 
-const route = getRouteApi('/$orgSlug/ingredients')
+const route = getRouteApi('/$orgSlug/exercises')
 
-export function IngredientsPage() {
+export function ExercisesPage() {
 	const { session } = route.useRouteContext()
 
 	const userOrgId = session.user.organisationId
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
-	return <IngredientsContent userOrgId={userOrgId} />
+	return <ExercisesContent userOrgId={userOrgId} />
 }
 
-function IngredientsContent({ userOrgId }: { userOrgId: string }) {
-	const { data: ingredients } = useSuspenseQuery(
-		orpc.ingredient.getAllOrg.queryOptions({
+function ExercisesContent({ userOrgId }: { userOrgId: string }) {
+	const { data: exercises } = useSuspenseQuery(
+		orpc.exercise.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -196,23 +195,23 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Ingredient>(
+		getSortingStateParser<Exercise>(
 			columns
 				.map((c) => (c as any).accessorKey)
 				.filter((key): key is string => !!key),
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const ingredientsData = (ingredients as Ingredient[]) ?? []
+	const exercisesData = (exercises as Exercise[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...ingredientsData]
+		const processed = [...exercisesData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Ingredient]
-				const bValue = b[id as keyof Ingredient]
+				const aValue = a[id as keyof Exercise]
+				const bValue = b[id as keyof Exercise]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -230,7 +229,7 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [ingredientsData, page, perPage, sorting])
+	}, [exercisesData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -244,10 +243,10 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 	})
 
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full h-full'>
+		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
-				<IngredientCreateDialog />
+				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
+				<ExerciseCreateDialog />
 			</div>
 
 			<Tabs
@@ -275,11 +274,11 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 				</TabsContent>
 
 				<TabsContent value='grid' className='mt-4'>
-					<IngredientsGridView
+					<ExercisesGridView
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={ingredientsData.length}
+						total={exercisesData.length}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -287,60 +286,64 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 	)
 }
 
-interface IngredientsGridViewProps {
-	data: Ingredient[]
+interface ExercisesGridViewProps {
+	data: Exercise[]
 	page: number
 	perPage: number
 	total: number
 }
 
-function IngredientsGridView({
+function ExercisesGridView({
 	data,
 	page,
 	perPage,
 	total,
-}: IngredientsGridViewProps) {
+}: ExercisesGridViewProps) {
 	const totalPages = Math.ceil(total / perPage)
 
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-				{data.map((ingredient) => (
-					<Card key={ingredient.id} className='flex flex-col'>
+				{data.map((exercise) => (
+					<Card key={exercise.id} className='flex flex-col'>
 						<CardHeader className='pb-3'>
-							<CardTitle className='text-lg'>{ingredient.name}</CardTitle>
+							<CardTitle className='text-lg'>{exercise.name}</CardTitle>
+							{exercise.movementName && (
+								<CardDescription className='flex items-center gap-1'>
+									<BarbellIcon className='size-3' />
+									{exercise.movementName}
+								</CardDescription>
+							)}
 						</CardHeader>
 						<CardContent className='flex-1'>
-							<div className='space-y-3'>
+							<div className='grid grid-cols-2 gap-3'>
 								<div className='flex items-center gap-2'>
-									<FireIcon className='size-4 text-orange-500' />
-									<span className='text-sm font-medium'>
-										{ingredient.calories.toFixed(1)} kcal
-									</span>
-									<span className='text-sm text-muted-foreground'>
-										per {ingredient.serveSize} {ingredient.serveUnit}
+									<TargetIcon className='size-4 text-blue-500' />
+									<span className='text-sm'>
+										{exercise.sets ?? '-'} x {exercise.reps ?? '-'}{' '}
+										{exercise.repUnit}
 									</span>
 								</div>
-								<div className='grid grid-cols-3 gap-2 text-sm'>
-									<div className='text-center p-2 bg-muted rounded'>
-										<div className='font-medium'>
-											{ingredient.protein.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Protein</div>
+								{exercise.ormPercent && (
+									<div className='flex items-center gap-2'>
+										<BarbellIcon className='size-4 text-green-500' />
+										<span className='text-sm'>{exercise.ormPercent}% 1RM</span>
 									</div>
-									<div className='text-center p-2 bg-muted rounded'>
-										<div className='font-medium'>
-											{ingredient.fat.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Fat</div>
+								)}
+								{exercise.targetRpe && (
+									<div className='flex items-center gap-2'>
+										<TargetIcon className='size-4 text-orange-500' />
+										<span className='text-sm'>RPE {exercise.targetRpe}</span>
 									</div>
-									<div className='text-center p-2 bg-muted rounded'>
-										<div className='font-medium'>
-											{ingredient.carbohydrate.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Carbs</div>
+								)}
+								{exercise.restTime && (
+									<div className='flex items-center gap-2'>
+										<TimerIcon className='size-4 text-purple-500' />
+										<span className='text-sm'>
+											{exercise.restTime} {exercise.restUnit || 's'}
+										</span>
 									</div>
-								</div>
+								)}
 							</div>
 						</CardContent>
 					</Card>
@@ -351,7 +354,7 @@ function IngredientsGridView({
 				<div className='flex items-center justify-between px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
-						{Math.min(page * perPage, total)} of {total} ingredients
+						{Math.min(page * perPage, total)} of {total} exercises
 					</div>
 					<div className='flex items-center gap-2'>
 						<span className='text-sm'>

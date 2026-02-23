@@ -2,11 +2,12 @@
 
 import * as React from 'react'
 
-import { ExerciseCreateDialog } from '@/components/admin/exercise-create-dialog'
+import { WarmupGroupCreateDialog } from '@/components/admin/warmup/warmup-group-create-dialog'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -25,31 +26,30 @@ import { getRouteApi } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
-	BarbellIcon,
-	Clock,
 	ListIcon,
+	PlayCircleIcon,
 	SquaresFourIcon,
-	TargetIcon,
-	TimerIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 
-interface Exercise {
+interface WarmupGroup {
 	id: string
 	name: string
-	movementName: string | null
-	sets: number | null
-	reps: number | null
-	repUnit: string | null
-	ormPercent: number | null
-	targetRpe: number | null
-	restTime: number | null
-	restUnit: string | null
+	description: string | null
+	warmupCount: number
+	creatorName: string | null
 	createdAt: Date
+	warmups: Array<{
+		id: string
+		name: string
+		description: string | null
+		images: string | null
+		link: string | null
+	}>
 }
 
-const columnHelper = createColumnHelper<Exercise>()
+const columnHelper = createColumnHelper<WarmupGroup>()
 
 const columns = [
 	columnHelper.display({
@@ -87,75 +87,34 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('movementName', {
+	columnHelper.accessor('description', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Movement' />
+			<DataTableColumnHeader column={column} label='Description' />
 		),
+		cell: ({ row }) => {
+			const desc = row.getValue('description') as string | null
+			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
+		},
 		meta: {
-			label: 'Movement',
+			label: 'Description',
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('sets', {
+	columnHelper.accessor('warmupCount', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Sets' />
+			<DataTableColumnHeader column={column} label='Warmups' />
 		),
 		meta: {
-			label: 'Sets',
+			label: 'Warmups',
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('reps', {
+	columnHelper.accessor('creatorName', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Reps' />
+			<DataTableColumnHeader column={column} label='Creator' />
 		),
 		meta: {
-			label: 'Reps',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('repUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rep Unit' />
-		),
-		meta: {
-			label: 'Rep Unit',
-			variant: 'text',
-		},
-	}),
-	columnHelper.accessor('ormPercent', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='% 1RM' />
-		),
-		cell: ({ row }) => {
-			const value = row.getValue('ormPercent') as number | null
-			return value ? `${value}%` : '-'
-		},
-		meta: {
-			label: '% 1RM',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('targetRpe', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='TargetIcon RPE' />
-		),
-		meta: {
-			label: 'TargetIcon RPE',
-			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('restTime', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest' />
-		),
-		cell: ({ row }) => {
-			const time = row.getValue('restTime') as number | null
-			const unit = row.original.repUnit
-			return time ? `${time} ${unit || 's'}` : '-'
-		},
-		meta: {
-			label: 'Rest',
+			label: 'Creator',
 			variant: 'text',
 		},
 	}),
@@ -171,19 +130,29 @@ const columns = [
 	}),
 ]
 
-const route = getRouteApi('/$orgSlug/exercises')
+const route = getRouteApi('/$orgSlug/warmups')
 
-export function ExercisesPage() {
+export function WarmupsPage() {
 	const { session } = route.useRouteContext()
-
 	const userOrgId = session.user.organisationId
+
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
-	return <ExercisesContent userOrgId={userOrgId} />
+	return <WarmupsContent userOrgId={userOrgId} />
 }
 
-function ExercisesContent({ userOrgId }: { userOrgId: string }) {
-	const { data: exercises } = useSuspenseQuery(
-		orpc.exercise.getAllOrg.queryOptions({
+WarmupsPage.useRouteContext = () => {
+	return {
+		session: {
+			user: {
+				organisationId: null as string | null,
+			},
+		},
+	}
+}
+
+function WarmupsContent({ userOrgId }: { userOrgId: string }) {
+	const { data: groups } = useSuspenseQuery(
+		orpc.warmup.getAllGroups.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -195,23 +164,33 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
 	const [sorting] = useQueryState(
 		'sort',
-		getSortingStateParser<Exercise>(
+		getSortingStateParser<WarmupGroup>(
 			columns
 				.map((c) => (c as any).accessorKey)
 				.filter((key): key is string => !!key),
 		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
-	const exercisesData = (exercises as Exercise[]) ?? []
+	const groupsData: WarmupGroup[] = React.useMemo(() => {
+		return (groups ?? []).map((g) => ({
+			id: g.id,
+			name: g.name,
+			description: g.description,
+			warmupCount: g.warmups?.length ?? 0,
+			creatorName: g.creator?.name ?? null,
+			createdAt: g.createdAt,
+			warmups: g.warmups ?? [],
+		}))
+	}, [groups])
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...exercisesData]
+		const processed = [...groupsData]
 
 		if (sorting && sorting.length > 0) {
 			const { id, desc } = sorting[0]
 			processed.sort((a, b) => {
-				const aValue = a[id as keyof Exercise]
-				const bValue = b[id as keyof Exercise]
+				const aValue = a[id as keyof WarmupGroup]
+				const bValue = b[id as keyof WarmupGroup]
 
 				if (aValue === bValue) return 0
 				if (aValue === null || aValue === undefined) return 1
@@ -229,7 +208,7 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [exercisesData, page, perPage, sorting])
+	}, [groupsData, page, perPage, sorting])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -245,8 +224,8 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
+				<h1 className='text-2xl font-bold tracking-tight'>Warmups</h1>
+				<WarmupGroupCreateDialog />
 			</div>
 
 			<Tabs
@@ -274,11 +253,14 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 				</TabsContent>
 
 				<TabsContent value='grid' className='mt-4'>
-					<ExercisesGridView
+					<WarmupGridView
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={exercisesData.length}
+						total={groupsData.length}
+						onPageChange={(newPage) => {
+							void newPage
+						}}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -286,64 +268,58 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 	)
 }
 
-interface ExercisesGridViewProps {
-	data: Exercise[]
+interface WarmupGridViewProps {
+	data: WarmupGroup[]
 	page: number
 	perPage: number
 	total: number
+	onPageChange: (page: number) => void
 }
 
-function ExercisesGridView({
+function WarmupGridView({
 	data,
 	page,
 	perPage,
 	total,
-}: ExercisesGridViewProps) {
+	onPageChange,
+}: WarmupGridViewProps) {
 	const totalPages = Math.ceil(total / perPage)
 
 	return (
 		<div className='flex flex-col gap-4'>
 			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-				{data.map((exercise) => (
-					<Card key={exercise.id} className='flex flex-col'>
+				{data.map((group) => (
+					<Card key={group.id} className='flex flex-col'>
 						<CardHeader className='pb-3'>
-							<CardTitle className='text-lg'>{exercise.name}</CardTitle>
-							{exercise.movementName && (
-								<CardDescription className='flex items-center gap-1'>
-									<BarbellIcon className='size-3' />
-									{exercise.movementName}
+							<CardTitle className='text-lg'>{group.name}</CardTitle>
+							{group.description && (
+								<CardDescription className='line-clamp-2'>
+									{group.description}
 								</CardDescription>
 							)}
 						</CardHeader>
 						<CardContent className='flex-1'>
-							<div className='grid grid-cols-2 gap-3'>
-								<div className='flex items-center gap-2'>
-									<TargetIcon className='size-4 text-blue-500' />
-									<span className='text-sm'>
-										{exercise.sets ?? '-'} x {exercise.reps ?? '-'}{' '}
-										{exercise.repUnit}
-									</span>
+							<div className='space-y-2'>
+								<div className='text-sm text-muted-foreground'>
+									{group.warmupCount} exercise
+									{group.warmupCount !== 1 ? 's' : ''}
 								</div>
-								{exercise.ormPercent && (
-									<div className='flex items-center gap-2'>
-										<BarbellIcon className='size-4 text-green-500' />
-										<span className='text-sm'>{exercise.ormPercent}% 1RM</span>
-									</div>
-								)}
-								{exercise.targetRpe && (
-									<div className='flex items-center gap-2'>
-										<TargetIcon className='size-4 text-orange-500' />
-										<span className='text-sm'>RPE {exercise.targetRpe}</span>
-									</div>
-								)}
-								{exercise.restTime && (
-									<div className='flex items-center gap-2'>
-										<TimerIcon className='size-4 text-purple-500' />
-										<span className='text-sm'>
-											{exercise.restTime} {exercise.restUnit || 's'}
-										</span>
-									</div>
-								)}
+								<div className='space-y-1'>
+									{group.warmups.slice(0, 3).map((warmup) => (
+										<div
+											key={warmup.id}
+											className='flex items-center gap-2 text-sm'
+										>
+											<PlayCircleIcon className='size-3 text-muted-foreground' />
+											<span className='truncate'>{warmup.name}</span>
+										</div>
+									))}
+									{group.warmups.length > 3 && (
+										<div className='text-sm text-muted-foreground pl-5'>
+											+{group.warmups.length - 3} more
+										</div>
+									)}
+								</div>
 							</div>
 						</CardContent>
 					</Card>
@@ -354,12 +330,28 @@ function ExercisesGridView({
 				<div className='flex items-center justify-between px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
-						{Math.min(page * perPage, total)} of {total} exercises
+						{Math.min(page * perPage, total)} of {total} warmups
 					</div>
 					<div className='flex items-center gap-2'>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => onPageChange(page - 1)}
+							disabled={page <= 1}
+						>
+							Previous
+						</Button>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>
+						<Button
+							variant='outline'
+							size='sm'
+							onClick={() => onPageChange(page + 1)}
+							disabled={page >= totalPages}
+						>
+							Next
+						</Button>
 					</div>
 				</div>
 			)}

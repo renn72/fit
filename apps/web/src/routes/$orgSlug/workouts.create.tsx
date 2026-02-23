@@ -1,4 +1,4 @@
-import { WorkoutCreateForm } from '@/components/admin/workout-create-form'
+import { WorkoutCreateForm } from '@/components/admin/workout/workout-create-form'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'

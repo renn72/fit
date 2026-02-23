@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { WorkoutCreateForm } from '@/components/admin/workout-create-form'
+import { IngredientCreateForm } from '@/components/admin/ingredient/ingredient-create-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -15,22 +15,22 @@ import {
 
 import { PlusIcon } from '@phosphor-icons/react'
 
-export function WorkoutCreateDialog() {
+export function IngredientCreateDialog() {
 	const [open, setOpen] = useState(false)
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size='sm' className='gap-2' />}>
-				<PlusIcon /> Create Workout
+				<PlusIcon /> Add Ingredient
 			</DialogTrigger>
 			<DialogContent className='overflow-y-auto sm:max-w-2xl max-h-[90vh]'>
 				<DialogHeader>
-					<DialogTitle>Create Workout</DialogTitle>
+					<DialogTitle>Create Ingredient</DialogTitle>
 					<DialogDescription>
-						Create a new workout with exercises, supersets, and optional warmup.
+						Add a new ingredient to your organisation.
 					</DialogDescription>
 				</DialogHeader>
-				<WorkoutCreateForm onSuccess={() => setOpen(false)} />
+				<IngredientCreateForm onSuccess={() => setOpen(false)} />
 			</DialogContent>
 		</Dialog>
 	)

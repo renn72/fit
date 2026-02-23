@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { WarmupGroupCreateForm } from '@/components/admin/warmup-group-create-form'
+import { MovementCreateForm } from '@/components/admin/movement/movement-create-form'
 import { Button } from '@/components/ui/button'
 import {
 	Dialog,
@@ -15,22 +15,22 @@ import {
 
 import { PlusIcon } from '@phosphor-icons/react'
 
-export function WarmupGroupCreateDialog() {
+export function MovementCreateDialog() {
 	const [open, setOpen] = useState(false)
 
 	return (
 		<Dialog open={open} onOpenChange={setOpen}>
 			<DialogTrigger render={<Button size='sm' className='gap-2' />}>
-				<PlusIcon /> Add Warmup
+				<PlusIcon /> Add Movement
 			</DialogTrigger>
 			<DialogContent className='overflow-y-auto sm:max-w-2xl max-h-[90vh]'>
 				<DialogHeader>
-					<DialogTitle>Create Warmup</DialogTitle>
+					<DialogTitle>Create Movement</DialogTitle>
 					<DialogDescription>
-						Create a warmup with one or more exercises.
+						Add a new movement to your organisation.
 					</DialogDescription>
 				</DialogHeader>
-				<WarmupGroupCreateForm onSuccess={() => setOpen(false)} />
+				<MovementCreateForm onSuccess={() => setOpen(false)} />
 			</DialogContent>
 		</Dialog>
 	)

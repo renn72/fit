@@ -1,4 +1,4 @@
-import { OrgsTable } from '@/components/dictator/orgs-table'
+import { OrgsTable } from '@/components/dictator/orgs/orgs-table'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

@@ -1,4 +1,4 @@
-import { MenuTemplatesPage } from '@/components/admin/menu-templates-page'
+import { MenuTemplatesPage } from '@/components/admin/menu-template/menu-templates-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

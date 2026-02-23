@@ -1,4 +1,4 @@
-import { MovementsPage } from '@/components/admin/movements-page'
+import { MovementsPage } from '@/components/admin/movement/movements-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

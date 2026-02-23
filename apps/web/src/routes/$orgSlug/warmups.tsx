@@ -1,4 +1,4 @@
-import { WarmupsPage } from '@/components/admin/warmups-page'
+import { WarmupsPage } from '@/components/admin/warmup/warmups-page'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
