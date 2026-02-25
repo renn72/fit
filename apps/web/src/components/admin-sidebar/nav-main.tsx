@@ -17,7 +17,7 @@ import {
 	SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 
 const route = getRouteApi('/$orgSlug')
 
@@ -70,8 +70,10 @@ export function NavMain({
 											<SidebarMenuSubItem key={subItem.title}>
 												<SidebarMenuSubButton
 													render={
-														<a
-															href={subItem.url.replace('$orgSlug', orgSlug)}
+														<Link
+															to={subItem.url}
+															params={{ orgSlug }}
+															search={(prev) => ({ ...prev })}
 														/>
 													}
 												>
