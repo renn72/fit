@@ -1,121 +1,94 @@
-'use client'
+import type * as React from 'react'
 
-import { useState } from 'react'
-
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import {
-	Command,
-	CommandEmpty,
-	CommandGroup,
-	CommandInput,
-	CommandItem,
-	CommandList,
-} from '@/components/ui/command'
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
+} from '@/components/ui/collapsible'
 import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from '@/components/ui/popover'
-import {
+	SidebarGroup,
+	SidebarGroupLabel,
 	SidebarMenu,
+	SidebarMenuAction,
 	SidebarMenuButton,
 	SidebarMenuItem,
+	SidebarMenuSub,
+	SidebarMenuSubButton,
+	SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 
-import { CaretUpDownIcon, CheckIcon, UserIcon } from '@phosphor-icons/react'
+import { getRouteApi, Link } from '@tanstack/react-router'
 
-interface User {
-	id: string
-	name: string
-	email: string
-	image: string | null
-}
+import { CaretRightIcon } from '@phosphor-icons/react'
 
-interface NavUserProps {
-	users: User[] | undefined
-	selectedUserId: string
-	onUserSelect: (userId: string) => void
-}
+const route = getRouteApi('/$orgSlug')
 
-export function NavUser({ users, selectedUserId, onUserSelect }: NavUserProps) {
-	const [open, setOpen] = useState(false)
-
-	const selectedUser = users?.find((u) => u.id === selectedUserId)
-
+export function NavUser({
+	items,
+	...props
+}: {
+	items: {
+		title: string
+		url: string
+		icon: React.ReactNode
+		isActive?: boolean
+		items?: {
+			title: string
+			url: string
+		}[]
+	}[]
+} & React.ComponentPropsWithoutRef<typeof SidebarGroup>) {
+	const { orgSlug } = route.useParams()
 	return (
-		<SidebarMenu>
-			<SidebarMenuItem className='p-1'>
-				<Popover open={open} onOpenChange={setOpen}>
-					<PopoverTrigger
-						render={
-							<SidebarMenuButton
-								size='lg'
-								variant='outline'
-								className='border aria-expanded:bg-muted aria-expanded:text-foreground'
-							/>
-						}
+		<SidebarGroup>
+			<SidebarGroupLabel>User</SidebarGroupLabel>
+			<SidebarMenu>
+				{items.map((item) => (
+					<Collapsible
+						key={item.title}
+						defaultOpen={item.isActive}
+						render={<SidebarMenuItem />}
 					>
-						<Avatar className='w-7 h-7'>
-							<AvatarImage
-								src={selectedUser?.image || undefined}
-								alt={selectedUser?.name || 'User'}
-							/>
-							<AvatarFallback>
-								<UserIcon className='w-4 h-4' />
-							</AvatarFallback>
-						</Avatar>
-						<div className='grid flex-1 text-left'>
-							<span className='text-sm font-medium truncate'>
-								{selectedUser?.name || 'Select User'}
-							</span>
-							<span className='text-xs text-muted-foreground truncate'>
-								{selectedUser?.email || 'Choose a user'}
-							</span>
-						</div>
-						<CaretUpDownIcon className='ml-auto w-4 h-4 text-muted-foreground' />
-					</PopoverTrigger>
-					<PopoverContent className='p-0 w-84' align='start' side='right'>
-						<Command>
-							<CommandInput placeholder='Search users...' />
-							<CommandList>
-								<CommandEmpty>No users found.</CommandEmpty>
-								<CommandGroup>
-									{users?.map((user) => (
-										<CommandItem
-											key={user.id}
-											onSelect={() => {
-												onUserSelect(user.id)
-												setOpen(false)
-											}}
-											className='flex gap-2 items-center'
-										>
-											<Avatar className='w-6 h-6'>
-												<AvatarImage
-													src={user.image || undefined}
-													alt={user.name}
-												/>
-												<AvatarFallback>
-													<UserIcon className='w-3 h-3' />
-												</AvatarFallback>
-											</Avatar>
-											<div className='grid flex-1 text-left'>
-												<span className='text-sm'>{user.name}</span>
-												<span className='text-xs text-muted-foreground'>
-													{user.email}
-												</span>
-											</div>
-											{selectedUserId === user.id && (
-												<CheckIcon className='ml-auto w-4 h-4' />
-											)}
-										</CommandItem>
-									))}
-								</CommandGroup>
-							</CommandList>
-						</Command>
-					</PopoverContent>
-				</Popover>
-			</SidebarMenuItem>
-		</SidebarMenu>
+						<SidebarMenuButton
+							tooltip={item.title}
+							render={<a href={item.url} />}
+						>
+							{item.icon}
+							<span>{item.title}</span>
+						</SidebarMenuButton>
+						{item.items?.length ? (
+							<>
+								<SidebarMenuAction
+									render={<CollapsibleTrigger />}
+									className='aria-expanded:rotate-90'
+								>
+									<CaretRightIcon />
+									<span className='sr-only'>Toggle</span>
+								</SidebarMenuAction>
+								<CollapsibleContent>
+									<SidebarMenuSub>
+										{item.items?.map((subItem) => (
+											<SidebarMenuSubItem key={subItem.title}>
+												<SidebarMenuSubButton
+													render={
+														<Link
+															to={subItem.url}
+															params={{ orgSlug }}
+															search={(prev) => ({ ...prev })}
+														/>
+													}
+												>
+													<span>{subItem.title}</span>
+												</SidebarMenuSubButton>
+											</SidebarMenuSubItem>
+										))}
+									</SidebarMenuSub>
+								</CollapsibleContent>
+							</>
+						) : null}
+					</Collapsible>
+				))}
+			</SidebarMenu>
+		</SidebarGroup>
 	)
 }

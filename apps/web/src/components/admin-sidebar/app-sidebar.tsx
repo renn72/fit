@@ -2,6 +2,7 @@ import type * as React from 'react'
 
 import { NavMain } from '@/components/admin-sidebar/nav-main'
 import { NavUser } from '@/components/admin-sidebar/nav-user'
+import { NavUserSelect } from '@/components/admin-sidebar/nav-user-select'
 import {
 	Sidebar,
 	SidebarContent,
@@ -14,34 +15,20 @@ import { orpc } from '@/utils/orpc'
 import { useQuery } from '@tanstack/react-query'
 
 import {
+	BarbellIcon,
+	CarrotIcon,
 	ChartPieIcon,
+	CookingPotIcon,
 	CropIcon,
-	LifebuoyIcon,
 	MapTrifoldIcon,
-	PaperPlaneTiltIcon,
-	RobotIcon,
-	TerminalIcon,
-	UserIcon,
 } from '@phosphor-icons/react'
 
 const data = {
 	navMain: [
 		{
-			title: 'User',
-			url: '#',
-			icon: <UserIcon />,
-			isActive: true,
-			items: [
-				{
-					title: 'Create Menu',
-					url: '/$orgSlug/user-menu-create',
-				},
-			],
-		},
-		{
 			title: 'Nutrition',
 			url: '#',
-			icon: <TerminalIcon />,
+			icon: <CarrotIcon />,
 			isActive: true,
 			items: [
 				{
@@ -61,7 +48,7 @@ const data = {
 		{
 			title: 'Fitness',
 			url: '#',
-			icon: <RobotIcon weight='duotone' />,
+			icon: <BarbellIcon />,
 			isActive: true,
 			items: [
 				{
@@ -104,16 +91,18 @@ const data = {
 			icon: <MapTrifoldIcon />,
 		},
 	],
-	navSecondary: [
+	navUser: [
 		{
-			title: 'Support',
+			title: 'Nutrition',
 			url: '#',
-			icon: <LifebuoyIcon />,
-		},
-		{
-			title: 'Feedback',
-			url: '#',
-			icon: <PaperPlaneTiltIcon />,
+			icon: <CookingPotIcon />,
+			isActive: true,
+			items: [
+				{
+					title: 'Create Menu',
+					url: '/$orgSlug/user-menu-create',
+				},
+			],
 		},
 	],
 }
@@ -137,13 +126,14 @@ export function AppSidebar({
 		>
 			<SidebarContent>
 				<SidebarMenu>
-					<NavUser
+					<NavUserSelect
 						users={users}
 						selectedUserId={selectedUserId}
 						onUserSelect={onUserSelect}
 					/>
 				</SidebarMenu>
 				<NavMain items={data.navMain} />
+				<NavUser items={data.navUser} />
 			</SidebarContent>
 			<SidebarFooter>
 				<SidebarMenuItem>

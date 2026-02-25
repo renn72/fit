@@ -50,7 +50,8 @@ export function NavMain({
 					>
 						<SidebarMenuButton
 							tooltip={item.title}
-							render={<a href={item.url} />}
+							size='lg'
+							className='flex gap-2 items-center'
 						>
 							{item.icon}
 							<span>{item.title}</span>
@@ -59,7 +60,7 @@ export function NavMain({
 							<>
 								<SidebarMenuAction
 									render={<CollapsibleTrigger />}
-									className='aria-expanded:rotate-90'
+									className='mt-1 aria-expanded:rotate-90'
 								>
 									<CaretRightIcon />
 									<span className='sr-only'>Toggle</span>
