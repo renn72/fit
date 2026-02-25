@@ -28,6 +28,7 @@ import { Route as DictatorBaseMovementsRouteImport } from './routes/dictator/bas
 import { Route as DictatorBaseIngredientsRouteImport } from './routes/dictator/base-ingredients'
 import { Route as OrgSlugWorkoutsRouteImport } from './routes/$orgSlug/workouts'
 import { Route as OrgSlugWarmupsRouteImport } from './routes/$orgSlug/warmups'
+import { Route as OrgSlugUserMenuCreateRouteImport } from './routes/$orgSlug/user-menu-create'
 import { Route as OrgSlugRecipesRouteImport } from './routes/$orgSlug/recipes'
 import { Route as OrgSlugMovementsRouteImport } from './routes/$orgSlug/movements'
 import { Route as OrgSlugMenuTemplatesRouteImport } from './routes/$orgSlug/menu-templates'
@@ -133,6 +134,11 @@ const OrgSlugWarmupsRoute = OrgSlugWarmupsRouteImport.update({
   path: '/warmups',
   getParentRoute: () => OrgSlugRoute,
 } as any)
+const OrgSlugUserMenuCreateRoute = OrgSlugUserMenuCreateRouteImport.update({
+  id: '/user-menu-create',
+  path: '/user-menu-create',
+  getParentRoute: () => OrgSlugRoute,
+} as any)
 const OrgSlugRecipesRoute = OrgSlugRecipesRouteImport.update({
   id: '/recipes',
   path: '/recipes',
@@ -195,6 +201,7 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
+  '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
@@ -225,6 +232,7 @@ export interface FileRoutesByTo {
   '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
+  '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
@@ -256,6 +264,7 @@ export interface FileRoutesById {
   '/$orgSlug/menu-templates': typeof OrgSlugMenuTemplatesRoute
   '/$orgSlug/movements': typeof OrgSlugMovementsRoute
   '/$orgSlug/recipes': typeof OrgSlugRecipesRouteWithChildren
+  '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRouteWithChildren
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
@@ -288,6 +297,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
+    | '/$orgSlug/user-menu-create'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
     | '/dictator/base-ingredients'
@@ -318,6 +328,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
+    | '/$orgSlug/user-menu-create'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
     | '/dictator/base-ingredients'
@@ -348,6 +359,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/menu-templates'
     | '/$orgSlug/movements'
     | '/$orgSlug/recipes'
+    | '/$orgSlug/user-menu-create'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
     | '/dictator/base-ingredients'
@@ -509,6 +521,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugWarmupsRouteImport
       parentRoute: typeof OrgSlugRoute
     }
+    '/$orgSlug/user-menu-create': {
+      id: '/$orgSlug/user-menu-create'
+      path: '/user-menu-create'
+      fullPath: '/$orgSlug/user-menu-create'
+      preLoaderRoute: typeof OrgSlugUserMenuCreateRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
     '/$orgSlug/recipes': {
       id: '/$orgSlug/recipes'
       path: '/recipes'
@@ -607,6 +626,7 @@ interface OrgSlugRouteChildren {
   OrgSlugMenuTemplatesRoute: typeof OrgSlugMenuTemplatesRoute
   OrgSlugMovementsRoute: typeof OrgSlugMovementsRoute
   OrgSlugRecipesRoute: typeof OrgSlugRecipesRouteWithChildren
+  OrgSlugUserMenuCreateRoute: typeof OrgSlugUserMenuCreateRoute
   OrgSlugWarmupsRoute: typeof OrgSlugWarmupsRoute
   OrgSlugWorkoutsRoute: typeof OrgSlugWorkoutsRouteWithChildren
 }
@@ -619,6 +639,7 @@ const OrgSlugRouteChildren: OrgSlugRouteChildren = {
   OrgSlugMenuTemplatesRoute: OrgSlugMenuTemplatesRoute,
   OrgSlugMovementsRoute: OrgSlugMovementsRoute,
   OrgSlugRecipesRoute: OrgSlugRecipesRouteWithChildren,
+  OrgSlugUserMenuCreateRoute: OrgSlugUserMenuCreateRoute,
   OrgSlugWarmupsRoute: OrgSlugWarmupsRoute,
   OrgSlugWorkoutsRoute: OrgSlugWorkoutsRouteWithChildren,
 }

@@ -173,6 +173,7 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 			input: { organisationId: userOrgId },
 		}),
 	)
+	console.log(menuTemplates)
 
 	const [viewMode, setViewMode] = useQueryState('view', {
 		defaultValue: 'table',

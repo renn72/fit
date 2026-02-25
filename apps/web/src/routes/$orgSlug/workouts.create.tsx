@@ -1,4 +1,5 @@
 import { WorkoutCreateForm } from '@/components/admin/workout/workout-create-form'
+import { Button } from '@/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
@@ -32,16 +33,16 @@ function WorkoutCreatePage() {
 	const { orgSlug } = Route.useParams()
 
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full max-w-4xl mx-auto'>
-			<div className='flex items-center gap-4'>
-				<button
+		<div className='flex flex-col gap-4 p-4 mx-auto w-full max-w-4xl'>
+			<div className='flex gap-4 items-center'>
+				<Button
 					onClick={() =>
 						navigate({ to: '/$orgSlug/workouts', params: { orgSlug } })
 					}
 					className='text-sm text-muted-foreground hover:text-foreground'
 				>
 					← Back to Workouts
-				</button>
+				</Button>
 			</div>
 
 			<div className='space-y-2'>

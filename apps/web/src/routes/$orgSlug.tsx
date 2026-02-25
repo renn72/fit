@@ -23,16 +23,8 @@ export const Route = createFileRoute('/$orgSlug')({
 		middlewares: [retainSearchParams(['user'])],
 	},
 	loader: async ({ context, params }) => {
-		const { orgSlug } = params
 		const session = context.session
-		const userOrgSlug = session?.user?.organisationSlug
 
-		if (userOrgSlug !== orgSlug) {
-			console.log('redirecting')
-			throw redirect({
-				to: '/',
-			})
-		}
 		if (!session?.user?.organisationId) {
 			console.log('redirecting')
 			throw redirect({
