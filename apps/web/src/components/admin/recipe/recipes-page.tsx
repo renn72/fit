@@ -24,7 +24,13 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import { ChefHatIcon, FireIcon, ListIcon, SquaresFourIcon, TagIcon } from '@phosphor-icons/react'
+import {
+	ChefHatIcon,
+	FireIcon,
+	ListIcon,
+	SquaresFourIcon,
+	TagIcon,
+} from '@phosphor-icons/react'
 import _ from 'lodash'
 import { parseAsInteger, useQueryState } from 'nuqs'
 

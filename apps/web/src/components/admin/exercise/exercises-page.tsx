@@ -26,7 +26,6 @@ import { createColumnHelper } from '@tanstack/react-table'
 
 import {
 	BarbellIcon,
-	Clock,
 	ListIcon,
 	SquaresFourIcon,
 	TargetIcon,
@@ -58,7 +57,7 @@ const columns = [
 			<Checkbox
 				checked={
 					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
+					(table.getIsSomePageRowsSelected() && undefined)
 				}
 				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
 				aria-label='Select all'
@@ -303,13 +302,13 @@ function ExercisesGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 				{data.map((exercise) => (
 					<Card key={exercise.id} className='flex flex-col'>
 						<CardHeader className='pb-3'>
 							<CardTitle className='text-lg'>{exercise.name}</CardTitle>
 							{exercise.movementName && (
-								<CardDescription className='flex items-center gap-1'>
+								<CardDescription className='flex gap-1 items-center'>
 									<BarbellIcon className='size-3' />
 									{exercise.movementName}
 								</CardDescription>
@@ -317,28 +316,28 @@ function ExercisesGridView({
 						</CardHeader>
 						<CardContent className='flex-1'>
 							<div className='grid grid-cols-2 gap-3'>
-								<div className='flex items-center gap-2'>
-									<TargetIcon className='size-4 text-blue-500' />
+								<div className='flex gap-2 items-center'>
+									<TargetIcon className='text-blue-500 size-4' />
 									<span className='text-sm'>
 										{exercise.sets ?? '-'} x {exercise.reps ?? '-'}{' '}
 										{exercise.repUnit}
 									</span>
 								</div>
 								{exercise.ormPercent && (
-									<div className='flex items-center gap-2'>
-										<BarbellIcon className='size-4 text-green-500' />
+									<div className='flex gap-2 items-center'>
+										<BarbellIcon className='text-green-500 size-4' />
 										<span className='text-sm'>{exercise.ormPercent}% 1RM</span>
 									</div>
 								)}
 								{exercise.targetRpe && (
-									<div className='flex items-center gap-2'>
-										<TargetIcon className='size-4 text-orange-500' />
+									<div className='flex gap-2 items-center'>
+										<TargetIcon className='text-orange-500 size-4' />
 										<span className='text-sm'>RPE {exercise.targetRpe}</span>
 									</div>
 								)}
 								{exercise.restTime && (
-									<div className='flex items-center gap-2'>
-										<TimerIcon className='size-4 text-purple-500' />
+									<div className='flex gap-2 items-center'>
+										<TimerIcon className='text-purple-500 size-4' />
 										<span className='text-sm'>
 											{exercise.restTime} {exercise.restUnit || 's'}
 										</span>
@@ -351,12 +350,12 @@ function ExercisesGridView({
 			</div>
 
 			{totalPages > 1 && (
-				<div className='flex items-center justify-between px-2'>
+				<div className='flex justify-between items-center px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
 						{Math.min(page * perPage, total)} of {total} exercises
 					</div>
-					<div className='flex items-center gap-2'>
+					<div className='flex gap-2 items-center'>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>

@@ -1,0 +1,148 @@
+import { z } from 'zod'
+
+// ***************** User Menu *******************
+export const UserMenuGetByUserInput = z.object({
+	userId: z.string().min(1),
+})
+
+export const UserMenuGetInput = z.object({
+	id: z.string().min(1),
+})
+
+export const UserMenuCreateInput = z.object({
+	userId: z.string().min(1),
+	menuTemplateId: z.string().optional().nullable(),
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	startDate: z.date().optional().nullable(),
+	endDate: z.date().optional().nullable(),
+})
+
+export const UserMenuUpdateInput = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1).optional(),
+	description: z.string().optional().nullable(),
+	startDate: z.date().optional().nullable(),
+	endDate: z.date().optional().nullable(),
+	isActive: z.boolean().optional(),
+})
+
+export const UserMenuDeleteInput = z.object({
+	id: z.string().min(1),
+})
+
+// ***************** User Meal *******************
+export const UserMealCreateInput = z.object({
+	userMenuId: z.string().min(1),
+	mealIndex: z.number().int().min(0),
+	name: z.string().optional().nullable(),
+	targetCalories: z.number().optional().nullable(),
+	targetProtein: z.number().optional().nullable(),
+	targetFat: z.number().optional().nullable(),
+	targetCarbohydrate: z.number().optional().nullable(),
+})
+
+export const UserMealUpdateInput = z.object({
+	id: z.string().min(1),
+	name: z.string().optional().nullable(),
+	targetCalories: z.number().optional().nullable(),
+	targetProtein: z.number().optional().nullable(),
+	targetFat: z.number().optional().nullable(),
+	targetCarbohydrate: z.number().optional().nullable(),
+	isCompleted: z.boolean().optional(),
+})
+
+export const UserMealDeleteInput = z.object({
+	id: z.string().min(1),
+})
+
+// ***************** User Recipe *******************
+export const UserRecipeCreateInput = z.object({
+	userMenuId: z.string().min(1),
+	mealIndex: z.number().int().min(0),
+	recipeIndex: z.number().int().min(0),
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	category: z.string().optional().nullable(),
+	image: z.string().optional().nullable(),
+	instructions: z.string().optional().nullable(),
+	prepTime: z.number().int().optional().nullable(),
+	cookTime: z.number().int().optional().nullable(),
+	servings: z.number().int().optional().nullable(),
+	calories: z.number().optional().default(0),
+	protein: z.number().optional().default(0),
+	fat: z.number().optional().default(0),
+	carbohydrate: z.number().optional().default(0),
+})
+
+export const UserRecipeUpdateInput = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1).optional(),
+	description: z.string().optional().nullable(),
+	category: z.string().optional().nullable(),
+	image: z.string().optional().nullable(),
+	instructions: z.string().optional().nullable(),
+	prepTime: z.number().int().optional().nullable(),
+	cookTime: z.number().int().optional().nullable(),
+	servings: z.number().int().optional().nullable(),
+	calories: z.number().optional(),
+	protein: z.number().optional(),
+	fat: z.number().optional(),
+	carbohydrate: z.number().optional(),
+	isCompleted: z.boolean().optional(),
+})
+
+export const UserRecipeMarkCompletedInput = z.object({
+	id: z.string().min(1),
+	isCompleted: z.boolean(),
+})
+
+export const UserRecipeDeleteInput = z.object({
+	id: z.string().min(1),
+})
+
+// ***************** User Ingredient *******************
+export const UserIngredientCreateInput = z.object({
+	userMenuId: z.string().min(1),
+	userRecipeId: z.string().min(1),
+	ingredientId: z.string().min(1),
+	mealIndex: z.number().int().min(0),
+	recipeIndex: z.number().int().min(0),
+	serveSize: z.number(),
+	serveUnit: z.string().min(1),
+	altServeSize: z.number().optional().nullable(),
+	altServeUnit: z.string().optional().nullable(),
+	calories: z.number().optional().default(0),
+	protein: z.number().optional().default(0),
+	fat: z.number().optional().default(0),
+	carbohydrate: z.number().optional().default(0),
+})
+
+export const UserIngredientUpdateInput = z.object({
+	id: z.string().min(1),
+	serveSize: z.number().optional(),
+	serveUnit: z.string().optional(),
+	altServeSize: z.number().optional().nullable(),
+	altServeUnit: z.string().optional().nullable(),
+	calories: z.number().optional(),
+	protein: z.number().optional(),
+	fat: z.number().optional(),
+	carbohydrate: z.number().optional(),
+	isCompleted: z.boolean().optional(),
+})
+
+export const UserIngredientSwapInput = z.object({
+	id: z.string().min(1),
+	altIngredientId: z.string().min(1),
+	altServeSize: z.number().optional(),
+	altServeUnit: z.string().optional(),
+})
+
+export const UserIngredientMarkCompletedInput = z.object({
+	id: z.string().min(1),
+	isCompleted: z.boolean(),
+})
+
+export const UserIngredientDeleteInput = z.object({
+	id: z.string().min(1),
+})

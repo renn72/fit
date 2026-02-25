@@ -82,7 +82,10 @@ const equipments = [
 	'foam roll',
 ]
 
-export function ExerciseEditForm({ exercise, onSuccess }: ExerciseEditFormProps) {
+export function ExerciseEditForm({
+	exercise,
+	onSuccess,
+}: ExerciseEditFormProps) {
 	const queryClient = useQueryClient()
 
 	const updateExercise = useMutation(

@@ -21,18 +21,18 @@ import { z } from 'zod'
 
 const exerciseCreateSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
-	movementId: z.string().optional().nullable(),
-	sets: z.number().int().min(1).optional().nullable(),
-	reps: z.number().int().min(1).optional().nullable(),
-	repUnit: z.string().optional().nullable(),
-	ormPercent: z.number().min(0).max(100).optional().nullable(),
-	targetRpe: z.number().min(1).max(10).optional().nullable(),
-	restTime: z.number().int().min(0).optional().nullable(),
-	restUnit: z.string().optional().nullable(),
-	tempoDown: z.number().int().min(0).optional().nullable(),
-	tempoPause: z.number().int().min(0).optional().nullable(),
-	tempoUp: z.number().int().min(0).optional().nullable(),
-	notes: z.string().optional().nullable(),
+	movementId: z.string().nullable(),
+	sets: z.number().int().min(1).nullable(),
+	reps: z.number().int().min(1).nullable(),
+	repUnit: z.string().nullable(),
+	ormPercent: z.number().min(0).max(100).nullable(),
+	targetRpe: z.number().min(1).max(10).nullable(),
+	restTime: z.number().int().min(0).nullable(),
+	restUnit: z.string().nullable(),
+	tempoDown: z.number().int().min(0).nullable(),
+	tempoPause: z.number().int().min(0).nullable(),
+	tempoUp: z.number().int().min(0).nullable(),
+	notes: z.string().nullable(),
 })
 
 export interface ExerciseCreateFormProps {

@@ -1204,7 +1204,7 @@ export function MultiSelectCell<TData>({
 					<PopoverAnchor
 						render={<div className='absolute inset-0' />}
 						nativeButton={false}
-					></PopoverAnchor>
+					/>
 					<PopoverContent
 						data-grid-cell-editor=''
 						align='start'
@@ -1971,7 +1971,7 @@ export function FileCell<TData>({
 					<PopoverAnchor
 						render={<div className='absolute inset-0' />}
 						nativeButton={false}
-					></PopoverAnchor>
+					/>
 					<PopoverContent
 						data-grid-cell-editor=''
 						align='start'

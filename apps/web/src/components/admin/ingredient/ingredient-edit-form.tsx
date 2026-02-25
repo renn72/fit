@@ -43,7 +43,10 @@ export interface IngredientEditFormProps {
 	onSuccess?: () => void
 }
 
-export function IngredientEditForm({ ingredient, onSuccess }: IngredientEditFormProps) {
+export function IngredientEditForm({
+	ingredient,
+	onSuccess,
+}: IngredientEditFormProps) {
 	const queryClient = useQueryClient()
 
 	const updateIngredient = useMutation(

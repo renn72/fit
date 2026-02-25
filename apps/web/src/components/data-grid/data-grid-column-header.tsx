@@ -137,7 +137,7 @@ export function DataGridColumnHeader<TData, TValue>({
 									render={
 										<columnVariant.icon className='size-3.5 shrink-0 text-muted-foreground' />
 									}
-								></TooltipTrigger>
+								/>
 								<TooltipContent side='top'>
 									<p>{columnVariant.label}</p>
 								</TooltipContent>

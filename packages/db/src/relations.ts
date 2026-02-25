@@ -6,6 +6,7 @@ import * as menuTemplate from './schema/menu-template'
 import * as movement from './schema/movement'
 import * as org from './schema/org'
 import * as recipe from './schema/recipe'
+import * as userMenu from './schema/user-menu'
 import * as warmup from './schema/warmup'
 import * as workout from './schema/workout'
 
@@ -22,6 +23,7 @@ const schema = {
 	...warmup,
 	...blockTemplate,
 	...menuTemplate,
+	...userMenu,
 }
 
 export const relations = defineRelations(schema, (r) => ({
@@ -66,6 +68,10 @@ export const relations = defineRelations(schema, (r) => ({
 		workouts: r.many.workout({
 			from: r.user.id,
 			to: r.workout.creatorId,
+		}),
+		userMenus: r.many.userMenu({
+			from: r.user.id,
+			to: r.userMenu.userId,
 		}),
 	},
 
@@ -209,6 +215,14 @@ export const relations = defineRelations(schema, (r) => ({
 		recipes: r.many.recipeToIngredient({
 			from: r.ingredient.id,
 			to: r.recipeToIngredient.ingredientId,
+		}),
+		userIngredients: r.many.userIngredient({
+			from: r.ingredient.id,
+			to: r.userIngredient.ingredientId,
+		}),
+		altUserIngredients: r.many.userIngredient({
+			from: r.ingredient.id,
+			to: r.userIngredient.altIngredientId,
 		}),
 	},
 
@@ -427,6 +441,58 @@ export const relations = defineRelations(schema, (r) => ({
 		recipe: r.one.recipe({
 			from: r.menuTemplateToRecipe.recipeId,
 			to: r.recipe.id,
+		}),
+	},
+
+	// ***************** User Menu *******************
+	userMenu: {
+		user: r.one.user({
+			from: r.userMenu.userId,
+			to: r.user.id,
+		}),
+		meals: r.many.userMeal({
+			from: r.userMenu.id,
+			to: r.userMeal.userMenuId,
+		}),
+		recipes: r.many.userRecipe({
+			from: r.userMenu.id,
+			to: r.userRecipe.userMenuId,
+		}),
+		ingredients: r.many.userIngredient({
+			from: r.userMenu.id,
+			to: r.userIngredient.userMenuId,
+		}),
+	},
+
+	// ***************** User Meal *******************
+	userMeal: {
+		userMenu: r.one.userMenu({
+			from: r.userMeal.userMenuId,
+			to: r.userMenu.id,
+		}),
+	},
+
+	// ***************** User Recipe *******************
+	userRecipe: {
+		userMenu: r.one.userMenu({
+			from: r.userRecipe.userMenuId,
+			to: r.userMenu.id,
+		}),
+	},
+
+	// ***************** User Ingredient *******************
+	userIngredient: {
+		userMenu: r.one.userMenu({
+			from: r.userIngredient.userMenuId,
+			to: r.userMenu.id,
+		}),
+		ingredient: r.one.ingredient({
+			from: r.userIngredient.ingredientId,
+			to: r.ingredient.id,
+		}),
+		altIngredient: r.one.ingredient({
+			from: r.userIngredient.altIngredientId,
+			to: r.ingredient.id,
 		}),
 	},
 }))

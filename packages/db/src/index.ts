@@ -1,12 +1,13 @@
 import { env } from '@fit/env/server'
 
-import { createClient } from '@libsql/client'
-import { drizzle } from 'drizzle-orm/libsql'
 import { relations } from './relations'
 import * as auth from './schema/auth'
 import * as exercise from './schema/exercise'
-import * as org from './schema/org'
 import * as ingredient from './schema/ingredient'
+import * as org from './schema/org'
+
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 
 const schema = { ...org, ...auth, ...exercise, ...ingredient }
 
