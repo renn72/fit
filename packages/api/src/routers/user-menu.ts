@@ -69,6 +69,7 @@ export const userMenuRouter = {
 							asc(recipe.recipeIndex),
 						],
 					},
+					ingredients: true,
 				},
 				orderBy: (menu, { desc }) => [desc(menu.createdAt)],
 			})
@@ -96,10 +97,8 @@ export const userMenuRouter = {
 							asc(recipe.mealIndex),
 							asc(recipe.recipeIndex),
 						],
-						with: {
-							ingredients: true,
-						},
 					},
+					ingredients: true,
 				},
 			})
 

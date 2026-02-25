@@ -9,7 +9,7 @@ import {
 	SidebarMenu,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { orpc, queryClient } from '@/utils/orpc'
+import { orpc } from '@/utils/orpc'
 
 import { useQuery } from '@tanstack/react-query'
 
@@ -21,10 +21,23 @@ import {
 	PaperPlaneTiltIcon,
 	RobotIcon,
 	TerminalIcon,
+	UserIcon,
 } from '@phosphor-icons/react'
 
 const data = {
 	navMain: [
+		{
+			title: 'User',
+			url: '#',
+			icon: <UserIcon />,
+			isActive: true,
+			items: [
+				{
+					title: 'Create Menu',
+					url: '/$orgSlug/user-menu-create',
+				},
+			],
+		},
 		{
 			title: 'Nutrition',
 			url: '#',
@@ -115,7 +128,8 @@ export function AppSidebar({
 	onUserSelect,
 	...props
 }: AppSidebarProps) {
-	const { data: users } = useQuery(orpc.user.getAllByOrg.queryOptions())
+	const { data: usersData } = useQuery(orpc.user.getAllByOrg.queryOptions())
+	const users = usersData ?? []
 	return (
 		<Sidebar
 			className='top-(--header-height) h-[calc(100svh-var(--header-height))]!'
