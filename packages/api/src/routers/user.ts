@@ -61,4 +61,36 @@ export const userRouter = {
 				organisationSlug: u.organisationMember?.slug ?? '',
 			}))
 		}),
+
+	getAllByOrg: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/user/by-org',
+			summary: 'Get all users for current organization',
+			tags: ['User'],
+		})
+		.handler(async ({ context }) => {
+			const userOrgId = context.session.user.organisationId
+
+			if (!userOrgId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organization',
+				})
+			}
+
+			const users = await db.query.user.findMany({
+				where: {
+					organisationId: userOrgId,
+				},
+				columns: {
+					id: true,
+					name: true,
+					email: true,
+					image: true,
+				},
+				orderBy: (user, { asc }) => [asc(user.name)],
+			})
+
+			return users
+		}),
 }

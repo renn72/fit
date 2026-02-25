@@ -1076,6 +1076,95 @@ export const adminSetupRouter = {
 			return { message: '10 menu templates generated successfully' }
 		}),
 
+	generateUsers: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-users',
+			summary: 'Generate 5 users for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate users',
+				})
+			}
+
+			const org = await db.query.organisation.findFirst({
+				where: { id: input.organisationId },
+			})
+
+			if (!org) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'Organisation not found',
+				})
+			}
+
+			const firstNames = [
+				'Alex',
+				'Jordan',
+				'Taylor',
+				'Morgan',
+				'Casey',
+				'Jamie',
+				'Riley',
+				'Avery',
+				'Quinn',
+				'Skyler',
+				'Drew',
+				'Parker',
+				'Cameron',
+				'Sam',
+				'Dakota',
+			]
+
+			const lastNames = [
+				'Smith',
+				'Johnson',
+				'Williams',
+				'Brown',
+				'Jones',
+				'Garcia',
+				'Miller',
+				'Davis',
+				'Rodriguez',
+				'Martinez',
+				'Hernandez',
+				'Lopez',
+				'Gonzalez',
+				'Wilson',
+				'Anderson',
+			]
+
+			const shuffledFirst = [...firstNames].sort(() => Math.random() - 0.5)
+			const shuffledLast = [...lastNames].sort(() => Math.random() - 0.5)
+
+			await db.transaction(async (tx) => {
+				for (let i = 0; i < 5; i++) {
+					const firstName = shuffledFirst[i]!
+					const lastName = shuffledLast[i]!
+					const fullName = `${firstName} ${lastName}`
+					const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${uuid().substring(0, 8)}@example.com`
+
+					await tx.insert(user).values({
+						id: uuid(),
+						name: fullName,
+						email: email,
+						organisationId: input.organisationId,
+						organisationSlug: org.slug,
+					})
+				}
+			})
+
+			return { message: '5 users generated successfully' }
+		}),
+
 	generatePlans: protectedProcedure
 		.route({
 			method: 'POST',

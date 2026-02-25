@@ -1,113 +1,120 @@
 'use client'
 
+import { useState } from 'react'
+
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuGroup,
-	DropdownMenuItem,
-	DropdownMenuLabel,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+	Command,
+	CommandEmpty,
+	CommandGroup,
+	CommandInput,
+	CommandItem,
+	CommandList,
+} from '@/components/ui/command'
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from '@/components/ui/popover'
 import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-	useSidebar,
 } from '@/components/ui/sidebar'
 
-import {
-	BellIcon,
-	CaretUpDownIcon,
-	CheckCircleIcon,
-	CreditCardIcon,
-	SignOutIcon,
-	SparkleIcon,
-} from '@phosphor-icons/react'
+import { CaretUpDownIcon, CheckIcon, UserIcon } from '@phosphor-icons/react'
 
-export function NavUser({
-	user,
-}: {
-	user: {
-		name: string
-		email: string
-		avatar: string
-	}
-}) {
-	const { isMobile } = useSidebar()
+interface User {
+	id: string
+	name: string
+	email: string
+	image: string | null
+}
+
+interface NavUserProps {
+	users: User[] | undefined
+	selectedUserId: string
+	onUserSelect: (userId: string) => void
+}
+
+export function NavUser({ users, selectedUserId, onUserSelect }: NavUserProps) {
+	const [open, setOpen] = useState(false)
+
+	const selectedUser = users?.find((u) => u.id === selectedUserId)
+
 	return (
 		<SidebarMenu>
-			<SidebarMenuItem>
-				<DropdownMenu>
-					<DropdownMenuTrigger
+			<SidebarMenuItem className='p-1'>
+				<Popover open={open} onOpenChange={setOpen}>
+					<PopoverTrigger
 						render={
 							<SidebarMenuButton
 								size='lg'
-								className='aria-expanded:bg-muted aria-expanded:text-foreground'
+								variant='outline'
+								className='border aria-expanded:bg-muted aria-expanded:text-foreground'
 							/>
 						}
 					>
-						<Avatar>
-							<AvatarFallback>CN</AvatarFallback>
+						<Avatar className='w-7 h-7'>
+							<AvatarImage
+								src={selectedUser?.image || undefined}
+								alt={selectedUser?.name || 'User'}
+							/>
+							<AvatarFallback>
+								<UserIcon className='w-4 h-4' />
+							</AvatarFallback>
 						</Avatar>
-						<div className='grid flex-1 text-sm leading-tight text-left'>
-							<span className='font-medium truncate'>{user.name}</span>
-							<span className='text-xs truncate'>{user.email}</span>
+						<div className='grid flex-1 text-left'>
+							<span className='text-sm font-medium truncate'>
+								{selectedUser?.name || 'Select User'}
+							</span>
+							<span className='text-xs text-muted-foreground truncate'>
+								{selectedUser?.email || 'Choose a user'}
+							</span>
 						</div>
-						<CaretUpDownIcon className='ml-auto size-4' />
-					</DropdownMenuTrigger>
-					<DropdownMenuContent
-						className='rounded-lg min-w-56'
-						side={isMobile ? 'bottom' : 'right'}
-						align='end'
-						sideOffset={4}
-					>
-						<DropdownMenuGroup>
-							<DropdownMenuLabel className='p-0 font-normal'>
-								<div className='flex gap-2 items-center py-1.5 px-1 text-sm text-left'>
-									<Avatar>
-										<AvatarImage src={user.avatar} alt={user.name} />
-										<AvatarFallback>CN</AvatarFallback>
-									</Avatar>
-									<div className='grid flex-1 text-sm leading-tight text-left'>
-										<span className='font-medium truncate'>{user.name}</span>
-										<span className='text-xs truncate'>{user.email}</span>
-									</div>
-								</div>
-							</DropdownMenuLabel>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<SparkleIcon />
-								Upgrade to Pro
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<CheckCircleIcon />
-								Account
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<CreditCardIcon />
-								Billing
-							</DropdownMenuItem>
-							<DropdownMenuItem>
-								<BellIcon />
-								Notifications
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-						<DropdownMenuSeparator />
-						<DropdownMenuGroup>
-							<DropdownMenuItem>
-								<SignOutIcon />
-								Log out
-							</DropdownMenuItem>
-						</DropdownMenuGroup>
-					</DropdownMenuContent>
-				</DropdownMenu>
+						<CaretUpDownIcon className='ml-auto w-4 h-4 text-muted-foreground' />
+					</PopoverTrigger>
+					<PopoverContent className='p-0 w-84' align='start' side='right'>
+						<Command>
+							<CommandInput placeholder='Search users...' />
+							<CommandList>
+								<CommandEmpty>No users found.</CommandEmpty>
+								<CommandGroup>
+									{users?.map((user) => (
+										<CommandItem
+											key={user.id}
+											onSelect={() => {
+												onUserSelect(user.id)
+												setOpen(false)
+											}}
+											className='flex gap-2 items-center'
+										>
+											<Avatar className='w-6 h-6'>
+												<AvatarImage
+													src={user.image || undefined}
+													alt={user.name}
+												/>
+												<AvatarFallback>
+													<UserIcon className='w-3 h-3' />
+												</AvatarFallback>
+											</Avatar>
+											<div className='grid flex-1 text-left'>
+												<span className='text-sm'>{user.name}</span>
+												<span className='text-xs text-muted-foreground'>
+													{user.email}
+												</span>
+											</div>
+											{selectedUserId === user.id && (
+												<CheckIcon className='ml-auto w-4 h-4' />
+											)}
+										</CommandItem>
+									))}
+								</CommandGroup>
+							</CommandList>
+						</Command>
+					</PopoverContent>
+				</Popover>
 			</SidebarMenuItem>
 		</SidebarMenu>
 	)

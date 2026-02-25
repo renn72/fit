@@ -51,7 +51,7 @@ export function IngredientRowActions<TData>({
 						<Button
 							size='icon'
 							variant='ghost'
-							className='flex items-start p-0 data-[state=open]:bg-muted'
+							className='flex items-center p-0 data-[state=open]:bg-muted h-6'
 						/>
 					}
 				>

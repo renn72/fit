@@ -1,23 +1,21 @@
 import type * as React from 'react'
 
 import { NavMain } from '@/components/admin-sidebar/nav-main'
-import { NavProjects } from '@/components/admin-sidebar/nav-projects'
-import { NavSecondary } from '@/components/admin-sidebar/nav-secondary'
 import { NavUser } from '@/components/admin-sidebar/nav-user'
 import {
 	Sidebar,
 	SidebarContent,
 	SidebarFooter,
-	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuItem,
 } from '@/components/ui/sidebar'
-import { FitByWsysLogo } from '@/components/wsysIcon'
+import { orpc, queryClient } from '@/utils/orpc'
+
+import { useQuery } from '@tanstack/react-query'
 
 import {
 	ChartPieIcon,
 	CropIcon,
-	GearIcon,
 	LifebuoyIcon,
 	MapTrifoldIcon,
 	PaperPlaneTiltIcon,
@@ -26,11 +24,6 @@ import {
 } from '@phosphor-icons/react'
 
 const data = {
-	user: {
-		name: 'shadcn',
-		email: 'm@example.com',
-		avatar: '/avatars/shadcn.jpg',
-	},
 	navMain: [
 		{
 			title: 'Nutrition',
@@ -39,12 +32,12 @@ const data = {
 			isActive: true,
 			items: [
 				{
-					title: 'Recipes',
-					url: '/$orgSlug/recipes',
-				},
-				{
 					title: 'Ingredients',
 					url: '/$orgSlug/ingredients',
+				},
+				{
+					title: 'Recipes',
+					url: '/$orgSlug/recipes',
 				},
 				{
 					title: 'Menu Templates',
@@ -111,26 +104,37 @@ const data = {
 		},
 	],
 }
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+	selectedUserId: string
+	onUserSelect: (userId: string) => void
+}
+
+export function AppSidebar({
+	selectedUserId,
+	onUserSelect,
+	...props
+}: AppSidebarProps) {
+	const { data: users } = useQuery(orpc.user.getAllByOrg.queryOptions())
 	return (
 		<Sidebar
 			className='top-(--header-height) h-[calc(100svh-var(--header-height))]!'
 			{...props}
 		>
-			<SidebarHeader>
-				<SidebarMenu>
-					<SidebarMenuItem>
-						<img alt='Fit by wsys' src='/logo.webp' width='40' height='40' />
-					</SidebarMenuItem>
-				</SidebarMenu>
-			</SidebarHeader>
 			<SidebarContent>
+				<SidebarMenu>
+					<NavUser
+						users={users}
+						selectedUserId={selectedUserId}
+						onUserSelect={onUserSelect}
+					/>
+				</SidebarMenu>
 				<NavMain items={data.navMain} />
-				<NavProjects projects={data.projects} />
-				<NavSecondary items={data.navSecondary} className='mt-auto' />
 			</SidebarContent>
 			<SidebarFooter>
-				<NavUser user={data.user} />
+				<SidebarMenuItem>
+					<img alt='Fit by wsys' src='/logo.webp' width='40' height='40' />
+				</SidebarMenuItem>
 			</SidebarFooter>
 		</Sidebar>
 	)

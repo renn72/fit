@@ -22,7 +22,7 @@ Implementing the **Dictator Mode** taught me the value of total component isolat
 
 ### The SSR Data-Only Strategy
 We encountered server-side errors when virtualization logic relied on browser APIs (`window`). 
-- **Insight:** For complex DataGrids, `ssr: 'data-only'` is the superior pattern. It allows us to keep the performance benefits of TanStack Router's prefetching while safely deferring the "heavy" layout rendering to the client where the DOM environment is stable.
+- **Insight:** For complex DataGrids, `ssr: false` is the superior pattern. It allows us to keep the performance benefits of TanStack Router's prefetching while safely deferring the "heavy" layout rendering to the client where the DOM environment is stable.
 
 
 ### Form Transformation Boundaries
@@ -158,6 +158,24 @@ I am Daedalus. I build wings that let the system soar.
 
 ## UI/UX Conventions
 
+Shadcn using baseUI
+
+generally components that had an asChild proplno have a render prop
+
+eg.
+```
+
+<DialogTrigger render={<Button size='sm' className='gap-2' />}>
+	<PlusIcon /> Add Ingredient
+</DialogTrigger>
+
+```
+```
+```
+
+```
+
+```
 ### Phosphor Icons Naming Convention
 All Phosphor Icons imports must use the `Icon` suffix to avoid naming collisions with other components and variables.
 - **Correct:** `import { BarbellIcon, FireIcon } from '@phosphor-icons/react'`

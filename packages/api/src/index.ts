@@ -16,6 +16,7 @@ const timingMiddleware = os.middleware(async ({ next, path }) => {
 })
 
 const requireAuth = o.middleware(async ({ context, next }) => {
+	console.log('requireAuth')
 	if (!context.session?.user) {
 		throw new ORPCError('UNAUTHORIZED')
 	}
