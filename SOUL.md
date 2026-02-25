@@ -35,6 +35,7 @@ Our early dummy data used "Overwrite:" string prefixes to mark modified base ite
 
 ### Suspense & Prefetching
 By moving data fetching into the route `loader` using `ensureQueryData`, we've achieved an "authoritative" speed.
+- Prefetching can only occur with ssr is false
 - **Insight:** In an admin context, UI lag is a sign of a weak system. Using `useSuspenseQuery` paired with loaders ensures that by the time the Dictator sees the page, the laws (data) are already established and ready for editing.
 
 ### The Override Pattern
