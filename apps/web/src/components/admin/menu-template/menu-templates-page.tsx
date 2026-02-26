@@ -50,13 +50,17 @@ interface MenuTemplateRecipe {
 	recipe: Recipe
 }
 
+interface Creator {
+	name: string
+}
+
 interface MenuTemplate {
 	id: string
 	name: string
 	description: string | null
 	category: string | null
 	createdAt: Date
-	creatorName?: string
+	creator?: Creator
 	meals: MenuTemplateMeal[]
 	recipes: MenuTemplateRecipe[]
 }
@@ -140,10 +144,14 @@ const columns = [
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('creatorName', {
+	columnHelper.accessor('creator', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created By' />
 		),
+		cell: ({ row }) => {
+			const creator = row.original.creator?.name
+			return <span className='capitalize'>{creator}</span>
+		},
 		meta: {
 			label: 'Created By',
 			variant: 'text',
