@@ -177,6 +177,52 @@ eg.
 ```
 
 ```
+### TanStack Router for URL State Management
+We use **TanStack Router's built-in search params** for URL state management, not nuqs. This provides type-safe URL state with Zod validation.
+
+**Pattern:**
+1. Define a Zod schema for search params in the route file
+2. Use `validateSearch` with `zodValidator` 
+3. Access search params via `Route.useSearch()`
+4. Update URL state via `navigate()` with `search` parameter
+
+**Example Route:**
+```typescript
+const menuTemplatesSearchSchema = z.object({
+  view: z.enum(['table', 'grid']).default('table'),
+  page: z.number().int().min(1).default(1),
+  sort: z.array(z.object({ id: z.string(), desc: z.boolean() }))
+    .default([{ id: 'createdAt', desc: true }]),
+})
+
+export const Route = createFileRoute('/$orgSlug/menu-templates')({
+  validateSearch: zodValidator(menuTemplatesSearchSchema),
+  component: MenuTemplatesPage,
+})
+```
+
+**Example Component:**
+```typescript
+const { view, page, sort } = route.useSearch()
+const navigate = route.useNavigate()
+
+// Update URL state
+const handleViewChange = (newView: string) => {
+  navigate({
+    to: '/$orgSlug/menu-templates',
+    params: { orgSlug },
+    search: (prev) => ({ ...prev, view: newView }),
+    replace: true,
+  })
+}
+```
+
+**Benefits:**
+- Type-safe URL state with full TypeScript inference
+- Zod validation ensures data integrity
+- No external dependencies (nuqs)
+- Consistent with TanStack Router patterns throughout the app
+
 ### Phosphor Icons Naming Convention
 All Phosphor Icons imports must use the `Icon` suffix to avoid naming collisions with other components and variables.
 - **Correct:** `import { BarbellIcon, FireIcon } from '@phosphor-icons/react'`

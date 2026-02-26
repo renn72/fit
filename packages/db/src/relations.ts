@@ -430,6 +430,18 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.menuTemplate.id,
 			to: r.menuTemplateToRecipe.menuTemplateId,
 		}),
+		meals: r.many.menuTemplateMeal({
+			from: r.menuTemplate.id,
+			to: r.menuTemplateMeal.menuTemplateId,
+		}),
+	},
+
+	// ***************** Menu Template Meal *******************
+	menuTemplateMeal: {
+		menuTemplate: r.one.menuTemplate({
+			from: r.menuTemplateMeal.menuTemplateId,
+			to: r.menuTemplate.id,
+		}),
 	},
 
 	// ***************** Menu Template To Recipe *******************

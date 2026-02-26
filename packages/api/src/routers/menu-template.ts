@@ -1,6 +1,7 @@
 import { db } from '@fit/db'
 import {
 	menuTemplate,
+	menuTemplateMeal,
 	menuTemplateToRecipe,
 } from '@fit/db/schema/menu-template'
 
@@ -10,11 +11,14 @@ import { protectedProcedure } from '../index'
 import {
 	MenuTemplateAddRecipeInput,
 	MenuTemplateCreateInput,
+	MenuTemplateCreateMealInput,
 	MenuTemplateDeleteInput,
+	MenuTemplateDeleteMealInput,
 	MenuTemplateGetAllOrgInput,
 	MenuTemplateGetInput,
 	MenuTemplateRemoveRecipeInput,
 	MenuTemplateUpdateInput,
+	MenuTemplateUpdateMealInput,
 } from '../schemas/menu-template'
 
 export const menuTemplateRouter = {
@@ -47,6 +51,9 @@ export const menuTemplateRouter = {
 							name: true,
 							slug: true,
 						},
+					},
+					meals: {
+						orderBy: (meal, { asc }) => [asc(meal.mealIndex)],
 					},
 					recipes: {
 						with: {
@@ -98,6 +105,9 @@ export const menuTemplateRouter = {
 							name: true,
 						},
 					},
+					meals: {
+						orderBy: (meal, { asc }) => [asc(meal.mealIndex)],
+					},
 					recipes: {
 						with: {
 							recipe: true,
@@ -126,6 +136,9 @@ export const menuTemplateRouter = {
 			const menuTemplateData = await db.query.menuTemplate.findFirst({
 				where: { id: input.id },
 				with: {
+					meals: {
+						orderBy: (meal, { asc }) => [asc(meal.mealIndex)],
+					},
 					recipes: {
 						with: {
 							recipe: true,
@@ -249,7 +262,100 @@ export const menuTemplateRouter = {
 			return { success: true, id: input.id }
 		}),
 
-	// ***************** Menu Template Recipe Operations *******************
+	// ***************** Meal Operations *****************
+
+	createMeal: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/menu-template/meal',
+			summary: 'Create a meal for a menu template',
+			tags: ['Menu Template'],
+		})
+		.input(MenuTemplateCreateMealInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to modify menu templates',
+				})
+			}
+
+			// Verify menu template exists
+			const menuTemplateData = await db.query.menuTemplate.findFirst({
+				where: { id: input.menuTemplateId },
+			})
+
+			if (!menuTemplateData) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Menu template not found',
+				})
+			}
+
+			const [meal] = await db
+				.insert(menuTemplateMeal)
+				.values({
+					menuTemplateId: input.menuTemplateId,
+					mealIndex: input.mealIndex,
+					name: input.name,
+				})
+				.returning()
+
+			return meal
+		}),
+
+	updateMeal: protectedProcedure
+		.route({
+			method: 'PATCH',
+			path: '/menu-template/meal',
+			summary: 'Update a meal name',
+			tags: ['Menu Template'],
+		})
+		.input(MenuTemplateUpdateMealInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to modify menu templates',
+				})
+			}
+
+			const [updated] = await db
+				.update(menuTemplateMeal)
+				.set({ name: input.name })
+				.where(eq(menuTemplateMeal.id, input.id))
+				.returning()
+
+			if (!updated) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Meal not found',
+				})
+			}
+
+			return updated
+		}),
+
+	deleteMeal: protectedProcedure
+		.route({
+			method: 'DELETE',
+			path: '/menu-template/meal/:id',
+			summary: 'Delete a meal from a menu template',
+			tags: ['Menu Template'],
+		})
+		.input(MenuTemplateDeleteMealInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to modify menu templates',
+				})
+			}
+
+			await db.delete(menuTemplateMeal).where(eq(menuTemplateMeal.id, input.id))
+			return { success: true, id: input.id }
+		}),
+
+	// ***************** Recipe Operations *****************
+
 	addRecipe: protectedProcedure
 		.route({
 			method: 'POST',

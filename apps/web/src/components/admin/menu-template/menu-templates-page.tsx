@@ -17,7 +17,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -31,13 +30,17 @@ import {
 	SquaresFourIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface Recipe {
 	id: string
 	name: string
 	category: string | null
-	calories: number | null
+}
+
+interface MenuTemplateMeal {
+	id: string
+	mealIndex: number
+	name: string
 }
 
 interface MenuTemplateRecipe {
@@ -54,6 +57,7 @@ interface MenuTemplate {
 	category: string | null
 	createdAt: Date
 	creatorName?: string
+	meals: MenuTemplateMeal[]
 	recipes: MenuTemplateRecipe[]
 }
 
@@ -117,21 +121,22 @@ const columns = [
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('recipes', {
+	columnHelper.accessor('meals', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Recipes' />
+			<DataTableColumnHeader column={column} label='Meals' />
 		),
 		cell: ({ row }) => {
-			const recipes = row.getValue('recipes') as MenuTemplateRecipe[]
-			const mealCount = new Set(recipes.map((r) => r.mealIndex)).size
+			const meals = row.getValue('meals') as MenuTemplateMeal[]
+			const recipes = row.original.recipes
+			const recipeCount = recipes?.length || 0
 			return (
 				<span>
-					{recipes?.length || 0} recipes ({mealCount} meals)
+					{meals?.length || 0} meals ({recipeCount} recipes)
 				</span>
 			)
 		},
 		meta: {
-			label: 'Recipes',
+			label: 'Meals',
 			variant: 'number',
 		},
 	}),
@@ -168,25 +173,13 @@ export function MenuTemplatesPage() {
 
 function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	const { orgSlug } = route.useParams()
+	const navigate = route.useNavigate()
+	const { view, page, perPage, sort } = route.useSearch()
+
 	const { data: menuTemplates } = useSuspenseQuery(
 		orpc.menuTemplate.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
-	)
-	console.log(menuTemplates)
-
-	const [viewMode, setViewMode] = useQueryState('view', {
-		defaultValue: 'table',
-	})
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<MenuTemplate>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
 	)
 
 	const menuTemplatesData = (menuTemplates as MenuTemplate[]) ?? []
@@ -194,8 +187,8 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...menuTemplatesData]
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
 			processed.sort((a, b) => {
 				const aValue = a[id as keyof MenuTemplate]
 				const bValue = b[id as keyof MenuTemplate]
@@ -216,7 +209,7 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [menuTemplatesData, page, perPage, sorting])
+	}, [menuTemplatesData, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -224,25 +217,30 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
+
+	const handleViewChange = (newView: string) => {
+		navigate({
+			to: '/$orgSlug/menu-templates',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
+			replace: true,
+		})
+	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Menu Templates</h1>
 				<Link to='/$orgSlug/menu-templates/create' params={{ orgSlug }}>
-					<Button>Create Menu Template</Button>
+					<Button className='cursor-pointer'>Create Menu Template</Button>
 				</Link>
 			</div>
 
-			<Tabs
-				value={viewMode}
-				onValueChange={(v) => void setViewMode(v)}
-				className='w-full'
-			>
+			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
 						<ListIcon className='size-4' />
@@ -294,6 +292,9 @@ function MenuTemplatesGridView({
 		<div className='flex flex-col gap-4'>
 			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 				{data.map((menuTemplate) => {
+					const sortedMeals = [...menuTemplate.meals].sort(
+						(a, b) => a.mealIndex - b.mealIndex,
+					)
 					const sortedRecipes = [...menuTemplate.recipes].sort((a, b) => {
 						if (a.mealIndex !== b.mealIndex) {
 							return a.mealIndex - b.mealIndex
@@ -301,7 +302,7 @@ function MenuTemplatesGridView({
 						return a.recipeIndex - b.recipeIndex
 					})
 					const totalItems = sortedRecipes.length
-					const mealCount = new Set(sortedRecipes.map((r) => r.mealIndex)).size
+					const mealCount = sortedMeals.length
 
 					return (
 						<Card key={menuTemplate.id} className='flex flex-col'>
@@ -337,46 +338,45 @@ function MenuTemplatesGridView({
 											Meal Schedule
 										</div>
 										<div className='overflow-y-auto space-y-2 max-h-80'>
-											{Array.from(
-												new Set(sortedRecipes.map((r) => r.mealIndex)),
-											)
-												.sort((a, b) => a - b)
-												.map((mealIndex) => {
-													const mealRecipes = sortedRecipes.filter(
-														(r) => r.mealIndex === mealIndex,
-													)
-													return (
-														<div
-															key={mealIndex}
-															className='p-3 space-y-2 rounded-lg border'
-														>
-															<div className='flex gap-2 items-center'>
-																<CookingPotIcon className='text-orange-500 size-4' />
-																<span className='text-sm font-medium'>
-																	Meal {mealIndex + 1}
-																</span>
-															</div>
-															<div className='pl-6 space-y-1'>
-																{mealRecipes.map((recipeItem) => (
-																	<div
-																		key={recipeItem.id}
-																		className='flex gap-2 items-center text-xs'
-																	>
-																		<ForkKnifeIcon className='text-green-500 size-3' />
-																		<span className='flex-1 truncate'>
-																			{recipeItem.recipe.name}
-																		</span>
-																		{recipeItem.recipe.category && (
-																			<span className='text-muted-foreground'>
-																				({recipeItem.recipe.category})
-																			</span>
-																		)}
-																	</div>
-																))}
-															</div>
+											{sortedMeals.map((meal) => {
+												const mealRecipes = sortedRecipes.filter(
+													(r) => r.mealIndex === meal.mealIndex,
+												)
+												return (
+													<div
+														key={meal.id}
+														className='p-3 space-y-2 rounded-lg border'
+													>
+														<div className='flex gap-2 items-center'>
+															<CookingPotIcon className='text-orange-500 size-4' />
+															<span className='text-sm font-medium'>
+																{meal.name}
+															</span>
+															<span className='text-xs text-muted-foreground'>
+																({mealRecipes.length} recipes)
+															</span>
 														</div>
-													)
-												})}
+														<div className='pl-6 space-y-1'>
+															{mealRecipes.map((recipeItem) => (
+																<div
+																	key={recipeItem.id}
+																	className='flex gap-2 items-center text-xs'
+																>
+																	<ForkKnifeIcon className='text-green-500 size-3' />
+																	<span className='flex-1 truncate'>
+																		{recipeItem.recipe.name}
+																	</span>
+																	{recipeItem.recipe.category && (
+																		<span className='text-muted-foreground'>
+																			({recipeItem.recipe.category})
+																		</span>
+																	)}
+																</div>
+															))}
+														</div>
+													</div>
+												)
+											})}
 										</div>
 									</div>
 								</div>

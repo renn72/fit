@@ -38,6 +38,25 @@ export const menuTemplate = s.sqliteTable(
 	],
 )
 
+export const menuTemplateMeal = s.sqliteTable(
+	'menu_template_meal',
+	{
+		id: s
+			.text('id')
+			.primaryKey()
+			.$defaultFn(() => uuid()),
+		menuTemplateId: s
+			.text('menu_template_id')
+			.notNull()
+			.references(() => menuTemplate.id, { onDelete: 'cascade' }),
+		mealIndex: s.integer('meal_index').notNull(),
+		name: s.text('name').notNull(),
+	},
+	(table) => [
+		s.index('menu_template_meal_menuTemplateId_idx').on(table.menuTemplateId),
+	],
+)
+
 export const menuTemplateToRecipe = s.sqliteTable(
 	'menu_template_to_recipe',
 	{

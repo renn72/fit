@@ -4,7 +4,7 @@ import { orpc } from '@/utils/orpc'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/$orgSlug/workouts/create')({
+export const Route = createFileRoute('/$orgSlug/workouts_/create')({
 	component: WorkoutCreatePage,
 	loader: async ({ context }) => {
 		const session = context.session

@@ -8,6 +8,7 @@ import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
 import {
 	menuTemplate,
+	menuTemplateMeal,
 	menuTemplateToRecipe,
 } from '@fit/db/schema/menu-template'
 import { movement } from '@fit/db/schema/movement'
@@ -1017,6 +1018,17 @@ export const adminSetupRouter = {
 				'High Protein',
 			]
 
+			const mealNames = [
+				'Breakfast',
+				'Mid-Morning Snack',
+				'Lunch',
+				'Afternoon Snack',
+				'Dinner',
+				'Pre-Workout Meal',
+				'Post-Workout Meal',
+				'Evening Snack',
+			]
+
 			await db.transaction(async (tx) => {
 				for (let i = 0; i < 10; i++) {
 					// Generate 3-5 meals for this menu template
@@ -1043,6 +1055,20 @@ export const adminSetupRouter = {
 							message: 'Failed to create menu template',
 						})
 					}
+
+					// Create meals with names
+					const shuffledMealNames = [...mealNames].sort(
+						() => Math.random() - 0.5,
+					)
+					const selectedMealNames = shuffledMealNames.slice(0, mealCount)
+
+					await tx.insert(menuTemplateMeal).values(
+						selectedMealNames.map((name, index) => ({
+							menuTemplateId: newMenuTemplate.id,
+							mealIndex: index,
+							name: name,
+						})),
+					)
 
 					// Add recipes to menu template with mealIndex and recipeIndex
 					const menuTemplateRecipes: {
