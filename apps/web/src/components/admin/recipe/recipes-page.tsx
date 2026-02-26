@@ -17,7 +17,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -32,7 +31,6 @@ import {
 	TagIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface RecipeIngredient {
 	id: string
@@ -246,19 +244,8 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		}),
 	)
 
-	const [viewMode, setViewMode] = useQueryState('view', {
-		defaultValue: 'table',
-	})
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<RecipeWithTotals>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
+	const navigate = route.useNavigate()
+	const { view, page, perPage, sort } = route.useSearch()
 
 	const recipesData: RecipeWithTotals[] = React.useMemo(() => {
 		return ((recipes as Recipe[]) ?? []).map(calculateRecipeTotals)
@@ -267,8 +254,8 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...recipesData]
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
 			processed.sort((a, b) => {
 				const aValue = a[id as keyof RecipeWithTotals]
 				const bValue = b[id as keyof RecipeWithTotals]
@@ -289,7 +276,7 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [recipesData, page, perPage, sorting])
+	}, [recipesData, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -297,9 +284,17 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 		},
 	})
+
+	const handleViewChange = (newView: string) => {
+		navigate({
+			to: '/$orgSlug/recipes',
+			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
+			replace: true,
+		})
+	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
@@ -310,11 +305,7 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 				</Link>
 			</div>
 
-			<Tabs
-				value={viewMode}
-				onValueChange={(v) => void setViewMode(v)}
-				className='w-full'
-			>
+			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
 						<ListIcon className='size-4' />
@@ -359,13 +350,13 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 				{data.map((recipe) => (
 					<Card key={recipe.id} className='flex flex-col'>
 						<CardHeader className='pb-3'>
 							<CardTitle className='text-lg'>{recipe.name}</CardTitle>
 							{recipe.category && (
-								<CardDescription className='flex items-center gap-1'>
+								<CardDescription className='flex gap-1 items-center'>
 									<ChefHatIcon className='size-3' />
 									{recipe.category}
 								</CardDescription>
@@ -417,13 +408,13 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 												return (
 													<div
 														key={item.id}
-														className='text-sm py-2 border-b border-border/50 last:border-0'
+														className='py-2 text-sm border-b last:border-0 border-border/50'
 													>
-														<div className='flex items-center justify-between mb-1'>
-															<span className='truncate flex-1 font-medium'>
+														<div className='flex justify-between items-center mb-1'>
+															<span className='flex-1 font-medium truncate'>
 																{item.ingredient.name}
 															</span>
-															<span className='text-muted-foreground text-xs'>
+															<span className='text-xs text-muted-foreground'>
 																{item.amount}
 																{item.unit}
 															</span>
@@ -446,7 +437,7 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 												)
 											})}
 											{recipe.ingredients.length > 3 && (
-												<div className='text-sm text-muted-foreground py-1'>
+												<div className='py-1 text-sm text-muted-foreground'>
 													+{recipe.ingredients.length - 3} more ingredients
 												</div>
 											)}
@@ -457,7 +448,7 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 								{/* Tags */}
 								{recipe.metaTags && (
 									<div className='flex flex-wrap gap-1 pt-2'>
-										<TagIcon className='size-3 text-muted-foreground mt-0.5' />
+										<TagIcon className='mt-0.5 size-3 text-muted-foreground' />
 										{recipe.metaTags
 											.split(',')
 											.filter(Boolean)
@@ -484,12 +475,12 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 			</div>
 
 			{totalPages > 1 && (
-				<div className='flex items-center justify-between px-2'>
+				<div className='flex justify-between items-center px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
 						{Math.min(page * perPage, total)} of {total} recipes
 					</div>
-					<div className='flex items-center gap-2'>
+					<div className='flex gap-2 items-center'>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>

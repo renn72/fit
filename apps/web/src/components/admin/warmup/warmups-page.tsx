@@ -7,7 +7,6 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -18,7 +17,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -31,7 +29,6 @@ import {
 	SquaresFourIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface WarmupGroup {
 	id: string
@@ -157,19 +154,8 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 		}),
 	)
 
-	const [viewMode, setViewMode] = useQueryState('view', {
-		defaultValue: 'table',
-	})
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<WarmupGroup>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
+	const navigate = route.useNavigate()
+	const { view, page, perPage, sort } = route.useSearch()
 
 	const groupsData: WarmupGroup[] = React.useMemo(() => {
 		return (groups ?? []).map((g) => ({
@@ -186,8 +172,8 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...groupsData]
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
 			processed.sort((a, b) => {
 				const aValue = a[id as keyof WarmupGroup]
 				const bValue = b[id as keyof WarmupGroup]
@@ -208,7 +194,7 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [groupsData, page, perPage, sorting])
+	}, [groupsData, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -216,10 +202,18 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
+
+	const handleViewChange = (newView: string) => {
+		navigate({
+			to: '/$orgSlug/warmups',
+			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
+			replace: true,
+		})
+	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
@@ -228,11 +222,7 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 				<WarmupGroupCreateDialog />
 			</div>
 
-			<Tabs
-				value={viewMode}
-				onValueChange={(v) => void setViewMode(v)}
-				className='w-full'
-			>
+			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
 						<ListIcon className='size-4' />
@@ -258,9 +248,6 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 						page={page}
 						perPage={perPage}
 						total={groupsData.length}
-						onPageChange={(newPage) => {
-							void newPage
-						}}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -273,16 +260,9 @@ interface WarmupGridViewProps {
 	page: number
 	perPage: number
 	total: number
-	onPageChange: (page: number) => void
 }
 
-function WarmupGridView({
-	data,
-	page,
-	perPage,
-	total,
-	onPageChange,
-}: WarmupGridViewProps) {
+function WarmupGridView({ data, page, perPage, total }: WarmupGridViewProps) {
 	const totalPages = Math.ceil(total / perPage)
 
 	return (
@@ -333,25 +313,9 @@ function WarmupGridView({
 						{Math.min(page * perPage, total)} of {total} warmups
 					</div>
 					<div className='flex items-center gap-2'>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => onPageChange(page - 1)}
-							disabled={page <= 1}
-						>
-							Previous
-						</Button>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>
-						<Button
-							variant='outline'
-							size='sm'
-							onClick={() => onPageChange(page + 1)}
-							disabled={page >= totalPages}
-						>
-							Next
-						</Button>
 					</div>
 				</div>
 			)}

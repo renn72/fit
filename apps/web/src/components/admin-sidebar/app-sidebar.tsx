@@ -108,7 +108,7 @@ const data = {
 }
 
 interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
-	selectedUserId: string
+	selectedUserId: string | null
 	onUserSelect: (userId: string) => void
 }
 

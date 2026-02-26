@@ -18,7 +18,6 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -32,7 +31,6 @@ import {
 	TargetIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface Movement {
 	id: string
@@ -220,27 +218,16 @@ function MovementsContent({ userOrgId }: { userOrgId: string }) {
 		}),
 	)
 
-	const [viewMode, setViewMode] = useQueryState('view', {
-		defaultValue: 'table',
-	})
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<Movement>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
+	const navigate = route.useNavigate()
+	const { view, page, perPage, sort } = route.useSearch()
 
 	const movementsData = (movements as Movement[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...movementsData]
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
 			processed.sort((a, b) => {
 				const aValue = a[id as keyof Movement]
 				const bValue = b[id as keyof Movement]
@@ -261,7 +248,7 @@ function MovementsContent({ userOrgId }: { userOrgId: string }) {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [movementsData, page, perPage, sorting])
+	}, [movementsData, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -269,10 +256,18 @@ function MovementsContent({ userOrgId }: { userOrgId: string }) {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
+
+	const handleViewChange = (newView: string) => {
+		navigate({
+			to: '/$orgSlug/movements',
+			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
+			replace: true,
+		})
+	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
@@ -281,11 +276,7 @@ function MovementsContent({ userOrgId }: { userOrgId: string }) {
 				<MovementCreateDialog />
 			</div>
 
-			<Tabs
-				value={viewMode}
-				onValueChange={(v) => void setViewMode(v)}
-				className='w-full'
-			>
+			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
 						<ListIcon className='size-4' />

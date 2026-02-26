@@ -71,11 +71,7 @@ export function NavMain({
 											<SidebarMenuSubItem key={subItem.title}>
 												<SidebarMenuSubButton
 													render={
-														<Link
-															to={subItem.url}
-															params={{ orgSlug }}
-															search={(prev) => ({ ...prev })}
-														/>
+														<Link to={subItem.url} params={{ orgSlug }} />
 													}
 												>
 													<span>{subItem.title}</span>

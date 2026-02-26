@@ -22,7 +22,7 @@ export const Route = createFileRoute('/$orgSlug')({
 	search: {
 		middlewares: [retainSearchParams(['user'])],
 	},
-	loader: async ({ context, params }) => {
+	loader: async ({ context }) => {
 		const session = context.session
 
 		if (!session?.user?.organisationId) {
@@ -41,7 +41,7 @@ function LayoutRouteComponent() {
 	const navigate = Route.useNavigate()
 
 	// Default to current user's ID if no userId in search params
-	const selectedUserId = user || session.user.id
+	const selectedUserId = user || null
 	const location = useLocation()
 	const handleUserSelect = (newUserId: string) => {
 		navigate({
