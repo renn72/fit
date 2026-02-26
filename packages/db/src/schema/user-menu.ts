@@ -86,10 +86,6 @@ export const userRecipe = s.sqliteTable(
 		description: s.text('description'),
 		category: s.text('category'),
 		image: s.text('image'),
-		calories: s.real('calories').notNull().default(0),
-		protein: s.real('protein').notNull().default(0),
-		fat: s.real('fat').notNull().default(0),
-		carbohydrate: s.real('carbohydrate').notNull().default(0),
 	},
 	(table) => [s.index('user_recipe_userMenuId_idx').on(table.userMenuId)],
 )

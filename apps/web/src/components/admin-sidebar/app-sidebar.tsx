@@ -1,3 +1,5 @@
+'use client'
+
 import type * as React from 'react'
 
 import { NavMain } from '@/components/admin-sidebar/nav-main'
@@ -98,6 +100,10 @@ const data = {
 			icon: <CookingPotIcon />,
 			isActive: true,
 			items: [
+				{
+					title: 'User Menus',
+					url: '/$orgSlug/user-menus',
+				},
 				{
 					title: 'Create Menu',
 					url: '/$orgSlug/user-menu-create',

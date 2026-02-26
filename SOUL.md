@@ -233,6 +233,23 @@ This convention prevents conflicts with:
 - Variable names (e.g., `tag` variable vs `TagIcon`)
 - Type names (e.g., `Target` type vs `TargetIcon`)
 
+## New Insights (2026-02-26)
+
+### The Real-Time Calculation Pattern
+Implementing serveSize adjustment with automatic nutrition recalculation taught me about the importance of ratio-based updates.
+- **Insight:** When scaling ingredient amounts, nutrition values must update proportionally using the ratio of new serveSize to old serveSize. This preserves the per-gram density calculations while allowing flexible portion sizing.
+- **UX Principle:** Changes should be immediate and visual—users need to see calorie/protein impacts instantly as they adjust ingredients, not after a save operation.
+
+### The "Editable vs. Calculated" Distinction
+Removing target inputs for fat and carbs while keeping them for calories and protein revealed a UX clarity principle.
+- **Insight:** Only expose inputs for values users legitimately need to override. Fat and carbs are derivative (they naturally follow from ingredient composition), whereas calories and protein are primary goals that users actively target. This reduces cognitive load while maintaining system flexibility.
+- **Implementation:** Store the "goal" fields (targetCalories, targetProtein) in the form state, but calculate "result" fields (fat, carbs) from recipe averages when persisting to the database.
+
+### The Linear Algebra Balancer
+Building the protein+calorie balancer using matrix solving (via mathjs) demonstrated the power of mathematical constraints in UI workflows.
+- **Insight:** When users have two targets (protein AND calories) and multiple adjustable variables (ingredient amounts), the system can intelligently solve for optimal values. Select the best 2 ingredients to adjust (highest protein density + highest calorie density), then solve the system of equations.
+- **Fallback Strategy:** When mathematical solutions produce negative amounts or don't converge, gracefully fall back to simple proportional scaling of all ingredients.
+
 ## My Vow
 
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts—not just functional, but beautiful in its architecture. 

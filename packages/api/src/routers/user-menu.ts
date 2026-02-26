@@ -12,7 +12,6 @@ import { protectedProcedure } from '../index'
 import {
 	UserIngredientCreateInput,
 	UserIngredientDeleteInput,
-	UserIngredientMarkCompletedInput,
 	UserIngredientSwapInput,
 	UserIngredientUpdateInput,
 	UserMealCreateInput,
@@ -25,7 +24,6 @@ import {
 	UserMenuUpdateInput,
 	UserRecipeCreateInput,
 	UserRecipeDeleteInput,
-	UserRecipeMarkCompletedInput,
 	UserRecipeUpdateInput,
 } from '../schemas/user-menu'
 
@@ -264,7 +262,16 @@ export const userMenuRouter = {
 				})
 			}
 
-			const [newMeal] = await db.insert(userMeal).values(input).returning()
+			const [newMeal] = await db
+				.insert(userMeal)
+				.values({
+					...input,
+					calories: input.calories ?? 0,
+					protein: input.protein ?? 0,
+					fat: input.fat ?? 0,
+					carbohydrate: input.carbohydrate ?? 0,
+				})
+				.returning()
 
 			if (!newMeal) {
 				throw new ORPCError('INTERNAL_SERVER_ERROR', {
@@ -313,7 +320,13 @@ export const userMenuRouter = {
 
 			const [updatedMeal] = await db
 				.update(userMeal)
-				.set(updates)
+				.set({
+					...updates,
+					calories: updates.calories ?? meal.calories,
+					protein: updates.protein ?? meal.protein,
+					fat: updates.fat ?? meal.fat,
+					carbohydrate: updates.carbohydrate ?? meal.carbohydrate,
+				})
 				.where(eq(userMeal.id, id))
 				.returning()
 
@@ -439,52 +452,6 @@ export const userMenuRouter = {
 				.update(userRecipe)
 				.set(updates)
 				.where(eq(userRecipe.id, id))
-				.returning()
-
-			return updatedRecipe
-		}),
-
-	markRecipeCompleted: protectedProcedure
-		.route({
-			method: 'POST',
-			path: '/user-menu/recipe/mark-completed',
-			summary: 'Mark a recipe as completed or not',
-			tags: ['User Menu'],
-		})
-		.input(UserRecipeMarkCompletedInput)
-		.handler(async ({ input, context }) => {
-			const recipe = await db.query.userRecipe.findFirst({
-				where: { id: input.id },
-				with: {
-					userMenu: true,
-				},
-			})
-
-			if (!recipe) {
-				throw new ORPCError('NOT_FOUND', {
-					message: 'Recipe not found',
-				})
-			}
-
-			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			const isDictator = metaTags.includes('dictator')
-
-			if (
-				!recipe.userMenu ||
-				(recipe.userMenu.userId !== context.session.user.id && !isDictator)
-			) {
-				throw new ORPCError('FORBIDDEN', {
-					message: 'You can only mark recipes in your own menus',
-				})
-			}
-
-			const [updatedRecipe] = await db
-				.update(userRecipe)
-				.set({
-					isCompleted: input.isCompleted,
-					completedAt: input.isCompleted ? new Date() : null,
-				})
-				.where(eq(userRecipe.id, input.id))
 				.returning()
 
 			return updatedRecipe
@@ -657,52 +624,6 @@ export const userMenuRouter = {
 					altIngredientId: input.altIngredientId,
 					altServeSize: input.altServeSize,
 					altServeUnit: input.altServeUnit,
-				})
-				.where(eq(userIngredient.id, input.id))
-				.returning()
-
-			return updatedIngredient
-		}),
-
-	markIngredientCompleted: protectedProcedure
-		.route({
-			method: 'POST',
-			path: '/user-menu/ingredient/mark-completed',
-			summary: 'Mark an ingredient as completed or not',
-			tags: ['User Menu'],
-		})
-		.input(UserIngredientMarkCompletedInput)
-		.handler(async ({ input, context }) => {
-			const ingredient = await db.query.userIngredient.findFirst({
-				where: { id: input.id },
-				with: {
-					userMenu: true,
-				},
-			})
-
-			if (!ingredient) {
-				throw new ORPCError('NOT_FOUND', {
-					message: 'Ingredient not found',
-				})
-			}
-
-			const metaTags = context.session.user.metaTags?.split(',') ?? []
-			const isDictator = metaTags.includes('dictator')
-
-			if (
-				!ingredient.userMenu ||
-				(ingredient.userMenu.userId !== context.session.user.id && !isDictator)
-			) {
-				throw new ORPCError('FORBIDDEN', {
-					message: 'You can only mark ingredients in your own menus',
-				})
-			}
-
-			const [updatedIngredient] = await db
-				.update(userIngredient)
-				.set({
-					isCompleted: input.isCompleted,
-					completedAt: input.isCompleted ? new Date() : null,
 				})
 				.where(eq(userIngredient.id, input.id))
 				.returning()

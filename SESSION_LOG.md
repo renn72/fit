@@ -174,3 +174,75 @@
     - Added "Generate 4 Plans" button to `/dictator/generation` page
     - Plans include various price points: Free ($0), Pro ($29/mo), Elite ($99/mo), Enterprise ($299/mo)
 
+# 2026-02-26
+
+- **User Menu Creation Form (Rich Interface):**
+    - Created comprehensive menu creation form at `/$orgSlug/user-menu-create`
+    - **Meal Management:** Add/remove meals, edit meal names, set target calories and protein
+    - **Recipe Management:** Add recipes via VirtualizedCombobox, remove recipes, reorder with up/down buttons
+    - **Ingredient Management:** View all ingredients per recipe, change serve sizes (0.1 precision), add/remove ingredients
+    - **Balance Calories:** Scales all recipes proportionally to meet target calories
+    - **Balance Protein & Calories:** Uses linear algebra (mathjs) to solve for ingredient amounts that meet both targets
+    - Smart ingredient selection: picks highest protein/g and highest calories/g ingredients for balancing
+    - Properly accounts for other ingredients' contributions when balancing
+    - Enhanced UI: recipe nutrition displays prominently with primary colors and borders
+    - Meal headers show average calories per recipe instead of total
+
+- **User Menu List View (Card-Based):**
+    - Created card-style view at `/$orgSlug/user-menus`
+    - Reads selected user from parent route search params (sidebar integration)
+    - Shows user selector if no user selected
+    - Displays menus in responsive card grid (1/2/3 columns based on viewport)
+    - Each card shows: name, status badge, description, date range, meal/recipe counts, daily nutrition summary
+    - Shows average calories per recipe for quick comparison
+
+- **User Menu Details View:**
+    - Created detailed view at `/$orgSlug/user-menu/$menuId`
+    - Back button to return to menu list
+    - Large daily nutrition summary card with color-coded macros
+    - Shows all meals with their target calories/protein
+    - Lists all recipes per meal with full nutrition breakdown
+    - Shows all ingredients per recipe with serving sizes
+
+- **Menu Actions:**
+    - Added dropdown menu to each menu card (three dots)
+    - **Activate:** Green button with play icon (shown when inactive)
+    - **Deactivate:** Yellow button with stop icon (shown when active)
+    - **Delete:** Red button with trash icon + confirmation dialog
+    - All actions invalidate cache and show toast notifications
+    - Uses existing `userMenu.update` and `userMenu.delete` API endpoints
+
+- **Infrastructure:**
+    - Added `mathjs` dependency for linear algebra operations
+    - Created `recipe-balancer.ts` utility with `balanceRecipe()`, `selectIngredientsForBalancing()`, `isValidSolution()`
+    - Added "User Menus" to sidebar under user section (Nutrition category)
+    - Removed zod search validation from user-menus route (uses parent route params)
+    - Created route files: `user-menus.tsx`, `user-menu.$menuId.tsx`
+    - Fixed TypeScript errors in user-menu-create form
+
+- **Database/API Compatibility:**
+    - Fixed minor LSP errors related to checkbox component and unused imports
+    - All components use proper TypeScript types with orpc integration
+
+# 2026-02-26 (Evening)
+
+- **User Menu Creation - Real-Time Nutrition Calculation:**
+    - Fixed ingredient serveSize updates to automatically recalculate calories, protein, fat, carbs based on ratio
+    - Added +/- buttons to increment/decrement serveSize by 5 units with immediate nutrition updates
+    - Both serveSize input changes and button clicks now trigger full recipe nutrition recalculation
+
+- **Meal Nutrition Calculation Logic:**
+    - Meal calories and protein can be overridden via target values, otherwise calculated as recipe averages
+    - Meal fat and carbs are always calculated from recipe averages (no user inputs)
+    - Simplified UI: removed Target Fat and Target Carbs input fields, keeping only Target Calories and Target Protein
+
+- **API Schema Cleanup:**
+    - Updated `UserMealCreateInput` to use `calories/protein/fat/carbohydrate` fields instead of `targetCalories/targetProtein`
+    - Removed nutrition fields from `UserIngredientCreateInput` (they don't exist in DB schema)
+    - Fixed API handlers to properly handle null values and fallback to existing values in updates
+
+- **UI/UX Refinements:**
+    - Reverted to 4-column grid for meal targets (Calories, Protein, Balance Calories, Balance P&C)
+    - Meal totals automatically reflect target overrides or recipe averages in real-time
+    - Ingredient rows show updated nutrition values immediately when serveSize changes
+

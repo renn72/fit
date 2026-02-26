@@ -36,20 +36,19 @@ export const UserMealCreateInput = z.object({
 	userMenuId: z.string().min(1),
 	mealIndex: z.number().int().min(0),
 	name: z.string().optional().nullable(),
-	targetCalories: z.number().optional().nullable(),
-	targetProtein: z.number().optional().nullable(),
-	targetFat: z.number().optional().nullable(),
-	targetCarbohydrate: z.number().optional().nullable(),
+	calories: z.number().optional().nullable(),
+	protein: z.number().optional().nullable(),
+	fat: z.number().optional().nullable(),
+	carbohydrate: z.number().optional().nullable(),
 })
 
 export const UserMealUpdateInput = z.object({
 	id: z.string().min(1),
 	name: z.string().optional().nullable(),
-	targetCalories: z.number().optional().nullable(),
-	targetProtein: z.number().optional().nullable(),
-	targetFat: z.number().optional().nullable(),
-	targetCarbohydrate: z.number().optional().nullable(),
-	isCompleted: z.boolean().optional(),
+	calories: z.number().optional().nullable(),
+	protein: z.number().optional().nullable(),
+	fat: z.number().optional().nullable(),
+	carbohydrate: z.number().optional().nullable(),
 })
 
 export const UserMealDeleteInput = z.object({
@@ -66,13 +65,6 @@ export const UserRecipeCreateInput = z.object({
 	category: z.string().optional().nullable(),
 	image: z.string().optional().nullable(),
 	instructions: z.string().optional().nullable(),
-	prepTime: z.number().int().optional().nullable(),
-	cookTime: z.number().int().optional().nullable(),
-	servings: z.number().int().optional().nullable(),
-	calories: z.number().optional().default(0),
-	protein: z.number().optional().default(0),
-	fat: z.number().optional().default(0),
-	carbohydrate: z.number().optional().default(0),
 })
 
 export const UserRecipeUpdateInput = z.object({
@@ -112,10 +104,6 @@ export const UserIngredientCreateInput = z.object({
 	serveUnit: z.string().min(1),
 	altServeSize: z.number().optional().nullable(),
 	altServeUnit: z.string().optional().nullable(),
-	calories: z.number().optional().default(0),
-	protein: z.number().optional().default(0),
-	fat: z.number().optional().default(0),
-	carbohydrate: z.number().optional().default(0),
 })
 
 export const UserIngredientUpdateInput = z.object({
@@ -124,11 +112,6 @@ export const UserIngredientUpdateInput = z.object({
 	serveUnit: z.string().optional(),
 	altServeSize: z.number().optional().nullable(),
 	altServeUnit: z.string().optional().nullable(),
-	calories: z.number().optional(),
-	protein: z.number().optional(),
-	fat: z.number().optional(),
-	carbohydrate: z.number().optional(),
-	isCompleted: z.boolean().optional(),
 })
 
 export const UserIngredientSwapInput = z.object({

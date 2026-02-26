@@ -171,12 +171,40 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 	const createAllMenuItems = async (userMenuId: string) => {
 		try {
 			for (const meal of formData.meals) {
+				// Calculate meal nutrition as average of recipes
+				// Use targetCalories/targetProtein if set, otherwise calculate from recipes
+				const recipeCount = meal.recipes.length
+				const totalCalories = meal.recipes.reduce(
+					(sum, r) => sum + r.calories,
+					0,
+				)
+				const totalProtein = meal.recipes.reduce((sum, r) => sum + r.protein, 0)
+				const totalFat = meal.recipes.reduce((sum, r) => sum + r.fat, 0)
+				const totalCarbs = meal.recipes.reduce(
+					(sum, r) => sum + r.carbohydrate,
+					0,
+				)
+
+				const avgCalories = recipeCount > 0 ? totalCalories / recipeCount : 0
+				const avgProtein = recipeCount > 0 ? totalProtein / recipeCount : 0
+				const avgFat = recipeCount > 0 ? totalFat / recipeCount : 0
+				const avgCarbs = recipeCount > 0 ? totalCarbs / recipeCount : 0
+
+				// Use target values if set for calories/protein, otherwise use averages
+				// Fat and carbs are always calculated from recipe averages
+				const mealCalories = meal.targetCalories ?? avgCalories
+				const mealProtein = meal.targetProtein ?? avgProtein
+				const mealFat = avgFat
+				const mealCarbs = avgCarbs
+
 				await createMealMutation.mutateAsync({
 					userMenuId,
 					mealIndex: meal.mealIndex,
 					name: meal.name,
-					targetCalories: meal.targetCalories,
-					targetProtein: meal.targetProtein,
+					calories: mealCalories,
+					protein: mealProtein,
+					fat: mealFat,
+					carbohydrate: mealCarbs,
 				})
 
 				for (const recipe of meal.recipes) {
@@ -189,13 +217,6 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 						category: null,
 						image: null,
 						instructions: null,
-						prepTime: null,
-						cookTime: null,
-						servings: null,
-						calories: recipe.calories,
-						protein: recipe.protein,
-						fat: recipe.fat,
-						carbohydrate: recipe.carbohydrate,
 					})
 
 					for (const ingredient of recipe.ingredients) {
@@ -207,10 +228,6 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 							recipeIndex: recipe.recipeIndex,
 							serveSize: ingredient.serveSize,
 							serveUnit: ingredient.serveUnit,
-							calories: ingredient.calories,
-							protein: ingredient.protein,
-							fat: ingredient.fat,
-							carbohydrate: ingredient.carbohydrate,
 						})
 					}
 				}
@@ -532,19 +549,73 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		// Round serveSize to 0.1 precision
 		const roundedServeSize = Math.round(serveSize * 10) / 10
 
+		// Calculate the ratio of new serveSize to old serveSize
+		const ratio =
+			ingredient.serveSize > 0 ? roundedServeSize / ingredient.serveSize : 1
+
 		const newIngredients = [...recipe.ingredients]
 		newIngredients[ingredientIndex] = {
 			...ingredient,
 			serveSize: roundedServeSize,
+			calories: ingredient.calories * ratio,
+			protein: ingredient.protein * ratio,
+			fat: ingredient.fat * ratio,
+			carbohydrate: ingredient.carbohydrate * ratio,
 		}
 
+		// Recalculate recipe totals
+		const newRecipeCalories = newIngredients.reduce(
+			(sum, ing) => sum + ing.calories,
+			0,
+		)
+		const newRecipeProtein = newIngredients.reduce(
+			(sum, ing) => sum + ing.protein,
+			0,
+		)
+		const newRecipeFat = newIngredients.reduce((sum, ing) => sum + ing.fat, 0)
+		const newRecipeCarbs = newIngredients.reduce(
+			(sum, ing) => sum + ing.carbohydrate,
+			0,
+		)
+
 		const newRecipes = [...meal.recipes]
-		newRecipes[recipeIndex] = { ...recipe, ingredients: newIngredients }
+		newRecipes[recipeIndex] = {
+			...recipe,
+			ingredients: newIngredients,
+			calories: newRecipeCalories,
+			protein: newRecipeProtein,
+			fat: newRecipeFat,
+			carbohydrate: newRecipeCarbs,
+		}
 
 		const newMeals = [...formData.meals]
 		newMeals[mealIndex] = { ...meal, recipes: newRecipes }
 
 		setFormData((prev) => ({ ...prev, meals: newMeals }))
+	}
+
+	const adjustIngredientServeSize = (
+		mealIndex: number,
+		recipeIndex: number,
+		ingredientIndex: number,
+		delta: number,
+	) => {
+		const meal = formData.meals[mealIndex]
+		if (!meal) return
+
+		const recipe = meal.recipes[recipeIndex]
+		if (!recipe) return
+
+		const ingredient = recipe.ingredients[ingredientIndex]
+		if (!ingredient) return
+
+		const newServeSize = Math.max(0, ingredient.serveSize + delta)
+		updateIngredientServeSize(
+			mealIndex,
+			recipeIndex,
+			ingredientIndex,
+			newServeSize,
+		)
 	}
 
 	const addIngredientToRecipe = (
@@ -1062,6 +1133,7 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 															onMoveRecipe={moveRecipeInMeal}
 															onToggleRecipe={toggleRecipeExpanded}
 															onUpdateIngredient={updateIngredientServeSize}
+															onAdjustIngredient={adjustIngredientServeSize}
 															onAddIngredient={addIngredientToRecipe}
 															onRemoveIngredient={removeIngredientFromRecipe}
 															onBalanceCalories={balanceCalories}
@@ -1195,6 +1267,12 @@ interface MealContentProps {
 		ingIdx: number,
 		serveSize: number,
 	) => void
+	onAdjustIngredient: (
+		mealIdx: number,
+		recipeIdx: number,
+		ingIdx: number,
+		delta: number,
+	) => void
 	onAddIngredient: (
 		mealIdx: number,
 		recipeIdx: number,
@@ -1222,6 +1300,7 @@ function MealContent({
 	onMoveRecipe,
 	onToggleRecipe,
 	onUpdateIngredient,
+	onAdjustIngredient,
 	onAddIngredient,
 	onRemoveIngredient,
 	onBalanceCalories,
@@ -1331,6 +1410,7 @@ function MealContent({
 									onMoveRecipe(mealIdx, recipeIdx, recipeIdx + 1)
 								}
 								onUpdateIngredient={onUpdateIngredient}
+								onAdjustIngredient={onAdjustIngredient}
 								onAddIngredient={onAddIngredient}
 								onRemoveIngredient={onRemoveIngredient}
 								isFirst={recipeIdx === 0}
@@ -1360,6 +1440,12 @@ interface RecipeCardProps {
 		ingIdx: number,
 		serveSize: number,
 	) => void
+	onAdjustIngredient: (
+		mealIdx: number,
+		recipeIdx: number,
+		ingIdx: number,
+		delta: number,
+	) => void
 	onAddIngredient: (
 		mealIdx: number,
 		recipeIdx: number,
@@ -1385,6 +1471,7 @@ function RecipeCard({
 	onMoveUp,
 	onMoveDown,
 	onUpdateIngredient,
+	onAdjustIngredient,
 	onAddIngredient,
 	onRemoveIngredient,
 	isFirst,
@@ -1513,7 +1600,18 @@ function RecipeCard({
 									{recipe.ingredients.map((ingredient, ingIdx) => (
 										<tr key={ingredient.id} className='border-b last:border-0'>
 											<td className='py-1'>{ingredient.ingredientName}</td>
-											<td className='flex justify-end py-1'>
+											<td className='flex gap-1 justify-end items-center py-1'>
+												<Button
+													type='button'
+													variant='ghost'
+													size='sm'
+													className='p-0 w-5 h-7'
+													onClick={() =>
+														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, -5)
+													}
+												>
+													-
+												</Button>
 												<Input
 													type='number'
 													value={ingredient.serveSize}
@@ -1525,8 +1623,19 @@ function RecipeCard({
 															Number.parseFloat(e.target.value) || 0,
 														)
 													}
-													className='w-20 h-7 text-right'
+													className='w-16 h-7 text-right'
 												/>
+												<Button
+													type='button'
+													variant='ghost'
+													size='sm'
+													className='p-0 w-5 h-7'
+													onClick={() =>
+														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, 5)
+													}
+												>
+													+
+												</Button>
 											</td>
 											<td className='py-1 text-right'>
 												{ingredient.serveUnit}
