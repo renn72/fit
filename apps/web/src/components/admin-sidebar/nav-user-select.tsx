@@ -33,7 +33,7 @@ interface User {
 
 interface NavUserProps {
 	users: User[] | undefined
-	selectedUserId: string
+	selectedUserId: string | null
 	onUserSelect: (userId: string) => void
 }
 
