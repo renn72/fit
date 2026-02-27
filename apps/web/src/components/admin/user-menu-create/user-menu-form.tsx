@@ -29,7 +29,26 @@ import {
 } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
-import { DragDropProvider, useDraggable, useDroppable } from '@dnd-kit/react'
+import {
+	closestCorners,
+	DndContext,
+	type DragEndEvent,
+	type DragOverEvent,
+	DragOverlay,
+	type DragStartEvent,
+	KeyboardSensor,
+	PointerSensor,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core'
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import {
 	CaretDownIcon,
 	CaretUpIcon,
@@ -109,6 +128,19 @@ export function UserMenuForm({
 	)
 	const [expandedRecipes, setExpandedRecipes] = React.useState<Set<string>>(
 		new Set(),
+	)
+	const [activeId, setActiveId] = React.useState<string | null>(null)
+
+	// Sensors for dnd-kit
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: {
+				distance: 8,
+			},
+		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
 	)
 
 	const [formData, setFormData] = React.useState<MenuFormData>({
@@ -636,123 +668,111 @@ export function UserMenuForm({
 		setExpandedRecipes((prev) => new Set([...prev, duplicatedRecipe.id]))
 	}
 
+	// Handle drag start
+	const handleDragStart = (event: DragStartEvent) => {
+		setActiveId(event.active.id as string)
+	}
+
+	// Handle drag over (for visual feedback)
+	const handleDragOver = (event: DragOverEvent) => {
+		// Optional: Add visual feedback during drag
+		const { over } = event
+		if (!over) return
+	}
+
 	// Handle drag end for moving recipes between meals and reordering
-	const handleRecipeDragEnd = (event: {
-		operation: {
-			source: { id: string | number } | null
-			target: { id: string | number } | null
-		}
-		canceled: boolean
-	}) => {
-		if (event.canceled) return
+	const handleDragEnd = (event: DragEndEvent) => {
+		const { active, over } = event
+		setActiveId(null)
 
-		const { source, target } = event.operation
-		if (!source || !target) return
+		if (!over) return
 
-		// Parse source ID (format: "mealIdx:recipeIdx:recipeId")
-		const sourceParts = source.id.toString().split(':')
-		if (sourceParts.length < 3) return
+		const activeId = active.id as string
+		const overId = over.id as string
 
-		const sourceMealIdx = Number.parseInt(sourceParts[0], 10)
-		const sourceRecipeIdx = Number.parseInt(sourceParts[1], 10)
+		// Don't do anything if dropped on itself
+		if (activeId === overId) return
 
-		if (isNaN(sourceMealIdx) || isNaN(sourceRecipeIdx)) return
+		// Find which meal the active recipe belongs to
+		let sourceMealIdx = -1
+		let sourceRecipeIdx = -1
+		let sourceRecipe: MealRecipe | null = null
 
-		const targetId = target.id.toString()
-		let targetMealIdx: number
-		let targetRecipeIdx: number | null = null
-		let isRecipeDropTarget = false
-
-		// Check if dropped on a recipe drop target
-		if (targetId.endsWith(':drop')) {
-			// Dropped on a recipe position
-			const targetParts = targetId.replace(':drop', '').split(':')
-			if (targetParts.length >= 3) {
-				targetMealIdx = Number.parseInt(targetParts[0], 10)
-				targetRecipeIdx = Number.parseInt(targetParts[1], 10)
-				isRecipeDropTarget = true
-			} else {
-				return
-			}
-		} else if (targetId.endsWith('-end')) {
-			// Dropped on the end zone (after last recipe)
-			targetMealIdx = Number.parseInt(
-				targetId.replace('meal-', '').replace('-end', ''),
-				10,
+		for (let i = 0; i < formData.meals.length; i++) {
+			const recipeIdx = formData.meals[i].recipes.findIndex(
+				(r) => r.id === activeId,
 			)
-			targetRecipeIdx = null // Will add to end
-			isRecipeDropTarget = false
-		} else if (targetId.startsWith('meal-')) {
+			if (recipeIdx !== -1) {
+				sourceMealIdx = i
+				sourceRecipeIdx = recipeIdx
+				sourceRecipe = formData.meals[i].recipes[recipeIdx]
+				break
+			}
+		}
+
+		if (sourceMealIdx === -1 || !sourceRecipe) return
+
+		// Parse the over ID to determine the target
+		let targetMealIdx = -1
+		let targetRecipeIdx = -1
+
+		if (overId.startsWith('meal-')) {
 			// Dropped on a meal container
-			targetMealIdx = Number.parseInt(targetId.replace('meal-', ''), 10)
-		} else {
+			targetMealIdx = Number.parseInt(overId.replace('meal-', ''), 10)
+			targetRecipeIdx = formData.meals[targetMealIdx]?.recipes.length || 0
+		} else if (overId.startsWith('recipe-')) {
+			// Dropped on a recipe
+			const targetRecipeId = overId.replace('recipe-', '')
+			for (let i = 0; i < formData.meals.length; i++) {
+				const recipeIdx = formData.meals[i].recipes.findIndex(
+					(r) => r.id === targetRecipeId,
+				)
+				if (recipeIdx !== -1) {
+					targetMealIdx = i
+					targetRecipeIdx = recipeIdx
+					break
+				}
+			}
+		}
+
+		if (
+			targetMealIdx === undefined ||
+			targetRecipeIdx === undefined ||
+			isNaN(targetMealIdx) ||
+			isNaN(targetRecipeIdx)
+		) {
 			return
 		}
 
-		if (isNaN(sourceMealIdx) || isNaN(targetMealIdx)) return
-
 		const newMeals = [...formData.meals]
-		const sourceMeal = newMeals[sourceMealIdx]
-		const targetMeal = newMeals[targetMealIdx]
 
-		if (!sourceMeal || !targetMeal) return
-
-		const recipe = sourceMeal.recipes[sourceRecipeIdx]
-		if (!recipe) return
-
-		// Remove from source
-		sourceMeal.recipes.splice(sourceRecipeIdx, 1)
-
-		if (
-			sourceMealIdx === targetMealIdx &&
-			isRecipeDropTarget &&
-			targetRecipeIdx !== null
-		) {
-			// Reordering within the same meal
-			// When dropping on a recipe, insert at that recipe's position
-			// The targetRecipeIdx is the index of the recipe we're dropping ON
-			// We want to insert BEFORE that recipe
-			let insertIndex = targetRecipeIdx
-
-			// If the source comes before the target, removing it shifts the target index down by 1
-			// So we need to insert at target - 1 to end up at the right position
-			if (sourceRecipeIdx < targetRecipeIdx) {
-				insertIndex = targetRecipeIdx - 1
-			}
-
-			// Special case: if dragging to the first position (index 0)
-			// and source is after target, just insert at 0
-			if (targetRecipeIdx === 0 && sourceRecipeIdx > 0) {
-				insertIndex = 0
-			}
-
-			// Insert at the calculated position
-			targetMeal.recipes.splice(insertIndex, 0, recipe)
-		} else if (sourceMealIdx === targetMealIdx) {
-			// Dropped on same meal container, no reordering needed
-			targetMeal.recipes.splice(sourceRecipeIdx, 0, recipe)
+		if (sourceMealIdx === targetMealIdx) {
+			// Reordering within the same meal using arrayMove
+			newMeals[sourceMealIdx].recipes = arrayMove(
+				newMeals[sourceMealIdx].recipes,
+				sourceRecipeIdx,
+				targetRecipeIdx,
+			)
 		} else {
 			// Moving to different meal
-			if (isRecipeDropTarget && targetRecipeIdx !== null) {
-				// Insert at specific position in target meal
-				targetMeal.recipes.splice(targetRecipeIdx, 0, recipe)
-			} else {
-				// Add to end of target meal
-				targetMeal.recipes.push(recipe)
-			}
+			// Remove from source
+			const [removed] = newMeals[sourceMealIdx].recipes.splice(
+				sourceRecipeIdx,
+				1,
+			)
+			// Insert at target position
+			newMeals[targetMealIdx].recipes.splice(targetRecipeIdx, 0, removed)
 		}
 
-		// Reindex both meals' recipes
+		// Reindex recipes in affected meals
 		if (sourceMealIdx !== targetMealIdx) {
-			sourceMeal.recipes = sourceMeal.recipes.map((r, i) => ({
-				...r,
-				recipeIndex: i,
-			}))
+			newMeals[sourceMealIdx].recipes = newMeals[sourceMealIdx].recipes.map(
+				(r, i) => ({ ...r, recipeIndex: i }),
+			)
 		}
-		targetMeal.recipes = targetMeal.recipes.map((r, i) => ({
-			...r,
-			recipeIndex: i,
-		}))
+		newMeals[targetMealIdx].recipes = newMeals[targetMealIdx].recipes.map(
+			(r, i) => ({ ...r, recipeIndex: i }),
+		)
 
 		setFormData((prev) => ({ ...prev, meals: newMeals }))
 	}
@@ -1419,7 +1439,13 @@ export function UserMenuForm({
 									</Button>
 								</div>
 
-								<DragDropProvider onDragEnd={handleRecipeDragEnd}>
+								<DndContext
+									sensors={sensors}
+									collisionDetection={closestCorners}
+									onDragStart={handleDragStart}
+									onDragEnd={handleDragEnd}
+									onDragOver={handleDragOver}
+								>
 									<div className='space-y-4'>
 										{formData.meals.length === 0 ? (
 											<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
@@ -1472,7 +1498,16 @@ export function UserMenuForm({
 											})
 										)}
 									</div>
-								</DragDropProvider>
+									<DragOverlay>
+										{activeId ? (
+											<RecipeCardOverlay
+												recipe={formData.meals
+													.flatMap((m) => m.recipes)
+													.find((r) => r.id === activeId)}
+											/>
+										) : null}
+									</DragOverlay>
+								</DndContext>
 							</div>
 						</CardContent>
 					</Card>
@@ -1808,7 +1843,7 @@ function MealContent({
 						Drag to reorder or move between meals
 					</p>
 				</div>
-				<RecipeDropZone mealIdx={mealIdx} recipeCount={meal.recipes.length}>
+				<RecipeDropZone mealIdx={mealIdx} recipes={meal.recipes}>
 					{meal.recipes?.map((recipe, recipeIdx) => (
 						<DraggableRecipeCard
 							key={recipe.id}
@@ -1868,36 +1903,28 @@ interface RecipeCardProps {
 	isFirst?: boolean
 	isLast?: boolean
 	isDragSource?: boolean
+	attributes?: any
+	listeners?: any
 }
 
 // Drop zone for recipes within a meal
 interface RecipeDropZoneProps {
 	mealIdx: number
-	recipeCount: number
+	recipes: MealRecipe[]
 	children: React.ReactNode
 }
 
-function RecipeDropZone({
-	mealIdx,
-	recipeCount,
-	children,
-}: RecipeDropZoneProps) {
-	const { ref, isDropTarget } = useDroppable({
-		id: `meal-${mealIdx}`,
-		accept: 'recipe',
-		data: { mealIdx },
-	})
-
+function RecipeDropZone({ mealIdx, recipes, children }: RecipeDropZoneProps) {
 	return (
-		<div
-			ref={ref}
-			className={`
-				space-y-3 transition-all duration-200 rounded-lg p-3
-				'bg-muted/30'
-			`}
+		<SortableContext
+			items={recipes.map((r) => r.id)}
+			strategy={verticalListSortingStrategy}
+			id={`meal-${mealIdx}`}
 		>
-			{children}
-		</div>
+			<div className='space-y-3 transition-all duration-200 rounded-lg p-3 bg-muted/30 min-h-[60px]'>
+				{children}
+			</div>
+		</SortableContext>
 	)
 }
 
@@ -1922,43 +1949,37 @@ function DraggableRecipeCard({
 	onAddIngredient,
 	onRemoveIngredient,
 }: DraggableRecipeCardProps) {
-	const { ref: dragRef, isDragSource } = useDraggable({
-		id: `${mealIdx}:${recipeIdx}:${recipe.id}`,
-		type: 'recipe',
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: recipe.id,
 		data: {
 			recipeId: recipe.id,
 			mealIdx,
 			recipeIdx,
+			type: 'recipe',
 		},
 	})
 
-	const { ref: dropRef, isDropTarget } = useDroppable({
-		id: `${mealIdx}:${recipeIdx}:${recipe.id}:drop`,
-		accept: 'recipe',
-		data: {
-			recipeId: recipe.id,
-			mealIdx,
-			recipeIdx,
-			isRecipeDropTarget: true,
-		},
-	})
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	}
 
 	return (
 		<div
-			ref={(node) => {
-				dragRef(node)
-				dropRef(node)
-			}}
+			ref={setNodeRef}
+			style={style}
 			className={`
-				relative rounded-md border shadow-sm transition-all duration-200 bg-card p-1
-				${isDragSource ? 'opacity-50 ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
-				${isDropTarget ? 'ring-2 ring-primary ring-dashed bg-primary/5 border-primary' : ''}
+				relative rounded-md border shadow-sm transition-all duration-200 bg-card
+				${isDragging ? 'opacity-50 ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
 			`}
 		>
-			{/* Drop indicator - shows a line when hovering over this recipe */}
-			{isDropTarget && (
-				<div className='absolute right-0 left-0 -top-1 z-20 h-1 rounded-full bg-primary' />
-			)}
 			<RecipeCard
 				recipe={recipe}
 				recipeIdx={recipeIdx}
@@ -1972,7 +1993,9 @@ function DraggableRecipeCard({
 				onAdjustIngredient={onAdjustIngredient}
 				onAddIngredient={onAddIngredient}
 				onRemoveIngredient={onRemoveIngredient}
-				isDragSource={isDragSource}
+				isDragSource={isDragging}
+				attributes={attributes}
+				listeners={listeners}
 			/>
 		</div>
 	)
@@ -1992,6 +2015,8 @@ function RecipeCard({
 	onAddIngredient,
 	onRemoveIngredient,
 	isDragSource,
+	attributes,
+	listeners,
 }: RecipeCardProps & { isDragSource?: boolean }) {
 	return (
 		<div
@@ -2027,6 +2052,8 @@ function RecipeCard({
 						size='sm'
 						className='p-0 w-6 h-6 cursor-grab active:cursor-grabbing'
 						title='Drag to reorder'
+						{...attributes}
+						{...listeners}
 					>
 						<DotsSixVerticalIcon className='size-3 text-muted-foreground' />
 					</Button>
@@ -2191,6 +2218,23 @@ function RecipeCard({
 					</div>
 				</div>
 			)}
+		</div>
+	)
+}
+
+// Recipe card overlay for drag preview
+function RecipeCardOverlay({ recipe }: { recipe?: MealRecipe }) {
+	if (!recipe) return null
+
+	return (
+		<div className='rounded-md border shadow-lg bg-card opacity-90 rotate-2'>
+			<div className='flex gap-2 items-center p-2 rounded-t-md bg-muted'>
+				<CaretDownIcon className='size-4' />
+				<span className='flex-1'>{recipe.recipeName}</span>
+				<span className='text-xs text-muted-foreground'>
+					{Math.round(recipe.calories)} cal
+				</span>
+			</div>
 		</div>
 	)
 }
