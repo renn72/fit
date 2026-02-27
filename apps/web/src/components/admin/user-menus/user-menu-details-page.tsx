@@ -20,6 +20,7 @@ import {
 	CalendarIcon,
 	ChefHatIcon,
 	FireIcon,
+	PencilIcon,
 	PizzaIcon,
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
@@ -208,6 +209,19 @@ export function UserMenuDetailsPage() {
 					</Button>
 				</div>
 				<div className='flex gap-2'>
+					<Button
+						variant='outline'
+						size='sm'
+						onClick={() =>
+							navigate({
+								to: '/$orgSlug/user-menu-edit/$menuId',
+								params: { orgSlug, menuId },
+							})
+						}
+					>
+						<PencilIcon className='mr-2 size-4' />
+						Edit
+					</Button>
 					{typedMenu.isActive ? (
 						<Badge variant='default'>Active</Badge>
 					) : (

@@ -35,6 +35,7 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 
 import {
 	DotsThreeIcon,
+	PencilIcon,
 	PlayIcon,
 	StopIcon,
 	TrashIcon,
@@ -273,6 +274,18 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 													<DotsThreeIcon className='size-4' />
 												</DropdownMenuTrigger>
 												<DropdownMenuContent align='end'>
+													<DropdownMenuItem
+														onClick={() =>
+															navigate({
+																to: '/$orgSlug/user-menu-edit/$menuId',
+																params: { orgSlug, menuId: typedMenu.id },
+															})
+														}
+														className='text-blue-600'
+													>
+														<PencilIcon className='mr-2 size-4' />
+														Edit
+													</DropdownMenuItem>
 													{typedMenu.isActive ? (
 														<DropdownMenuItem
 															onClick={() => handleDeactivate(typedMenu.id)}

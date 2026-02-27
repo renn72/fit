@@ -1,4 +1,4 @@
-import { UserMenuCreatePage } from '@/components/admin/user-menu-create/user-menu-create-from'
+import { UserMenuCreatePage } from '@/components/admin/user-menu-create/user-menu-create'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'

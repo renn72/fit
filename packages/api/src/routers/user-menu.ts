@@ -17,6 +17,8 @@ import {
 	UserMealCreateInput,
 	UserMealDeleteInput,
 	UserMealUpdateInput,
+	UserMenuBatchCreateInput,
+	UserMenuBatchUpdateInput,
 	UserMenuCreateInput,
 	UserMenuDeleteInput,
 	UserMenuGetByUserInput,
@@ -169,6 +171,221 @@ export const userMenuRouter = {
 			}
 
 			return newMenu
+		}),
+
+	batchCreate: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/user-menu/batch',
+			summary:
+				'Create a user menu with all meals, recipes, and ingredients in a single transaction',
+			tags: ['User Menu'],
+		})
+		.input(UserMenuBatchCreateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			const isDictator = metaTags.includes('dictator')
+
+			// Users can only create menus for themselves unless they're a dictator
+			if (input.userId !== context.session.user.id && !isDictator) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You can only create menus for yourself',
+				})
+			}
+
+			// Use a transaction to ensure all data is created atomically
+			const result = await db.transaction(async (tx) => {
+				// 1. Create the user menu
+				const [newMenu] = await tx
+					.insert(userMenu)
+					.values({
+						userId: input.userId,
+						name: input.name,
+						description: input.description,
+						startDate: input.startDate || new Date(),
+						endDate: input.endDate,
+					})
+					.returning()
+
+				if (!newMenu) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: 'Failed to create user menu',
+					})
+				}
+
+				// 2. Create all meals
+				for (const mealData of input.meals) {
+					const [newMeal] = await tx
+						.insert(userMeal)
+						.values({
+							userMenuId: newMenu.id,
+							mealIndex: mealData.mealIndex,
+							name: mealData.name,
+							calories: mealData.calories,
+							protein: mealData.protein,
+							fat: mealData.fat,
+							carbohydrate: mealData.carbohydrate,
+						})
+						.returning()
+
+					if (!newMeal) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create meal',
+						})
+					}
+
+					// 3. Create all recipes for this meal
+					for (const recipeData of mealData.recipes) {
+						const [newRecipe] = await tx
+							.insert(userRecipe)
+							.values({
+								userMenuId: newMenu.id,
+								mealIndex: mealData.mealIndex,
+								recipeIndex: recipeData.recipeIndex,
+								name: recipeData.name,
+								description: recipeData.description,
+								category: recipeData.category,
+								image: recipeData.image,
+							})
+							.returning()
+
+						if (!newRecipe) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: 'Failed to create recipe',
+							})
+						}
+
+						// 4. Create all ingredients for this recipe
+						for (const ingredientData of recipeData.ingredients) {
+							await tx.insert(userIngredient).values({
+								userMenuId: newMenu.id,
+								mealIndex: mealData.mealIndex,
+								recipeIndex: recipeData.recipeIndex,
+								ingredientId: ingredientData.ingredientId,
+								serveSize: ingredientData.serveSize,
+								serveUnit: ingredientData.serveUnit,
+							})
+						}
+					}
+				}
+
+				return newMenu
+			})
+
+			return result
+		}),
+
+	batchUpdate: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/user-menu/batch-update',
+			summary:
+				'Update a user menu by deleting all children and recreating them in a single transaction',
+			tags: ['User Menu'],
+		})
+		.input(UserMenuBatchUpdateInput)
+		.handler(async ({ input, context }) => {
+			const { id, meals, ...menuUpdates } = input
+
+			const existingMenu = await db.query.userMenu.findFirst({
+				where: { id },
+			})
+
+			if (!existingMenu) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'User menu not found',
+				})
+			}
+
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			const isDictator = metaTags.includes('dictator')
+
+			if (existingMenu.userId !== context.session.user.id && !isDictator) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You can only update your own menus',
+				})
+			}
+
+			// Use a transaction to ensure all updates are atomic
+			const result = await db.transaction(async (tx) => {
+				// 1. Delete all existing children (ingredients, recipes, meals)
+				await tx.delete(userIngredient).where(eq(userIngredient.userMenuId, id))
+				await tx.delete(userRecipe).where(eq(userRecipe.userMenuId, id))
+				await tx.delete(userMeal).where(eq(userMeal.userMenuId, id))
+
+				// 2. Update the menu itself
+				const [updatedMenu] = await tx
+					.update(userMenu)
+					.set(menuUpdates)
+					.where(eq(userMenu.id, id))
+					.returning()
+
+				if (!updatedMenu) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: 'Failed to update user menu',
+					})
+				}
+
+				// 3. Recreate all meals
+				for (const mealData of meals) {
+					const [newMeal] = await tx
+						.insert(userMeal)
+						.values({
+							userMenuId: id,
+							mealIndex: mealData.mealIndex,
+							name: mealData.name,
+							calories: mealData.calories,
+							protein: mealData.protein,
+							fat: mealData.fat,
+							carbohydrate: mealData.carbohydrate,
+						})
+						.returning()
+
+					if (!newMeal) {
+						throw new ORPCError('INTERNAL_SERVER_ERROR', {
+							message: 'Failed to create meal',
+						})
+					}
+
+					// 4. Recreate all recipes for this meal
+					for (const recipeData of mealData.recipes) {
+						const [newRecipe] = await tx
+							.insert(userRecipe)
+							.values({
+								userMenuId: id,
+								mealIndex: mealData.mealIndex,
+								recipeIndex: recipeData.recipeIndex,
+								name: recipeData.name,
+								description: recipeData.description,
+								category: recipeData.category,
+								image: recipeData.image,
+							})
+							.returning()
+
+						if (!newRecipe) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: 'Failed to create recipe',
+							})
+						}
+
+						// 5. Recreate all ingredients for this recipe
+						for (const ingredientData of recipeData.ingredients) {
+							await tx.insert(userIngredient).values({
+								userMenuId: id,
+								mealIndex: mealData.mealIndex,
+								recipeIndex: recipeData.recipeIndex,
+								ingredientId: ingredientData.ingredientId,
+								serveSize: ingredientData.serveSize,
+								serveUnit: ingredientData.serveUnit,
+							})
+						}
+					}
+				}
+
+				return updatedMenu
+			})
+
+			return result
 		}),
 
 	update: protectedProcedure

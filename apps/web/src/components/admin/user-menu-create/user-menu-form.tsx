@@ -27,11 +27,12 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
-import { getRouteApi, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 
 import {
 	CaretDownIcon,
 	CaretUpIcon,
+	CopyIcon,
 	PlusIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
@@ -80,21 +81,24 @@ interface MenuFormData {
 	meals: Meal[]
 }
 
-const route = getRouteApi('/$orgSlug/user-menu-create')
-
-export function UserMenuCreatePage() {
-	const { session } = route.useRouteContext()
-	const userOrgId = session.user.organisationId
-
-	if (!_.isString(userOrgId)) return <div>Missing org</div>
-	return <UserMenuCreateForm userOrgId={userOrgId} />
+interface UserMenuCreateFormProps {
+	userOrgId: string
+	menuId?: string
+	orgSlug: string
+	user?: string
 }
 
-function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
+export function UserMenuForm({
+	userOrgId,
+	menuId,
+	orgSlug,
+	user,
+}: UserMenuCreateFormProps) {
 	const navigate = useNavigate()
 	const queryClient = useQueryClient()
-	const { user } = route.useSearch()
-	const { orgSlug } = route.useParams()
+
+	// Determine if we're in edit mode
+	const isEditMode = !!menuId
 
 	const [selectedTemplate, setSelectedTemplate] = React.useState<any>(null)
 	const [expandedMeals, setExpandedMeals] = React.useState<Set<number>>(
@@ -111,6 +115,120 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		endDate: null,
 		meals: [],
 	})
+
+	// Load existing menu data when in edit mode
+	const { data: existingMenu } = useQuery(
+		orpc.userMenu.get.queryOptions({
+			input: { id: menuId || '' },
+			enabled: isEditMode,
+		}),
+	)
+
+	// Transform existing menu data to form state when editing
+	React.useEffect(() => {
+		if (isEditMode && existingMenu) {
+			const transformedMeals = existingMenu.meals.map((meal: any) => ({
+				id: crypto.randomUUID(),
+				mealIndex: meal.mealIndex,
+				name: meal.name || `Meal ${meal.mealIndex + 1}`,
+				targetCalories: meal.calories || null,
+				targetProtein: meal.protein || null,
+				recipes: existingMenu.recipes
+					.filter((r: any) => r.mealIndex === meal.mealIndex)
+					.sort((a: any, b: any) => a.recipeIndex - b.recipeIndex)
+					.map((recipe: any) => {
+						const recipeIngredients = existingMenu.ingredients
+							.filter(
+								(i: any) =>
+									i.mealIndex === meal.mealIndex &&
+									i.recipeIndex === recipe.recipeIndex,
+							)
+							.map((ing: any) => {
+								const baseIng = ing.ingredient
+								if (!baseIng) {
+									return {
+										id: crypto.randomUUID(),
+										recipeToIngredientId: '',
+										ingredientId: ing.ingredientId,
+										ingredientName: 'Unknown',
+										serveSize: ing.serveSize,
+										serveUnit: ing.serveUnit,
+										calories: 0,
+										protein: 0,
+										fat: 0,
+										carbohydrate: 0,
+									}
+								}
+
+								const ratio = ing.serveSize / baseIng.serveSize
+								return {
+									id: crypto.randomUUID(),
+									recipeToIngredientId: '',
+									ingredientId: ing.ingredientId,
+									ingredientName: baseIng.name,
+									serveSize: ing.serveSize,
+									serveUnit: ing.serveUnit,
+									calories: baseIng.calories * ratio,
+									protein: baseIng.protein * ratio,
+									fat: baseIng.fat * ratio,
+									carbohydrate: baseIng.carbohydrate * ratio,
+								}
+							})
+
+						const recipeCalories = recipeIngredients.reduce(
+							(sum: number, ing: MealIngredient) => sum + ing.calories,
+							0,
+						)
+						const recipeProtein = recipeIngredients.reduce(
+							(sum: number, ing: MealIngredient) => sum + ing.protein,
+							0,
+						)
+						const recipeFat = recipeIngredients.reduce(
+							(sum: number, ing: MealIngredient) => sum + ing.fat,
+							0,
+						)
+						const recipeCarbs = recipeIngredients.reduce(
+							(sum: number, ing: MealIngredient) => sum + ing.carbohydrate,
+							0,
+						)
+
+						return {
+							id: crypto.randomUUID(),
+							recipeId: '',
+							recipeName: recipe.name,
+							recipeIndex: recipe.recipeIndex,
+							calories: recipeCalories,
+							protein: recipeProtein,
+							fat: recipeFat,
+							carbohydrate: recipeCarbs,
+							ingredients: recipeIngredients,
+						}
+					}),
+			}))
+
+			setFormData({
+				name: existingMenu.name,
+				description: existingMenu.description,
+				startDate: existingMenu.startDate
+					? new Date(existingMenu.startDate).toISOString().split('T')[0]
+					: null,
+				endDate: existingMenu.endDate
+					? new Date(existingMenu.endDate).toISOString().split('T')[0]
+					: null,
+				meals: transformedMeals,
+			})
+
+			// Expand all meals and recipes for editing
+			setExpandedMeals(new Set(transformedMeals.map((m: Meal) => m.mealIndex)))
+			// setExpandedRecipes(
+			// 	new Set(
+			// 		transformedMeals.flatMap((m: Meal) =>
+			// 			m.recipes.map((r: MealRecipe) => r.id),
+			// 		),
+			// 	),
+			// )
+		}
+	}, [isEditMode, existingMenu])
 
 	const { data: menuTemplates } = useSuspenseQuery(
 		orpc.menuTemplate.getAllOrg.queryOptions({
@@ -130,11 +248,17 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		}),
 	)
 
-	const createMenuMutation = useMutation(
-		orpc.userMenu.create.mutationOptions({
-			onSuccess: (menuData) => {
+	const batchCreateMenuMutation = useMutation(
+		orpc.userMenu.batchCreate.mutationOptions({
+			onSuccess: () => {
 				toast.success('Menu created successfully')
-				createAllMenuItems(menuData.id)
+				queryClient.invalidateQueries({
+					queryKey: orpc.userMenu.getByUser.key(),
+				})
+				navigate({
+					to: '/$orgSlug/user-menu-create',
+					params: { orgSlug: orgSlug },
+				})
 			},
 			onError: (error) => {
 				toast.error(error.message || 'Failed to create menu')
@@ -142,14 +266,27 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		}),
 	)
 
-	const createMealMutation = useMutation(
-		orpc.userMenu.createMeal.mutationOptions(),
-	)
-	const createRecipeMutation = useMutation(
-		orpc.userMenu.createRecipe.mutationOptions(),
-	)
-	const createIngredientMutation = useMutation(
-		orpc.userMenu.createIngredient.mutationOptions(),
+	const batchUpdateMenuMutation = useMutation(
+		orpc.userMenu.batchUpdate.mutationOptions({
+			onSuccess: () => {
+				toast.success('Menu updated successfully')
+				queryClient.invalidateQueries({
+					queryKey: orpc.userMenu.getByUser.key(),
+				})
+				queryClient.invalidateQueries({
+					queryKey: orpc.userMenu.get.key(),
+				})
+				// Navigate back to menu list after editing
+				navigate({
+					to: '/$orgSlug/user-menus',
+					params: { orgSlug: orgSlug },
+					search: user ? { user } : {},
+				})
+			},
+			onError: (error) => {
+				toast.error(error.message || 'Failed to update menu')
+			},
+		}),
 	)
 
 	const recipeOptions = React.useMemo(() => {
@@ -167,84 +304,6 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 			label: ing.name,
 		}))
 	}, [ingredients])
-
-	const createAllMenuItems = async (userMenuId: string) => {
-		try {
-			for (const meal of formData.meals) {
-				// Calculate meal nutrition as average of recipes
-				// Use targetCalories/targetProtein if set, otherwise calculate from recipes
-				const recipeCount = meal.recipes.length
-				const totalCalories = meal.recipes.reduce(
-					(sum, r) => sum + r.calories,
-					0,
-				)
-				const totalProtein = meal.recipes.reduce((sum, r) => sum + r.protein, 0)
-				const totalFat = meal.recipes.reduce((sum, r) => sum + r.fat, 0)
-				const totalCarbs = meal.recipes.reduce(
-					(sum, r) => sum + r.carbohydrate,
-					0,
-				)
-
-				const avgCalories = recipeCount > 0 ? totalCalories / recipeCount : 0
-				const avgProtein = recipeCount > 0 ? totalProtein / recipeCount : 0
-				const avgFat = recipeCount > 0 ? totalFat / recipeCount : 0
-				const avgCarbs = recipeCount > 0 ? totalCarbs / recipeCount : 0
-
-				// Use target values if set for calories/protein, otherwise use averages
-				// Fat and carbs are always calculated from recipe averages
-				const mealCalories = meal.targetCalories ?? avgCalories
-				const mealProtein = meal.targetProtein ?? avgProtein
-				const mealFat = avgFat
-				const mealCarbs = avgCarbs
-
-				await createMealMutation.mutateAsync({
-					userMenuId,
-					mealIndex: meal.mealIndex,
-					name: meal.name,
-					calories: mealCalories,
-					protein: mealProtein,
-					fat: mealFat,
-					carbohydrate: mealCarbs,
-				})
-
-				for (const recipe of meal.recipes) {
-					const recipeData = await createRecipeMutation.mutateAsync({
-						userMenuId,
-						mealIndex: meal.mealIndex,
-						recipeIndex: recipe.recipeIndex,
-						name: recipe.recipeName,
-						description: null,
-						category: null,
-						image: null,
-						instructions: null,
-					})
-
-					for (const ingredient of recipe.ingredients) {
-						await createIngredientMutation.mutateAsync({
-							userMenuId,
-							userRecipeId: recipeData.id,
-							ingredientId: ingredient.ingredientId,
-							mealIndex: meal.mealIndex,
-							recipeIndex: recipe.recipeIndex,
-							serveSize: ingredient.serveSize,
-							serveUnit: ingredient.serveUnit,
-						})
-					}
-				}
-			}
-
-			queryClient.invalidateQueries({ queryKey: orpc.userMenu.getByUser.key() })
-			navigate({
-				to: '/$orgSlug/user-menu-create',
-				params: { orgSlug: orgSlug },
-				search: { user: undefined },
-			})
-			toast.success('Menu and all items created successfully')
-		} catch (error) {
-			toast.error('Failed to create menu items')
-			console.error(error)
-		}
-	}
 
 	const handleTemplateSelect = async (template: any) => {
 		setSelectedTemplate(template)
@@ -399,6 +458,50 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		})
 	}
 
+	const duplicateMeal = (mealIndex: number) => {
+		const meal = formData.meals[mealIndex]
+		if (!meal) return
+
+		// Deep clone the meal with new IDs for everything
+		const duplicatedMeal: Meal = {
+			...meal,
+			id: crypto.randomUUID(),
+			mealIndex: mealIndex + 1,
+			name: `${meal.name} (Copy)`,
+			recipes: meal.recipes.map((recipe) => ({
+				...recipe,
+				id: crypto.randomUUID(),
+				ingredients: recipe.ingredients.map((ing) => ({
+					...ing,
+					id: crypto.randomUUID(),
+				})),
+			})),
+		}
+
+		// Insert the duplicated meal after the original
+		const newMeals = [...formData.meals]
+		newMeals.splice(mealIndex + 1, 0, duplicatedMeal)
+
+		// Reindex all meals
+		const reindexedMeals = newMeals.map((m, i) => ({ ...m, mealIndex: i }))
+
+		setFormData((prev) => ({ ...prev, meals: reindexedMeals }))
+		setExpandedMeals((prev) => new Set([...prev, mealIndex + 1]))
+	}
+
+	const moveMeal = (fromIndex: number, toIndex: number) => {
+		if (toIndex < 0 || toIndex >= formData.meals.length) return
+
+		const newMeals = [...formData.meals]
+		const [movedMeal] = newMeals.splice(fromIndex, 1)
+		newMeals.splice(toIndex, 0, movedMeal)
+
+		// Reindex all meals
+		const reindexedMeals = newMeals.map((m, i) => ({ ...m, mealIndex: i }))
+
+		setFormData((prev) => ({ ...prev, meals: reindexedMeals }))
+	}
+
 	const addRecipeToMeal = (mealIndex: number, recipeId: string) => {
 		const recipe = recipes?.find((r) => r.id === recipeId)
 		if (!recipe) return
@@ -517,6 +620,42 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 		newMeals[mealIndex] = { ...meal, recipes: reindexedRecipes }
 
 		setFormData((prev) => ({ ...prev, meals: newMeals }))
+	}
+
+	const duplicateRecipe = (mealIndex: number, recipeIndex: number) => {
+		const meal = formData.meals[mealIndex]
+		if (!meal) return
+
+		const recipe = meal.recipes[recipeIndex]
+		if (!recipe) return
+
+		// Deep clone the recipe with new IDs
+		const duplicatedRecipe: MealRecipe = {
+			...recipe,
+			id: crypto.randomUUID(),
+			recipeIndex: recipeIndex + 1,
+			recipeName: `${recipe.recipeName} (Copy)`,
+			ingredients: recipe.ingredients.map((ing) => ({
+				...ing,
+				id: crypto.randomUUID(),
+			})),
+		}
+
+		// Insert the duplicated recipe after the original
+		const newRecipes = [...meal.recipes]
+		newRecipes.splice(recipeIndex + 1, 0, duplicatedRecipe)
+
+		// Reindex all recipes
+		const reindexedRecipes = newRecipes.map((r, i) => ({
+			...r,
+			recipeIndex: i,
+		}))
+
+		const newMeals = [...formData.meals]
+		newMeals[mealIndex] = { ...meal, recipes: reindexedRecipes }
+
+		setFormData((prev) => ({ ...prev, meals: newMeals }))
+		setExpandedRecipes((prev) => new Set([...prev, duplicatedRecipe.id]))
 	}
 
 	const toggleRecipeExpanded = (recipeId: string) => {
@@ -925,17 +1064,74 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 			return
 		}
 
-		await createMenuMutation.mutateAsync({
-			userId: user,
-			menuTemplateId: selectedTemplate?.id || null,
-			name: formData.name,
-			description: formData.description,
-			startDate: formData.startDate ? new Date(formData.startDate) : new Date(),
-			endDate: formData.endDate ? new Date(formData.endDate) : null,
+		// Build the batch payload with all meals, recipes, and ingredients
+		const meals = formData.meals.map((meal) => {
+			const recipeCount = meal.recipes.length
+			const totalCalories = meal.recipes.reduce((sum, r) => sum + r.calories, 0)
+			const totalProtein = meal.recipes.reduce((sum, r) => sum + r.protein, 0)
+			const totalFat = meal.recipes.reduce((sum, r) => sum + r.fat, 0)
+			const totalCarbs = meal.recipes.reduce(
+				(sum, r) => sum + r.carbohydrate,
+				0,
+			)
+
+			const avgCalories = recipeCount > 0 ? totalCalories / recipeCount : 0
+			const avgProtein = recipeCount > 0 ? totalProtein / recipeCount : 0
+			const avgFat = recipeCount > 0 ? totalFat / recipeCount : 0
+			const avgCarbs = recipeCount > 0 ? totalCarbs / recipeCount : 0
+
+			return {
+				mealIndex: meal.mealIndex,
+				name: meal.name,
+				calories: meal.targetCalories ?? avgCalories,
+				protein: meal.targetProtein ?? avgProtein,
+				fat: avgFat,
+				carbohydrate: avgCarbs,
+				recipes: meal.recipes.map((recipe) => ({
+					recipeIndex: recipe.recipeIndex,
+					name: recipe.recipeName,
+					description: null,
+					category: null,
+					image: null,
+					ingredients: recipe.ingredients.map((ing) => ({
+						ingredientId: ing.ingredientId,
+						serveSize: ing.serveSize,
+						serveUnit: ing.serveUnit,
+					})),
+				})),
+			}
 		})
+
+		if (isEditMode) {
+			// Update existing menu
+			await batchUpdateMenuMutation.mutateAsync({
+				id: menuId!,
+				name: formData.name,
+				description: formData.description,
+				startDate: formData.startDate
+					? new Date(formData.startDate)
+					: new Date(),
+				endDate: formData.endDate ? new Date(formData.endDate) : null,
+				meals,
+			})
+		} else {
+			// Create new menu
+			await batchCreateMenuMutation.mutateAsync({
+				userId: user,
+				menuTemplateId: selectedTemplate?.id || null,
+				name: formData.name,
+				description: formData.description,
+				startDate: formData.startDate
+					? new Date(formData.startDate)
+					: new Date(),
+				endDate: formData.endDate ? new Date(formData.endDate) : null,
+				meals,
+			})
+		}
 	}
 
-	if (!user) {
+	// Show user selector only in create mode when no user selected
+	if (!isEditMode && !user) {
 		return (
 			<div className='flex flex-col gap-4 p-8'>
 				<Card>
@@ -952,9 +1148,11 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 
 	return (
 		<div className='flex flex-col gap-6 p-8'>
-			<h1 className='text-2xl font-bold'>Create User Menu</h1>
+			<h1 className='text-2xl font-bold'>
+				{isEditMode ? 'Edit User Menu' : 'Create User Menu'}
+			</h1>
 
-			{!selectedTemplate ? (
+			{!isEditMode && !selectedTemplate ? (
 				<Card>
 					<CardHeader>
 						<CardTitle>Select Menu Template</CardTitle>
@@ -965,6 +1163,30 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 					</CardHeader>
 					<CardContent>
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+							{/* Blank Template Option */}
+							<Card
+								className='transition-colors cursor-pointer hover:bg-muted border-dashed border-2'
+								onClick={() =>
+									setFormData({
+										name: '',
+										description: null,
+										startDate: null,
+										endDate: null,
+										meals: [],
+									})
+								}
+							>
+								<CardHeader>
+									<CardTitle className='text-lg'>Blank Menu</CardTitle>
+									<CardDescription>Start from scratch</CardDescription>
+								</CardHeader>
+								<CardContent>
+									<p className='text-sm text-muted-foreground line-clamp-2'>
+										Create a custom menu with no pre-defined structure.
+									</p>
+								</CardContent>
+							</Card>
+
 							{menuTemplates?.map((template) => (
 								<Card
 									key={template.id}
@@ -1115,8 +1337,13 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 														mealIdx={mealIdx}
 														totals={totals}
 														isExpanded={isExpanded}
+														isFirst={mealIdx === 0}
+														isLast={mealIdx === formData.meals.length - 1}
 														onToggle={() => toggleMealExpanded(mealIdx)}
 														onRemove={() => removeMeal(mealIdx)}
+														onDuplicate={() => duplicateMeal(mealIdx)}
+														onMoveUp={() => moveMeal(mealIdx, mealIdx - 1)}
+														onMoveDown={() => moveMeal(mealIdx, mealIdx + 1)}
 													/>
 
 													{isExpanded && (
@@ -1154,20 +1381,43 @@ function UserMenuCreateForm({ userOrgId }: { userOrgId: string }) {
 							type='button'
 							variant='outline'
 							onClick={() => {
-								setSelectedTemplate(null)
-								setFormData({
-									name: '',
-									description: null,
-									startDate: null,
-									endDate: null,
-									meals: [],
-								})
+								if (isEditMode) {
+									// Navigate back to menu list when editing
+									navigate({
+										to: '/$orgSlug/user-menus',
+										params: { orgSlug },
+										search: user ? { user } : {},
+									})
+								} else {
+									// Reset form when creating
+									setSelectedTemplate(null)
+									setFormData({
+										name: '',
+										description: null,
+										startDate: null,
+										endDate: null,
+										meals: [],
+									})
+								}
 							}}
 						>
 							Cancel
 						</Button>
-						<Button type='submit' disabled={createMenuMutation.isPending}>
-							{createMenuMutation.isPending ? 'Creating...' : 'Create Menu'}
+						<Button
+							type='submit'
+							disabled={
+								isEditMode
+									? batchUpdateMenuMutation.isPending
+									: batchCreateMenuMutation.isPending
+							}
+						>
+							{isEditMode
+								? batchUpdateMenuMutation.isPending
+									? 'Saving...'
+									: 'Save Changes'
+								: batchCreateMenuMutation.isPending
+									? 'Creating...'
+									: 'Create Menu'}
 						</Button>
 					</div>
 				</form>
@@ -1186,16 +1436,26 @@ interface MealHeaderProps {
 		carbohydrate: number
 	}
 	isExpanded: boolean
+	isFirst: boolean
+	isLast: boolean
 	onToggle: () => void
 	onRemove: () => void
+	onDuplicate: () => void
+	onMoveUp: () => void
+	onMoveDown: () => void
 }
 
 function MealHeader({
 	meal,
 	totals,
 	isExpanded,
+	isFirst,
+	isLast,
 	onToggle,
 	onRemove,
+	onDuplicate,
+	onMoveUp,
+	onMoveDown,
 }: MealHeaderProps) {
 	return (
 		<div
@@ -1229,18 +1489,59 @@ function MealHeader({
 					</div>
 				</div>
 			</div>
-			<Button
-				type='button'
-				variant='ghost'
-				size='sm'
-				onClick={(e) => {
-					e.stopPropagation()
-					onRemove()
-				}}
-				className='text-red-500'
-			>
-				<TrashIcon className='size-4' />
-			</Button>
+			<div className='flex gap-1'>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					className='p-0 w-6 h-6'
+					onClick={(e) => {
+						e.stopPropagation()
+						onMoveUp()
+					}}
+					disabled={isFirst}
+				>
+					<CaretUpIcon className='size-3' />
+				</Button>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					className='p-0 w-6 h-6'
+					onClick={(e) => {
+						e.stopPropagation()
+						onMoveDown()
+					}}
+					disabled={isLast}
+				>
+					<CaretDownIcon className='size-3' />
+				</Button>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					className='p-0 w-6 h-6'
+					onClick={(e) => {
+						e.stopPropagation()
+						onDuplicate()
+					}}
+					title='Duplicate meal'
+				>
+					<CopyIcon className='size-3' />
+				</Button>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					onClick={(e) => {
+						e.stopPropagation()
+						onRemove()
+					}}
+					className='p-0 w-6 h-6 text-red-500'
+				>
+					<TrashIcon className='size-3' />
+				</Button>
+			</div>
 		</div>
 	)
 }
@@ -1405,6 +1706,7 @@ function MealContent({
 								isExpanded={expandedRecipes.has(recipe.id)}
 								onToggle={() => onToggleRecipe(recipe.id)}
 								onRemove={() => onRemoveRecipe(mealIdx, recipeIdx)}
+								onDuplicate={() => duplicateRecipe(mealIdx, recipeIdx)}
 								onMoveUp={() => onMoveRecipe(mealIdx, recipeIdx, recipeIdx - 1)}
 								onMoveDown={() =>
 									onMoveRecipe(mealIdx, recipeIdx, recipeIdx + 1)
@@ -1432,6 +1734,7 @@ interface RecipeCardProps {
 	isExpanded: boolean
 	onToggle: () => void
 	onRemove: () => void
+	onDuplicate: () => void
 	onMoveUp: () => void
 	onMoveDown: () => void
 	onUpdateIngredient: (
@@ -1468,6 +1771,7 @@ function RecipeCard({
 	isExpanded,
 	onToggle,
 	onRemove,
+	onDuplicate,
 	onMoveUp,
 	onMoveDown,
 	onUpdateIngredient,
@@ -1528,6 +1832,19 @@ function RecipeCard({
 						disabled={isLast}
 					>
 						<CaretDownIcon className='size-3' />
+					</Button>
+					<Button
+						type='button'
+						variant='ghost'
+						size='sm'
+						className='p-0 w-6 h-6'
+						onClick={(e) => {
+							e.stopPropagation()
+							onDuplicate()
+						}}
+						title='Duplicate recipe'
+					>
+						<CopyIcon className='size-3' />
 					</Button>
 					<Button
 						type='button'

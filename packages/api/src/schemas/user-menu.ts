@@ -125,3 +125,74 @@ export const UserIngredientMarkCompletedInput = z.object({
 export const UserIngredientDeleteInput = z.object({
 	id: z.string().min(1),
 })
+
+// ***************** Batch Create Menu (Full Menu with Meals, Recipes, Ingredients) *******************
+export const UserMenuBatchCreateInput = z.object({
+	userId: z.string().min(1),
+	menuTemplateId: z.string().optional().nullable(),
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	startDate: z.date().optional().nullable(),
+	endDate: z.date().optional().nullable(),
+	meals: z.array(
+		z.object({
+			mealIndex: z.number().int().min(0),
+			name: z.string().optional().nullable(),
+			calories: z.number(),
+			protein: z.number(),
+			fat: z.number(),
+			carbohydrate: z.number(),
+			recipes: z.array(
+				z.object({
+					recipeIndex: z.number().int().min(0),
+					name: z.string().min(1),
+					description: z.string().optional().nullable(),
+					category: z.string().optional().nullable(),
+					image: z.string().optional().nullable(),
+					ingredients: z.array(
+						z.object({
+							ingredientId: z.string().min(1),
+							serveSize: z.number(),
+							serveUnit: z.string().min(1),
+						}),
+					),
+				}),
+			),
+		}),
+	),
+})
+
+// ***************** Batch Update Menu (Delete and Recreate) *******************
+export const UserMenuBatchUpdateInput = z.object({
+	id: z.string().min(1),
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	startDate: z.date().optional().nullable(),
+	endDate: z.date().optional().nullable(),
+	meals: z.array(
+		z.object({
+			mealIndex: z.number().int().min(0),
+			name: z.string().optional().nullable(),
+			calories: z.number(),
+			protein: z.number(),
+			fat: z.number(),
+			carbohydrate: z.number(),
+			recipes: z.array(
+				z.object({
+					recipeIndex: z.number().int().min(0),
+					name: z.string().min(1),
+					description: z.string().optional().nullable(),
+					category: z.string().optional().nullable(),
+					image: z.string().optional().nullable(),
+					ingredients: z.array(
+						z.object({
+							ingredientId: z.string().min(1),
+							serveSize: z.number(),
+							serveUnit: z.string().min(1),
+						}),
+					),
+				}),
+			),
+		}),
+	),
+})
