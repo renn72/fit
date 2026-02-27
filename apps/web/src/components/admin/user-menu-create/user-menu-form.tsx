@@ -29,10 +29,13 @@ import {
 } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
+import { DragDropProvider, useDraggable, useDroppable } from '@dnd-kit/react'
 import {
 	CaretDownIcon,
 	CaretUpIcon,
+	ChefHatIcon,
 	CopyIcon,
+	DotsSixVerticalIcon,
 	PlusIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
@@ -597,31 +600,6 @@ export function UserMenuForm({
 		setFormData((prev) => ({ ...prev, meals: newMeals }))
 	}
 
-	const moveRecipeInMeal = (
-		mealIndex: number,
-		fromIndex: number,
-		toIndex: number,
-	) => {
-		const meal = formData.meals[mealIndex]
-		if (!meal) return
-
-		if (toIndex < 0 || toIndex >= meal.recipes.length) return
-
-		const newRecipes = [...meal.recipes]
-		const [movedRecipe] = newRecipes.splice(fromIndex, 1)
-		newRecipes.splice(toIndex, 0, movedRecipe)
-
-		const reindexedRecipes = newRecipes.map((r, i) => ({
-			...r,
-			recipeIndex: i,
-		}))
-
-		const newMeals = [...formData.meals]
-		newMeals[mealIndex] = { ...meal, recipes: reindexedRecipes }
-
-		setFormData((prev) => ({ ...prev, meals: newMeals }))
-	}
-
 	const duplicateRecipe = (mealIndex: number, recipeIndex: number) => {
 		const meal = formData.meals[mealIndex]
 		if (!meal) return
@@ -656,6 +634,127 @@ export function UserMenuForm({
 
 		setFormData((prev) => ({ ...prev, meals: newMeals }))
 		setExpandedRecipes((prev) => new Set([...prev, duplicatedRecipe.id]))
+	}
+
+	// Handle drag end for moving recipes between meals and reordering
+	const handleRecipeDragEnd = (event: {
+		operation: {
+			source: { id: string | number } | null
+			target: { id: string | number } | null
+		}
+		canceled: boolean
+	}) => {
+		if (event.canceled) return
+
+		const { source, target } = event.operation
+		if (!source || !target) return
+
+		// Parse source ID (format: "mealIdx:recipeIdx:recipeId")
+		const sourceParts = source.id.toString().split(':')
+		if (sourceParts.length < 3) return
+
+		const sourceMealIdx = Number.parseInt(sourceParts[0], 10)
+		const sourceRecipeIdx = Number.parseInt(sourceParts[1], 10)
+
+		if (isNaN(sourceMealIdx) || isNaN(sourceRecipeIdx)) return
+
+		const targetId = target.id.toString()
+		let targetMealIdx: number
+		let targetRecipeIdx: number | null = null
+		let isRecipeDropTarget = false
+
+		// Check if dropped on a recipe drop target
+		if (targetId.endsWith(':drop')) {
+			// Dropped on a recipe position
+			const targetParts = targetId.replace(':drop', '').split(':')
+			if (targetParts.length >= 3) {
+				targetMealIdx = Number.parseInt(targetParts[0], 10)
+				targetRecipeIdx = Number.parseInt(targetParts[1], 10)
+				isRecipeDropTarget = true
+			} else {
+				return
+			}
+		} else if (targetId.endsWith('-end')) {
+			// Dropped on the end zone (after last recipe)
+			targetMealIdx = Number.parseInt(
+				targetId.replace('meal-', '').replace('-end', ''),
+				10,
+			)
+			targetRecipeIdx = null // Will add to end
+			isRecipeDropTarget = false
+		} else if (targetId.startsWith('meal-')) {
+			// Dropped on a meal container
+			targetMealIdx = Number.parseInt(targetId.replace('meal-', ''), 10)
+		} else {
+			return
+		}
+
+		if (isNaN(sourceMealIdx) || isNaN(targetMealIdx)) return
+
+		const newMeals = [...formData.meals]
+		const sourceMeal = newMeals[sourceMealIdx]
+		const targetMeal = newMeals[targetMealIdx]
+
+		if (!sourceMeal || !targetMeal) return
+
+		const recipe = sourceMeal.recipes[sourceRecipeIdx]
+		if (!recipe) return
+
+		// Remove from source
+		sourceMeal.recipes.splice(sourceRecipeIdx, 1)
+
+		if (
+			sourceMealIdx === targetMealIdx &&
+			isRecipeDropTarget &&
+			targetRecipeIdx !== null
+		) {
+			// Reordering within the same meal
+			// When dropping on a recipe, insert at that recipe's position
+			// The targetRecipeIdx is the index of the recipe we're dropping ON
+			// We want to insert BEFORE that recipe
+			let insertIndex = targetRecipeIdx
+
+			// If the source comes before the target, removing it shifts the target index down by 1
+			// So we need to insert at target - 1 to end up at the right position
+			if (sourceRecipeIdx < targetRecipeIdx) {
+				insertIndex = targetRecipeIdx - 1
+			}
+
+			// Special case: if dragging to the first position (index 0)
+			// and source is after target, just insert at 0
+			if (targetRecipeIdx === 0 && sourceRecipeIdx > 0) {
+				insertIndex = 0
+			}
+
+			// Insert at the calculated position
+			targetMeal.recipes.splice(insertIndex, 0, recipe)
+		} else if (sourceMealIdx === targetMealIdx) {
+			// Dropped on same meal container, no reordering needed
+			targetMeal.recipes.splice(sourceRecipeIdx, 0, recipe)
+		} else {
+			// Moving to different meal
+			if (isRecipeDropTarget && targetRecipeIdx !== null) {
+				// Insert at specific position in target meal
+				targetMeal.recipes.splice(targetRecipeIdx, 0, recipe)
+			} else {
+				// Add to end of target meal
+				targetMeal.recipes.push(recipe)
+			}
+		}
+
+		// Reindex both meals' recipes
+		if (sourceMealIdx !== targetMealIdx) {
+			sourceMeal.recipes = sourceMeal.recipes.map((r, i) => ({
+				...r,
+				recipeIndex: i,
+			}))
+		}
+		targetMeal.recipes = targetMeal.recipes.map((r, i) => ({
+			...r,
+			recipeIndex: i,
+		}))
+
+		setFormData((prev) => ({ ...prev, meals: newMeals }))
 	}
 
 	const toggleRecipeExpanded = (recipeId: string) => {
@@ -1165,7 +1264,7 @@ export function UserMenuForm({
 						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 							{/* Blank Template Option */}
 							<Card
-								className='transition-colors cursor-pointer hover:bg-muted border-dashed border-2'
+								className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
 								onClick={() =>
 									setFormData({
 										name: '',
@@ -1320,58 +1419,60 @@ export function UserMenuForm({
 									</Button>
 								</div>
 
-								<div className='space-y-4'>
-									{formData.meals.length === 0 ? (
-										<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
-											No meals added yet. Click &quot;Add Meal&quot; to create
-											your first meal.
-										</div>
-									) : (
-										formData.meals.map((meal, mealIdx) => {
-											const totals = calculateMealTotals(meal)
-											const isExpanded = expandedMeals.has(mealIdx)
-											return (
-												<div key={meal.id} className='rounded-lg border'>
-													<MealHeader
-														meal={meal}
-														mealIdx={mealIdx}
-														totals={totals}
-														isExpanded={isExpanded}
-														isFirst={mealIdx === 0}
-														isLast={mealIdx === formData.meals.length - 1}
-														onToggle={() => toggleMealExpanded(mealIdx)}
-														onRemove={() => removeMeal(mealIdx)}
-														onDuplicate={() => duplicateMeal(mealIdx)}
-														onMoveUp={() => moveMeal(mealIdx, mealIdx - 1)}
-														onMoveDown={() => moveMeal(mealIdx, mealIdx + 1)}
-													/>
-
-													{isExpanded && (
-														<MealContent
+								<DragDropProvider onDragEnd={handleRecipeDragEnd}>
+									<div className='space-y-4'>
+										{formData.meals.length === 0 ? (
+											<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
+												No meals added yet. Click &quot;Add Meal&quot; to create
+												your first meal.
+											</div>
+										) : (
+											formData.meals.map((meal, mealIdx) => {
+												const totals = calculateMealTotals(meal)
+												const isExpanded = expandedMeals.has(mealIdx)
+												return (
+													<div key={meal.id} className='rounded-lg border'>
+														<MealHeader
 															meal={meal}
 															mealIdx={mealIdx}
-															recipeOptions={recipeOptions}
-															ingredientOptions={ingredientOptions}
-															expandedRecipes={expandedRecipes}
-															onUpdateName={updateMealName}
-															onUpdateTargets={updateMealTargets}
-															onAddRecipe={addRecipeToMeal}
-															onRemoveRecipe={removeRecipeFromMeal}
-															onMoveRecipe={moveRecipeInMeal}
-															onToggleRecipe={toggleRecipeExpanded}
-															onUpdateIngredient={updateIngredientServeSize}
-															onAdjustIngredient={adjustIngredientServeSize}
-															onAddIngredient={addIngredientToRecipe}
-															onRemoveIngredient={removeIngredientFromRecipe}
-															onBalanceCalories={balanceCalories}
-															onBalanceRecipe={balanceRecipeNutrition}
+															totals={totals}
+															isExpanded={isExpanded}
+															isFirst={mealIdx === 0}
+															isLast={mealIdx === formData.meals.length - 1}
+															onToggle={() => toggleMealExpanded(mealIdx)}
+															onRemove={() => removeMeal(mealIdx)}
+															onDuplicate={() => duplicateMeal(mealIdx)}
+															onMoveUp={() => moveMeal(mealIdx, mealIdx - 1)}
+															onMoveDown={() => moveMeal(mealIdx, mealIdx + 1)}
 														/>
-													)}
-												</div>
-											)
-										})
-									)}
-								</div>
+
+														{isExpanded && (
+															<MealContent
+																meal={meal}
+																mealIdx={mealIdx}
+																recipeOptions={recipeOptions}
+																ingredientOptions={ingredientOptions}
+																expandedRecipes={expandedRecipes}
+																onUpdateName={updateMealName}
+																onUpdateTargets={updateMealTargets}
+																onAddRecipe={addRecipeToMeal}
+																onRemoveRecipe={removeRecipeFromMeal}
+																onToggleRecipe={toggleRecipeExpanded}
+																onUpdateIngredient={updateIngredientServeSize}
+																onAdjustIngredient={adjustIngredientServeSize}
+																onAddIngredient={addIngredientToRecipe}
+																onRemoveIngredient={removeIngredientFromRecipe}
+																onBalanceCalories={balanceCalories}
+																onBalanceRecipe={balanceRecipeNutrition}
+																onDuplicateRecipe={duplicateRecipe}
+															/>
+														)}
+													</div>
+												)
+											})
+										)}
+									</div>
+								</DragDropProvider>
 							</div>
 						</CardContent>
 					</Card>
@@ -1560,7 +1661,6 @@ interface MealContentProps {
 	) => void
 	onAddRecipe: (mealIdx: number, recipeId: string) => void
 	onRemoveRecipe: (mealIdx: number, recipeIdx: number) => void
-	onMoveRecipe: (mealIdx: number, from: number, to: number) => void
 	onToggleRecipe: (recipeId: string) => void
 	onUpdateIngredient: (
 		mealIdx: number,
@@ -1586,6 +1686,7 @@ interface MealContentProps {
 	) => void
 	onBalanceCalories: (mealIdx: number) => void
 	onBalanceRecipe: (mealIdx: number) => void
+	onDuplicateRecipe: (mealIdx: number, recipeIdx: number) => void
 }
 
 function MealContent({
@@ -1598,7 +1699,6 @@ function MealContent({
 	onUpdateTargets,
 	onAddRecipe,
 	onRemoveRecipe,
-	onMoveRecipe,
 	onToggleRecipe,
 	onUpdateIngredient,
 	onAdjustIngredient,
@@ -1606,21 +1706,22 @@ function MealContent({
 	onRemoveIngredient,
 	onBalanceCalories,
 	onBalanceRecipe,
+	onDuplicateRecipe,
 }: MealContentProps) {
 	return (
 		<div className='p-4 space-y-4 border-t'>
-			<div className='space-y-2'>
-				<Label>Meal Name</Label>
-				<Input
-					value={meal.name}
-					onChange={(e) => onUpdateName(mealIdx, e.target.value)}
-					placeholder={`Meal ${mealIdx + 1}`}
-				/>
-			</div>
+			<div className='grid grid-cols-7 gap-2'>
+				<div className='col-span-3'>
+					<Label>Meal Name</Label>
+					<Input
+						value={meal.name}
+						onChange={(e) => onUpdateName(mealIdx, e.target.value)}
+						placeholder={`Meal ${mealIdx + 1}`}
+					/>
+				</div>
 
-			<div className='grid grid-cols-4 gap-2'>
 				<div>
-					<Label className='text-xs'>Target Calories</Label>
+					<Label>Target Calories</Label>
 					<Input
 						type='number'
 						value={meal.targetCalories ?? ''}
@@ -1635,7 +1736,7 @@ function MealContent({
 					/>
 				</div>
 				<div>
-					<Label className='text-xs'>Target Protein (g)</Label>
+					<Label>Target Protein (g)</Label>
 					<Input
 						type='number'
 						value={meal.targetProtein ?? ''}
@@ -1690,38 +1791,43 @@ function MealContent({
 				/>
 			</div>
 
-			{meal.recipes.length > 0 && (
-				<div className='pt-2 space-y-2'>
-					<div className='text-sm font-medium'>
-						Recipes ({meal.recipes.length})
+			<div className='p-4 space-y-3 rounded-lg border-2 border-primary/30 bg-primary/5'>
+				<div className='flex justify-between items-center pb-2 border-b border-primary/20'>
+					<div className='flex gap-2 items-center'>
+						<div className='p-1.5 rounded-md bg-primary/10'>
+							<ChefHatIcon className='w-4 h-4 text-primary' />
+						</div>
+						<span className='text-sm font-semibold text-foreground'>
+							Recipes
+						</span>
+						<span className='py-0.5 px-2 text-xs font-medium rounded-full bg-primary/10 text-primary'>
+							{meal.recipes.length}
+						</span>
 					</div>
-					<div className='space-y-2'>
-						{meal.recipes.map((recipe, recipeIdx) => (
-							<RecipeCard
-								key={recipe.id}
-								recipe={recipe}
-								recipeIdx={recipeIdx}
-								mealIdx={mealIdx}
-								ingredientOptions={ingredientOptions}
-								isExpanded={expandedRecipes.has(recipe.id)}
-								onToggle={() => onToggleRecipe(recipe.id)}
-								onRemove={() => onRemoveRecipe(mealIdx, recipeIdx)}
-								onDuplicate={() => duplicateRecipe(mealIdx, recipeIdx)}
-								onMoveUp={() => onMoveRecipe(mealIdx, recipeIdx, recipeIdx - 1)}
-								onMoveDown={() =>
-									onMoveRecipe(mealIdx, recipeIdx, recipeIdx + 1)
-								}
-								onUpdateIngredient={onUpdateIngredient}
-								onAdjustIngredient={onAdjustIngredient}
-								onAddIngredient={onAddIngredient}
-								onRemoveIngredient={onRemoveIngredient}
-								isFirst={recipeIdx === 0}
-								isLast={recipeIdx === meal.recipes.length - 1}
-							/>
-						))}
-					</div>
+					<p className='text-xs text-muted-foreground'>
+						Drag to reorder or move between meals
+					</p>
 				</div>
-			)}
+				<RecipeDropZone mealIdx={mealIdx} recipeCount={meal.recipes.length}>
+					{meal.recipes?.map((recipe, recipeIdx) => (
+						<DraggableRecipeCard
+							key={recipe.id}
+							recipe={recipe}
+							recipeIdx={recipeIdx}
+							mealIdx={mealIdx}
+							ingredientOptions={ingredientOptions}
+							isExpanded={expandedRecipes.has(recipe.id)}
+							onToggle={() => onToggleRecipe(recipe.id)}
+							onRemove={() => onRemoveRecipe(mealIdx, recipeIdx)}
+							onDuplicate={() => onDuplicateRecipe(mealIdx, recipeIdx)}
+							onUpdateIngredient={onUpdateIngredient}
+							onAdjustIngredient={onAdjustIngredient}
+							onAddIngredient={onAddIngredient}
+							onRemoveIngredient={onRemoveIngredient}
+						/>
+					))}
+				</RecipeDropZone>
+			</div>
 		</div>
 	)
 }
@@ -1735,8 +1841,8 @@ interface RecipeCardProps {
 	onToggle: () => void
 	onRemove: () => void
 	onDuplicate: () => void
-	onMoveUp: () => void
-	onMoveDown: () => void
+	onMoveUp?: () => void
+	onMoveDown?: () => void
 	onUpdateIngredient: (
 		mealIdx: number,
 		recipeIdx: number,
@@ -1759,8 +1865,117 @@ interface RecipeCardProps {
 		recipeIdx: number,
 		ingIdx: number,
 	) => void
-	isFirst: boolean
-	isLast: boolean
+	isFirst?: boolean
+	isLast?: boolean
+	isDragSource?: boolean
+}
+
+// Drop zone for recipes within a meal
+interface RecipeDropZoneProps {
+	mealIdx: number
+	recipeCount: number
+	children: React.ReactNode
+}
+
+function RecipeDropZone({
+	mealIdx,
+	recipeCount,
+	children,
+}: RecipeDropZoneProps) {
+	const { ref, isDropTarget } = useDroppable({
+		id: `meal-${mealIdx}`,
+		accept: 'recipe',
+		data: { mealIdx },
+	})
+
+	return (
+		<div
+			ref={ref}
+			className={`
+				space-y-3 transition-all duration-200 rounded-lg p-3
+				'bg-muted/30'
+			`}
+		>
+			{children}
+		</div>
+	)
+}
+
+// Draggable recipe card
+interface DraggableRecipeCardProps
+	extends Omit<
+		RecipeCardProps,
+		'onMoveUp' | 'onMoveDown' | 'isFirst' | 'isLast'
+	> {}
+
+function DraggableRecipeCard({
+	recipe,
+	recipeIdx,
+	mealIdx,
+	ingredientOptions,
+	isExpanded,
+	onToggle,
+	onRemove,
+	onDuplicate,
+	onUpdateIngredient,
+	onAdjustIngredient,
+	onAddIngredient,
+	onRemoveIngredient,
+}: DraggableRecipeCardProps) {
+	const { ref: dragRef, isDragSource } = useDraggable({
+		id: `${mealIdx}:${recipeIdx}:${recipe.id}`,
+		type: 'recipe',
+		data: {
+			recipeId: recipe.id,
+			mealIdx,
+			recipeIdx,
+		},
+	})
+
+	const { ref: dropRef, isDropTarget } = useDroppable({
+		id: `${mealIdx}:${recipeIdx}:${recipe.id}:drop`,
+		accept: 'recipe',
+		data: {
+			recipeId: recipe.id,
+			mealIdx,
+			recipeIdx,
+			isRecipeDropTarget: true,
+		},
+	})
+
+	return (
+		<div
+			ref={(node) => {
+				dragRef(node)
+				dropRef(node)
+			}}
+			className={`
+				relative rounded-md border shadow-sm transition-all duration-200 bg-card p-1
+				${isDragSource ? 'opacity-50 ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
+				${isDropTarget ? 'ring-2 ring-primary ring-dashed bg-primary/5 border-primary' : ''}
+			`}
+		>
+			{/* Drop indicator - shows a line when hovering over this recipe */}
+			{isDropTarget && (
+				<div className='absolute right-0 left-0 -top-1 z-20 h-1 rounded-full bg-primary' />
+			)}
+			<RecipeCard
+				recipe={recipe}
+				recipeIdx={recipeIdx}
+				mealIdx={mealIdx}
+				ingredientOptions={ingredientOptions}
+				isExpanded={isExpanded}
+				onToggle={onToggle}
+				onRemove={onRemove}
+				onDuplicate={onDuplicate}
+				onUpdateIngredient={onUpdateIngredient}
+				onAdjustIngredient={onAdjustIngredient}
+				onAddIngredient={onAddIngredient}
+				onRemoveIngredient={onRemoveIngredient}
+				isDragSource={isDragSource}
+			/>
+		</div>
+	)
 }
 
 function RecipeCard({
@@ -1772,17 +1987,16 @@ function RecipeCard({
 	onToggle,
 	onRemove,
 	onDuplicate,
-	onMoveUp,
-	onMoveDown,
 	onUpdateIngredient,
 	onAdjustIngredient,
 	onAddIngredient,
 	onRemoveIngredient,
-	isFirst,
-	isLast,
-}: RecipeCardProps) {
+	isDragSource,
+}: RecipeCardProps & { isDragSource?: boolean }) {
 	return (
-		<div className='rounded-md border'>
+		<div
+			className={`rounded-md border ${isDragSource ? 'ring-2 ring-primary' : ''}`}
+		>
 			<div
 				className='flex gap-2 items-center p-2 rounded-t-md cursor-pointer bg-muted'
 				onClick={onToggle}
@@ -1811,27 +2025,10 @@ function RecipeCard({
 						type='button'
 						variant='ghost'
 						size='sm'
-						className='p-0 w-6 h-6'
-						onClick={(e) => {
-							e.stopPropagation()
-							onMoveUp()
-						}}
-						disabled={isFirst}
+						className='p-0 w-6 h-6 cursor-grab active:cursor-grabbing'
+						title='Drag to reorder'
 					>
-						<CaretUpIcon className='size-3' />
-					</Button>
-					<Button
-						type='button'
-						variant='ghost'
-						size='sm'
-						className='p-0 w-6 h-6'
-						onClick={(e) => {
-							e.stopPropagation()
-							onMoveDown()
-						}}
-						disabled={isLast}
-					>
-						<CaretDownIcon className='size-3' />
+						<DotsSixVerticalIcon className='size-3 text-muted-foreground' />
 					</Button>
 					<Button
 						type='button'
