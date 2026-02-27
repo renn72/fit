@@ -49,10 +49,6 @@ interface UserMenuWithDetails {
 	startDate: Date | null
 	endDate: Date | null
 	isActive: boolean
-	totalCalories: number | null
-	totalProtein: number | null
-	totalFat: number | null
-	totalCarbohydrate: number | null
 	createdAt: Date
 	meals: Array<{
 		id: string
@@ -73,6 +69,19 @@ interface UserMenuWithDetails {
 		fat: number
 		carbohydrate: number
 	}>
+}
+
+// Calculate menu totals from meals
+function calculateMenuTotals(meals: UserMenuWithDetails['meals']) {
+	return meals.reduce(
+		(acc, meal) => ({
+			calories: acc.calories + (meal.calories || 0),
+			protein: acc.protein + (meal.protein || 0),
+			fat: acc.fat + (meal.fat || 0),
+			carbohydrate: acc.carbohydrate + (meal.carbohydrate || 0),
+		}),
+		{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+	)
 }
 
 interface UserMenusPageProps {
@@ -234,9 +243,10 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 						const typedMenu = menu as unknown as UserMenuWithDetails
 						const mealCount = typedMenu.meals?.length || 0
 						const recipeCount = typedMenu.recipes?.length || 0
+						const totals = calculateMenuTotals(typedMenu.meals || [])
 						const avgCaloriesPerRecipe =
-							recipeCount > 0 && typedMenu.totalCalories
-								? Math.round(typedMenu.totalCalories / recipeCount)
+							recipeCount > 0 && totals.calories
+								? Math.round(totals.calories / recipeCount)
 								: 0
 
 						return (
@@ -329,25 +339,25 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 											<div>
 												<span className='text-muted-foreground'>Calories:</span>{' '}
 												<span className='font-medium'>
-													{Math.round(typedMenu.totalCalories || 0)}
+													{Math.round(totals.calories)}
 												</span>
 											</div>
 											<div>
 												<span className='text-muted-foreground'>Protein:</span>{' '}
 												<span className='font-medium'>
-													{Math.round(typedMenu.totalProtein || 0)}g
+													{Math.round(totals.protein)}g
 												</span>
 											</div>
 											<div>
 												<span className='text-muted-foreground'>Fat:</span>{' '}
 												<span className='font-medium'>
-													{Math.round(typedMenu.totalFat || 0)}g
+													{Math.round(totals.fat)}g
 												</span>
 											</div>
 											<div>
 												<span className='text-muted-foreground'>Carbs:</span>{' '}
 												<span className='font-medium'>
-													{Math.round(typedMenu.totalCarbohydrate || 0)}g
+													{Math.round(totals.carbohydrate)}g
 												</span>
 											</div>
 										</div>

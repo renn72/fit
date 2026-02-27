@@ -31,10 +31,6 @@ interface UserMenuWithFullDetails {
 	startDate: Date | null
 	endDate: Date | null
 	isActive: boolean
-	totalCalories: number | null
-	totalProtein: number | null
-	totalFat: number | null
-	totalCarbohydrate: number | null
 	createdAt: Date
 	updatedAt: Date
 	meals: Array<{
@@ -55,10 +51,6 @@ interface UserMenuWithFullDetails {
 		recipeIndex: number
 		description: string | null
 		category: string | null
-		calories: number
-		protein: number
-		fat: number
-		carbohydrate: number
 		prepTime: number | null
 		cookTime: number | null
 		servings: number | null
@@ -70,14 +62,96 @@ interface UserMenuWithFullDetails {
 		mealIndex: number
 		recipeIndex: number
 		ingredientId: string
-		ingredientName: string
 		serveSize: number
 		serveUnit: string
-		calories: number
-		protein: number
-		fat: number
-		carbohydrate: number
+		// Base ingredient data for calculation
+		ingredient: {
+			id: string
+			name: string
+			calories: number
+			protein: number
+			fat: number
+			carbohydrate: number
+			serveSize: number
+			serveUnit: string
+		} | null
+		altIngredient: {
+			id: string
+			name: string
+			calories: number
+			protein: number
+			fat: number
+			carbohydrate: number
+			serveSize: number
+			serveUnit: string
+		} | null
+		altServeSize: number | null
+		altServeUnit: string | null
 	}>
+}
+
+// Calculate scaled nutrition for an ingredient
+function calculateIngredientNutrition(
+	ing: UserMenuWithFullDetails['ingredients'][0],
+): {
+	calories: number
+	protein: number
+	fat: number
+	carbohydrate: number
+	name: string
+} {
+	const baseIng = ing.altIngredient ?? ing.ingredient
+	if (!baseIng)
+		return { calories: 0, protein: 0, fat: 0, carbohydrate: 0, name: 'Unknown' }
+
+	const isAlt = !!ing.altIngredient
+	const serveSize = isAlt ? (ing.altServeSize ?? ing.serveSize) : ing.serveSize
+	const ratio = serveSize / baseIng.serveSize
+
+	return {
+		calories: baseIng.calories * ratio,
+		protein: baseIng.protein * ratio,
+		fat: baseIng.fat * ratio,
+		carbohydrate: baseIng.carbohydrate * ratio,
+		name: baseIng.name,
+	}
+}
+
+// Calculate recipe nutrition from its ingredients
+function calculateRecipeNutrition(
+	recipe: UserMenuWithFullDetails['recipes'][0],
+	allIngredients: UserMenuWithFullDetails['ingredients'],
+): { calories: number; protein: number; fat: number; carbohydrate: number } {
+	const recipeIngredients = allIngredients.filter(
+		(i) =>
+			i.mealIndex === recipe.mealIndex && i.recipeIndex === recipe.recipeIndex,
+	)
+
+	return recipeIngredients.reduce(
+		(acc, ing) => {
+			const nutrition = calculateIngredientNutrition(ing)
+			return {
+				calories: acc.calories + nutrition.calories,
+				protein: acc.protein + nutrition.protein,
+				fat: acc.fat + nutrition.fat,
+				carbohydrate: acc.carbohydrate + nutrition.carbohydrate,
+			}
+		},
+		{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+	)
+}
+
+// Calculate menu totals from meals
+function calculateMenuTotals(meals: UserMenuWithFullDetails['meals']) {
+	return meals.reduce(
+		(acc, meal) => ({
+			calories: acc.calories + (meal.calories || 0),
+			protein: acc.protein + (meal.protein || 0),
+			fat: acc.fat + (meal.fat || 0),
+			carbohydrate: acc.carbohydrate + (meal.carbohydrate || 0),
+		}),
+		{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+	)
 }
 
 export function UserMenuDetailsPage() {
@@ -95,14 +169,23 @@ export function UserMenuDetailsPage() {
 	)
 
 	const typedMenu = menu as unknown as UserMenuWithFullDetails
+	const menuTotals = calculateMenuTotals(typedMenu.meals || [])
 
-	// Group recipes by meal
-	const recipesByMeal = typedMenu.meals.map((meal) => ({
-		...meal,
-		recipes: typedMenu.recipes
+	// Group recipes by meal with calculated nutrition
+	const recipesByMeal = typedMenu.meals.map((meal) => {
+		const mealRecipes = typedMenu.recipes
 			.filter((r) => r.mealIndex === meal.mealIndex)
-			.sort((a, b) => a.recipeIndex - b.recipeIndex),
-	}))
+			.sort((a, b) => a.recipeIndex - b.recipeIndex)
+			.map((recipe) => ({
+				...recipe,
+				...calculateRecipeNutrition(recipe, typedMenu.ingredients),
+			}))
+
+		return {
+			...meal,
+			recipes: mealRecipes,
+		}
+	})
 
 	return (
 		<div className='flex flex-col gap-6 p-8'>
@@ -170,25 +253,25 @@ export function UserMenuDetailsPage() {
 						<div className='space-y-1'>
 							<div className='text-sm text-muted-foreground'>Calories</div>
 							<div className='text-2xl font-bold'>
-								{Math.round(typedMenu.totalCalories || 0)}
+								{Math.round(menuTotals.calories)}
 							</div>
 						</div>
 						<div className='space-y-1'>
 							<div className='text-sm text-muted-foreground'>Protein</div>
 							<div className='text-2xl font-bold text-blue-500'>
-								{Math.round(typedMenu.totalProtein || 0)}g
+								{Math.round(menuTotals.protein)}g
 							</div>
 						</div>
 						<div className='space-y-1'>
 							<div className='text-sm text-muted-foreground'>Fat</div>
 							<div className='text-2xl font-bold text-yellow-500'>
-								{Math.round(typedMenu.totalFat || 0)}g
+								{Math.round(menuTotals.fat)}g
 							</div>
 						</div>
 						<div className='space-y-1'>
 							<div className='text-sm text-muted-foreground'>Carbs</div>
 							<div className='text-2xl font-bold text-green-500'>
-								{Math.round(typedMenu.totalCarbohydrate || 0)}g
+								{Math.round(menuTotals.carbohydrate)}g
 							</div>
 						</div>
 					</div>
@@ -301,19 +384,52 @@ export function UserMenuDetailsPage() {
 														<div className='mb-2 text-xs font-medium text-muted-foreground'>
 															Ingredients
 														</div>
-														<div className='space-y-1'>
-															{recipeIngredients.map((ing) => (
-																<div
-																	key={ing.id}
-																	className='flex justify-between text-sm'
-																>
-																	<span>{ing.ingredientName}</span>
-																	<span className='text-muted-foreground'>
-																		{ing.serveSize} {ing.serveUnit} |{' '}
-																		{Math.round(ing.calories)} cal
-																	</span>
-																</div>
-															))}
+														<div className='space-y-2'>
+															{recipeIngredients.map((ing) => {
+																const nutrition =
+																	calculateIngredientNutrition(ing)
+																return (
+																	<div
+																		key={ing.id}
+																		className='flex justify-between items-center py-1 border-b border-muted last:border-0'
+																	>
+																		<div className='flex-1'>
+																			<div className='font-medium'>
+																				{nutrition.name}
+																			</div>
+																			<div className='text-xs text-muted-foreground'>
+																				{ing.serveSize} {ing.serveUnit}
+																			</div>
+																		</div>
+																		<div className='flex gap-4 text-xs text-muted-foreground text-right'>
+																			<div className='min-w-[50px]'>
+																				<div className='font-medium text-foreground'>
+																					{Math.round(nutrition.calories)}
+																				</div>
+																				<div className='text-[10px]'>cal</div>
+																			</div>
+																			<div className='min-w-[40px]'>
+																				<div className='font-medium text-foreground'>
+																					{Math.round(nutrition.protein)}g
+																				</div>
+																				<div className='text-[10px]'>pro</div>
+																			</div>
+																			<div className='min-w-[40px]'>
+																				<div className='font-medium text-foreground'>
+																					{Math.round(nutrition.carbohydrate)}g
+																				</div>
+																				<div className='text-[10px]'>carb</div>
+																			</div>
+																			<div className='min-w-[40px]'>
+																				<div className='font-medium text-foreground'>
+																					{Math.round(nutrition.fat)}g
+																				</div>
+																				<div className='text-[10px]'>fat</div>
+																			</div>
+																		</div>
+																	</div>
+																)
+															})}
 														</div>
 													</div>
 												</CardContent>

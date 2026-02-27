@@ -77,10 +77,6 @@ export const UserRecipeUpdateInput = z.object({
 	prepTime: z.number().int().optional().nullable(),
 	cookTime: z.number().int().optional().nullable(),
 	servings: z.number().int().optional().nullable(),
-	calories: z.number().optional(),
-	protein: z.number().optional(),
-	fat: z.number().optional(),
-	carbohydrate: z.number().optional(),
 	isCompleted: z.boolean().optional(),
 })
 

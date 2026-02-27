@@ -25,10 +25,6 @@ export const userMenu = s.sqliteTable(
 			.integer('is_active', { mode: 'boolean' })
 			.notNull()
 			.default(true),
-		totalCalories: s.real('total_calories'),
-		totalProtein: s.real('total_protein'),
-		totalFat: s.real('total_fat'),
-		totalCarbohydrate: s.real('total_carbohydrate'),
 		createdAt: s
 			.integer('created_at', { mode: 'timestamp_ms' })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
