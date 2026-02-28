@@ -1327,7 +1327,7 @@ export function UserMenuForm({
 				}
 
 				balancedCount++
-			} catch (error) {
+			} catch (_error) {
 				failedCount++
 			}
 		})
@@ -2336,7 +2336,7 @@ function DraggableOrgRecipeCard({
 			ref={setNodeRef}
 			style={style}
 			className={`rounded-md border bg-card p-2 space-y-2 transition-all ${
-				isDragging ? 'opacity-50 ring-2 ring-primary ring-offset-1' : ''
+				isDragging ? 'opacity-0' : ''
 			}`}
 		>
 			<div className='flex gap-2 items-start'>
@@ -2427,7 +2427,7 @@ function RecipeCard({
 				<span className='text-xs text-muted-foreground'>
 					{Math.round(recipe.calories)} cal
 				</span>
-				<div className='flex gap-1'>
+				<div className='flex gap-1 items-center'>
 					<Button
 						type='button'
 						variant='ghost'
@@ -2437,7 +2437,7 @@ function RecipeCard({
 						{...attributes}
 						{...listeners}
 					>
-						<DotsSixVerticalIcon className='size-4 text-muted-foreground' />
+						<DotsSixVerticalIcon className='size-5 text-muted-foreground' />
 					</Button>
 					<Button
 						type='button'

@@ -257,6 +257,34 @@ export function MenuTemplateCreateForm({
 		})
 	}
 
+	const moveMeal = (fromIndex: number, toIndex: number) => {
+		const currentMeals = form.getFieldValue('meals')
+		if (toIndex < 0 || toIndex >= currentMeals.length) return
+
+		const nextMeals = [...currentMeals]
+		const [movedMeal] = nextMeals.splice(fromIndex, 1)
+		if (!movedMeal) return
+		nextMeals.splice(toIndex, 0, movedMeal)
+
+		form.setFieldValue(
+			'meals',
+			nextMeals.map((meal, index) => ({ ...meal, mealIndex: index })),
+		)
+
+		setExpandedMeals((prev) => {
+			const next = new Set<number>()
+			for (const i of prev) {
+				if (i === fromIndex) next.add(toIndex)
+				else if (fromIndex < toIndex && i > fromIndex && i <= toIndex)
+					next.add(i - 1)
+				else if (fromIndex > toIndex && i >= toIndex && i < fromIndex)
+					next.add(i + 1)
+				else next.add(i)
+			}
+			return next
+		})
+	}
+
 	const toggleMealExpanded = (mealIndex: number) => {
 		setExpandedMeals((prev) => {
 			const next = new Set(prev)
@@ -329,6 +357,25 @@ export function MenuTemplateCreateForm({
 		}
 
 		form.setFieldValue('meals', newMeals)
+	}
+
+	const moveRecipeInMeal = (
+		mealIndex: number,
+		fromIndex: number,
+		toIndex: number,
+	) => {
+		const currentMeals = form.getFieldValue('meals')
+		const meal = currentMeals[mealIndex]
+		if (!meal) return
+		if (toIndex < 0 || toIndex >= meal.recipes.length) return
+
+		const nextRecipes = arrayMove(meal.recipes, fromIndex, toIndex).map(
+			(recipe, index) => ({ ...recipe, recipeIndex: index }),
+		)
+
+		const nextMeals = [...currentMeals]
+		nextMeals[mealIndex] = { ...meal, recipes: nextRecipes }
+		form.setFieldValue('meals', nextMeals)
 	}
 
 	const handleDragStart = (event: DragStartEvent) => {
@@ -572,17 +619,17 @@ export function MenuTemplateCreateForm({
 														field.state.value.map((meal, mealIdx) => {
 															const isExpanded = expandedMeals.has(mealIdx)
 															return (
-																<div
-																	key={mealIdx}
-																	className='rounded-lg border'
-																>
-																	<div
+														<div
+															key={mealIdx}
+															className='rounded-lg border'
+														>
+															<div
 																		className='flex justify-between items-center p-4 cursor-pointer hover:bg-muted/50'
 																		onMouseDown={() =>
 																			toggleMealExpanded(mealIdx)
 																		}
 																	>
-																		<div className='flex gap-3 items-center'>
+																<div className='flex gap-3 items-center'>
 																			{isExpanded ? (
 																				<CaretUpIcon className='size-4' />
 																			) : (
@@ -596,20 +643,48 @@ export function MenuTemplateCreateForm({
 																					{meal.recipes.length} recipes
 																				</p>
 																			</div>
-																		</div>
-																		<Button
-																			type='button'
-																			variant='ghost'
-																			size='sm'
-																			className='text-red-500'
-																			onClick={(e) => {
-																				e.stopPropagation()
-																				removeMeal(mealIdx)
-																			}}
-																		>
-																			<TrashIcon className='size-4' />
-																		</Button>
-																	</div>
+																</div>
+																<div className='flex gap-1 items-center'>
+																	<Button
+																		type='button'
+																		variant='ghost'
+																		size='sm'
+																		className='p-0 w-7 h-7'
+																		onClick={(e) => {
+																			e.stopPropagation()
+																			moveMeal(mealIdx, mealIdx - 1)
+																		}}
+																		disabled={mealIdx === 0}
+																	>
+																		<CaretUpIcon className='size-3' />
+																	</Button>
+																	<Button
+																		type='button'
+																		variant='ghost'
+																		size='sm'
+																		className='p-0 w-7 h-7'
+																		onClick={(e) => {
+																			e.stopPropagation()
+																			moveMeal(mealIdx, mealIdx + 1)
+																		}}
+																		disabled={mealIdx === field.state.value.length - 1}
+																	>
+																		<CaretDownIcon className='size-3' />
+																	</Button>
+																	<Button
+																		type='button'
+																		variant='ghost'
+																		size='sm'
+																		className='text-red-500'
+																		onClick={(e) => {
+																			e.stopPropagation()
+																			removeMeal(mealIdx)
+																		}}
+																	>
+																		<TrashIcon className='size-4' />
+																	</Button>
+																</div>
+															</div>
 
 																	{isExpanded && (
 																		<div className='p-4 space-y-4 border-t'>
@@ -660,6 +735,22 @@ export function MenuTemplateCreateForm({
 																							recipe={recipe}
 																							mealIdx={mealIdx}
 																							recipeIdx={recipeIdx}
+																							isFirst={recipeIdx === 0}
+																							isLast={recipeIdx === meal.recipes.length - 1}
+																							onMoveUp={() =>
+																								moveRecipeInMeal(
+																									mealIdx,
+																									recipeIdx,
+																									recipeIdx - 1,
+																								)
+																							}
+																							onMoveDown={() =>
+																								moveRecipeInMeal(
+																									mealIdx,
+																									recipeIdx,
+																									recipeIdx + 1,
+																								)
+																							}
 																							onRemove={() =>
 																								removeRecipeFromMeal(
 																									mealIdx,
@@ -802,12 +893,20 @@ function DraggableTemplateRecipeCard({
 	recipe,
 	mealIdx,
 	recipeIdx,
+	isFirst,
+	isLast,
+	onMoveUp,
+	onMoveDown,
 	onRemove,
 	getRecipeDndId,
 }: {
 	recipe: MealRecipe
 	mealIdx: number
 	recipeIdx: number
+	isFirst: boolean
+	isLast: boolean
+	onMoveUp: () => void
+	onMoveDown: () => void
 	onRemove: () => void
 	getRecipeDndId: (
 		mealIdx: number,
@@ -861,6 +960,28 @@ function DraggableTemplateRecipeCard({
 				{recipeIdx + 1}.
 			</span>
 			<span className='flex-1 text-sm'>{recipe.recipeName}</span>
+			<Button
+				type='button'
+				variant='ghost'
+				size='sm'
+				className='p-0 w-7 h-7'
+				onClick={onMoveUp}
+				disabled={isFirst}
+				title='Move recipe up'
+			>
+				<CaretUpIcon className='size-3' />
+			</Button>
+			<Button
+				type='button'
+				variant='ghost'
+				size='sm'
+				className='p-0 w-7 h-7'
+				onClick={onMoveDown}
+				disabled={isLast}
+				title='Move recipe down'
+			>
+				<CaretDownIcon className='size-3' />
+			</Button>
 			<Button
 				type='button'
 				variant='ghost'
