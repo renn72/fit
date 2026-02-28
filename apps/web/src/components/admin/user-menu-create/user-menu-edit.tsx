@@ -2,9 +2,8 @@
 
 import { getRouteApi } from '@tanstack/react-router'
 
-import { UserMenuForm } from './user-menu-form'
-
 import _ from 'lodash'
+import { UserMenuForm } from '../user-menu-form'
 
 const editRoute = getRouteApi('/$orgSlug/user-menu-edit/$menuId')
 

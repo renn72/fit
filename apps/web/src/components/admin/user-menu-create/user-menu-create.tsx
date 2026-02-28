@@ -2,9 +2,8 @@
 
 import { getRouteApi, useRouterState } from '@tanstack/react-router'
 
-import { UserMenuForm } from './user-menu-form'
-
 import _ from 'lodash'
+import { UserMenuForm } from '../user-menu-form'
 
 const createRoute = getRouteApi('/$orgSlug/user-menu-create')
 
