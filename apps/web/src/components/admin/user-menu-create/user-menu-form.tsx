@@ -10,8 +10,24 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+	Sidebar,
+	SidebarContent,
+	SidebarGroup,
+	SidebarHeader,
+	SidebarInput,
+	SidebarProvider,
+	SidebarRail,
+	SidebarTrigger,
+} from '@/components/ui/sidebar'
 import { Textarea } from '@/components/ui/textarea'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
@@ -38,6 +54,8 @@ import {
 	type DragStartEvent,
 	KeyboardSensor,
 	PointerSensor,
+	useDraggable,
+	useDroppable,
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core'
@@ -56,6 +74,7 @@ import {
 	CopyIcon,
 	DotsSixVerticalIcon,
 	PlusIcon,
+	SidebarIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
@@ -130,6 +149,7 @@ export function UserMenuForm({
 		new Set(),
 	)
 	const [activeId, setActiveId] = React.useState<string | null>(null)
+	const [recipeSearch, setRecipeSearch] = React.useState('')
 
 	// Sensors for dnd-kit
 	const sensors = useSensors(
@@ -332,6 +352,22 @@ export function UserMenuForm({
 		}))
 	}, [recipes])
 
+	const filteredRecipes = React.useMemo(() => {
+		if (!recipes) return []
+
+		const term = recipeSearch.trim().toLowerCase()
+		if (!term) return recipes
+
+		return recipes.filter((recipe) => {
+			const nameMatch = recipe.name.toLowerCase().includes(term)
+			const categoryMatch = (recipe.category || '').toLowerCase().includes(term)
+			const descriptionMatch = (recipe.description || '')
+				.toLowerCase()
+				.includes(term)
+			return nameMatch || categoryMatch || descriptionMatch
+		})
+	}, [recipes, recipeSearch])
+
 	const ingredientOptions = React.useMemo(() => {
 		if (!ingredients) return []
 		return ingredients.map((ing) => ({
@@ -339,6 +375,75 @@ export function UserMenuForm({
 			label: ing.name,
 		}))
 	}, [ingredients])
+
+	const buildMealRecipeFromSource = React.useCallback(
+		(recipe: any, recipeIndex: number): MealRecipe => {
+			const recipeIngredients: MealIngredient[] = (
+				recipe.ingredients || []
+			).map((ing: any) => {
+				const ingredientData = ing.ingredient
+				if (!ingredientData) {
+					return {
+						id: crypto.randomUUID(),
+						recipeToIngredientId: ing.id,
+						ingredientId: ing.ingredientId,
+						ingredientName: 'Unknown',
+						serveSize: Math.round(ing.amount * 10) / 10,
+						serveUnit: ing.unit,
+						calories: 0,
+						protein: 0,
+						fat: 0,
+						carbohydrate: 0,
+					}
+				}
+
+				const multiplier =
+					ingredientData.serveSize > 0
+						? ing.amount / ingredientData.serveSize
+						: 1
+
+				return {
+					id: crypto.randomUUID(),
+					recipeToIngredientId: ing.id,
+					ingredientId: ing.ingredientId,
+					ingredientName: ingredientData.name,
+					serveSize: Math.round(ing.amount * 10) / 10,
+					serveUnit: ing.unit,
+					calories: ingredientData.calories * multiplier,
+					protein: ingredientData.protein * multiplier,
+					fat: ingredientData.fat * multiplier,
+					carbohydrate: ingredientData.carbohydrate * multiplier,
+				}
+			})
+
+			const recipeCalories = recipeIngredients.reduce(
+				(sum, ing) => sum + ing.calories,
+				0,
+			)
+			const recipeProtein = recipeIngredients.reduce(
+				(sum, ing) => sum + ing.protein,
+				0,
+			)
+			const recipeFat = recipeIngredients.reduce((sum, ing) => sum + ing.fat, 0)
+			const recipeCarbs = recipeIngredients.reduce(
+				(sum, ing) => sum + ing.carbohydrate,
+				0,
+			)
+
+			return {
+				id: crypto.randomUUID(),
+				recipeId: recipe.id,
+				recipeName: recipe.name,
+				recipeIndex,
+				calories: recipeCalories,
+				protein: recipeProtein,
+				fat: recipeFat,
+				carbohydrate: recipeCarbs,
+				ingredients: recipeIngredients,
+			}
+		},
+		[],
+	)
 
 	const handleTemplateSelect = async (template: any) => {
 		setSelectedTemplate(template)
@@ -537,85 +642,48 @@ export function UserMenuForm({
 		setFormData((prev) => ({ ...prev, meals: reindexedMeals }))
 	}
 
-	const addRecipeToMeal = (mealIndex: number, recipeId: string) => {
+	const addRecipeToMeal = (
+		mealIndex: number,
+		recipeId: string,
+		insertAt?: number,
+	) => {
 		const recipe = recipes?.find((r) => r.id === recipeId)
 		if (!recipe) return
 
-		const meal = formData.meals[mealIndex]
-		if (!meal) return
+		let addedRecipeId: string | null = null
 
-		const recipeIngredients: MealIngredient[] = (recipe.ingredients || []).map(
-			(ing: any) => {
-				const ingredientData = ing.ingredient
-				if (!ingredientData) {
-					return {
-						id: crypto.randomUUID(),
-						recipeToIngredientId: ing.id,
-						ingredientId: ing.ingredientId,
-						ingredientName: 'Unknown',
-						serveSize: Math.round(ing.amount * 10) / 10,
-						serveUnit: ing.unit,
-						calories: 0,
-						protein: 0,
-						fat: 0,
-						carbohydrate: 0,
-					}
-				}
+		setFormData((prev) => {
+			const meal = prev.meals[mealIndex]
+			if (!meal) return prev
 
-				const multiplier =
-					ingredientData.serveSize > 0
-						? ing.amount / ingredientData.serveSize
-						: 1
+			const targetIndex =
+				insertAt === undefined
+					? meal.recipes.length
+					: Math.max(0, Math.min(insertAt, meal.recipes.length))
 
-				return {
-					id: crypto.randomUUID(),
-					recipeToIngredientId: ing.id,
-					ingredientId: ing.ingredientId,
-					ingredientName: ingredientData.name,
-					serveSize: Math.round(ing.amount * 10) / 10,
-					serveUnit: ing.unit,
-					calories: ingredientData.calories * multiplier,
-					protein: ingredientData.protein * multiplier,
-					fat: ingredientData.fat * multiplier,
-					carbohydrate: ingredientData.carbohydrate * multiplier,
-				}
-			},
-		)
+			const newRecipe = buildMealRecipeFromSource(recipe, targetIndex)
+			addedRecipeId = newRecipe.id
 
-		const recipeCalories = recipeIngredients.reduce(
-			(sum, ing) => sum + ing.calories,
-			0,
-		)
-		const recipeProtein = recipeIngredients.reduce(
-			(sum, ing) => sum + ing.protein,
-			0,
-		)
-		const recipeFat = recipeIngredients.reduce((sum, ing) => sum + ing.fat, 0)
-		const recipeCarbs = recipeIngredients.reduce(
-			(sum, ing) => sum + ing.carbohydrate,
-			0,
-		)
+			const nextRecipes = [...meal.recipes]
+			nextRecipes.splice(targetIndex, 0, newRecipe)
 
-		const newRecipe: MealRecipe = {
-			id: crypto.randomUUID(),
-			recipeId: recipe.id,
-			recipeName: recipe.name,
-			recipeIndex: meal.recipes.length,
-			calories: recipeCalories,
-			protein: recipeProtein,
-			fat: recipeFat,
-			carbohydrate: recipeCarbs,
-			ingredients: recipeIngredients,
-		}
+			const reindexedRecipes = nextRecipes.map((item, index) => ({
+				...item,
+				recipeIndex: index,
+			}))
 
-		const newMeals = [...formData.meals]
-		newMeals[mealIndex] = {
-			...meal,
-			recipes: [...meal.recipes, newRecipe],
-		}
+			const newMeals = [...prev.meals]
+			newMeals[mealIndex] = {
+				...meal,
+				recipes: reindexedRecipes,
+			}
 
-		setFormData((prev) => ({ ...prev, meals: newMeals }))
-		setExpandedRecipes((prev) => new Set([...prev, newRecipe.id]))
+			return { ...prev, meals: newMeals }
+		})
+
+		// if (addedRecipeId) {
+		// 	setExpandedRecipes((prev) => new Set([...prev, addedRecipeId!]))
+		// }
 	}
 
 	const removeRecipeFromMeal = (mealIndex: number, recipeIndex: number) => {
@@ -690,91 +758,194 @@ export function UserMenuForm({
 		const activeId = active.id as string
 		const overId = over.id as string
 
-		// Don't do anything if dropped on itself
-		if (activeId === overId) return
+		const activeData = active.data.current as
+			| {
+					type?: string
+					mealIdx?: number
+					recipeIdx?: number
+					recipeId?: string
+			  }
+			| undefined
 
-		// Find which meal the active recipe belongs to
-		let sourceMealIdx = -1
-		let sourceRecipeIdx = -1
-		let sourceRecipe: MealRecipe | null = null
-
-		for (let i = 0; i < formData.meals.length; i++) {
-			const recipeIdx = formData.meals[i].recipes.findIndex(
-				(r) => r.id === activeId,
+		if (activeData?.type === 'library-recipe') {
+			const sourceRecipe = recipes?.find(
+				(recipe) => recipe.id === activeData.recipeId,
 			)
-			if (recipeIdx !== -1) {
-				sourceMealIdx = i
-				sourceRecipeIdx = recipeIdx
-				sourceRecipe = formData.meals[i].recipes[recipeIdx]
-				break
-			}
-		}
+			if (!sourceRecipe) return
 
-		if (sourceMealIdx === -1 || !sourceRecipe) return
+			let addedRecipeId: string | null = null
 
-		// Parse the over ID to determine the target
-		let targetMealIdx = -1
-		let targetRecipeIdx = -1
+			setFormData((prev) => {
+				let targetMealIdx = -1
+				let targetRecipeIdx = -1
 
-		if (overId.startsWith('meal-')) {
-			// Dropped on a meal container
-			targetMealIdx = Number.parseInt(overId.replace('meal-', ''), 10)
-			targetRecipeIdx = formData.meals[targetMealIdx]?.recipes.length || 0
-		} else if (overId.startsWith('recipe-')) {
-			// Dropped on a recipe
-			const targetRecipeId = overId.replace('recipe-', '')
-			for (let i = 0; i < formData.meals.length; i++) {
-				const recipeIdx = formData.meals[i].recipes.findIndex(
-					(r) => r.id === targetRecipeId,
-				)
-				if (recipeIdx !== -1) {
-					targetMealIdx = i
-					targetRecipeIdx = recipeIdx
-					break
+				const overData = over.data.current as
+					| { type?: string; mealIdx?: number }
+					| undefined
+
+				if (overData?.type === 'meal-drop' && overData.mealIdx !== undefined) {
+					targetMealIdx = overData.mealIdx
+					targetRecipeIdx = prev.meals[targetMealIdx]?.recipes.length ?? -1
+				} else {
+					for (let i = 0; i < prev.meals.length; i++) {
+						const recipeIdx = prev.meals[i].recipes.findIndex(
+							(recipe) => recipe.id === overId,
+						)
+						if (recipeIdx !== -1) {
+							targetMealIdx = i
+							targetRecipeIdx = recipeIdx
+							break
+						}
+					}
 				}
-			}
-		}
 
-		if (
-			targetMealIdx === undefined ||
-			targetRecipeIdx === undefined ||
-			isNaN(targetMealIdx) ||
-			isNaN(targetRecipeIdx)
-		) {
+				if (
+					targetMealIdx < 0 ||
+					targetRecipeIdx < 0 ||
+					targetMealIdx >= prev.meals.length
+				) {
+					return prev
+				}
+
+				const targetMeal = prev.meals[targetMealIdx]
+				if (!targetMeal) return prev
+
+				const newRecipe = buildMealRecipeFromSource(
+					sourceRecipe,
+					targetRecipeIdx,
+				)
+				addedRecipeId = newRecipe.id
+
+				const nextRecipes = [...targetMeal.recipes]
+				nextRecipes.splice(targetRecipeIdx, 0, newRecipe)
+
+				const reindexedRecipes = nextRecipes.map((item, index) => ({
+					...item,
+					recipeIndex: index,
+				}))
+
+				const nextMeals = [...prev.meals]
+				nextMeals[targetMealIdx] = {
+					...targetMeal,
+					recipes: reindexedRecipes,
+				}
+
+				return { ...prev, meals: nextMeals }
+			})
+
+			if (addedRecipeId) {
+				setExpandedRecipes((prev) => new Set([...prev, addedRecipeId!]))
+			}
 			return
 		}
 
-		const newMeals = [...formData.meals]
+		setFormData((prev) => {
+			// Resolve source recipe location.
+			let sourceMealIdx = -1
+			let sourceRecipeIdx = -1
 
-		if (sourceMealIdx === targetMealIdx) {
-			// Reordering within the same meal using arrayMove
-			newMeals[sourceMealIdx].recipes = arrayMove(
-				newMeals[sourceMealIdx].recipes,
-				sourceRecipeIdx,
-				targetRecipeIdx,
-			)
-		} else {
-			// Moving to different meal
-			// Remove from source
-			const [removed] = newMeals[sourceMealIdx].recipes.splice(
-				sourceRecipeIdx,
-				1,
-			)
-			// Insert at target position
-			newMeals[targetMealIdx].recipes.splice(targetRecipeIdx, 0, removed)
-		}
+			if (
+				activeData?.type === 'meal-recipe' &&
+				activeData.mealIdx !== undefined &&
+				activeData.recipeIdx !== undefined
+			) {
+				const possibleRecipe =
+					prev.meals[activeData.mealIdx]?.recipes[activeData.recipeIdx]
+				if (possibleRecipe?.id === activeId) {
+					sourceMealIdx = activeData.mealIdx
+					sourceRecipeIdx = activeData.recipeIdx
+				}
+			}
 
-		// Reindex recipes in affected meals
-		if (sourceMealIdx !== targetMealIdx) {
-			newMeals[sourceMealIdx].recipes = newMeals[sourceMealIdx].recipes.map(
-				(r, i) => ({ ...r, recipeIndex: i }),
-			)
-		}
-		newMeals[targetMealIdx].recipes = newMeals[targetMealIdx].recipes.map(
-			(r, i) => ({ ...r, recipeIndex: i }),
-		)
+			if (sourceMealIdx < 0 || sourceRecipeIdx < 0) {
+				for (let i = 0; i < prev.meals.length; i++) {
+					const recipeIdx = prev.meals[i].recipes.findIndex(
+						(recipe) => recipe.id === activeId,
+					)
+					if (recipeIdx !== -1) {
+						sourceMealIdx = i
+						sourceRecipeIdx = recipeIdx
+						break
+					}
+				}
+			}
 
-		setFormData((prev) => ({ ...prev, meals: newMeals }))
+			if (sourceMealIdx < 0 || sourceRecipeIdx < 0) return prev
+
+			// Resolve target location.
+			let targetMealIdx = -1
+			let targetRecipeIdx = -1
+
+			const overData = over.data.current as
+				| { type?: string; mealIdx?: number }
+				| undefined
+
+			if (overData?.type === 'meal-drop' && overData.mealIdx !== undefined) {
+				targetMealIdx = overData.mealIdx
+				targetRecipeIdx = prev.meals[targetMealIdx]?.recipes.length ?? -1
+			} else {
+				for (let i = 0; i < prev.meals.length; i++) {
+					const recipeIdx = prev.meals[i].recipes.findIndex(
+						(recipe) => recipe.id === overId,
+					)
+					if (recipeIdx !== -1) {
+						targetMealIdx = i
+						targetRecipeIdx = recipeIdx
+						break
+					}
+				}
+			}
+
+			if (
+				targetMealIdx < 0 ||
+				targetRecipeIdx < 0 ||
+				targetMealIdx >= prev.meals.length ||
+				sourceMealIdx >= prev.meals.length
+			) {
+				return prev
+			}
+
+			// Don't do anything if dropped on itself.
+			if (
+				sourceMealIdx === targetMealIdx &&
+				sourceRecipeIdx === targetRecipeIdx
+			) {
+				return prev
+			}
+
+			const newMeals = prev.meals.map((meal) => ({
+				...meal,
+				recipes: [...meal.recipes],
+			}))
+
+			if (sourceMealIdx === targetMealIdx) {
+				newMeals[sourceMealIdx].recipes = arrayMove(
+					newMeals[sourceMealIdx].recipes,
+					sourceRecipeIdx,
+					targetRecipeIdx,
+				)
+			} else {
+				const [movedRecipe] = newMeals[sourceMealIdx].recipes.splice(
+					sourceRecipeIdx,
+					1,
+				)
+				if (!movedRecipe) return prev
+
+				newMeals[targetMealIdx].recipes.splice(targetRecipeIdx, 0, movedRecipe)
+			}
+
+			const affectedMeals = new Set([sourceMealIdx, targetMealIdx])
+			for (const mealIdx of affectedMeals) {
+				newMeals[mealIdx].recipes = newMeals[mealIdx].recipes.map(
+					(recipe, recipeIndex) => ({
+						...recipe,
+						recipeIndex,
+					}),
+				)
+			}
+
+			return { ...prev, meals: newMeals }
+		})
 	}
 
 	const toggleRecipeExpanded = (recipeId: string) => {
@@ -1266,299 +1437,362 @@ export function UserMenuForm({
 	}
 
 	return (
-		<div className='flex flex-col gap-6 p-8'>
-			<h1 className='text-2xl font-bold'>
-				{isEditMode ? 'Edit User Menu' : 'Create User Menu'}
-			</h1>
-
-			{!isEditMode && !selectedTemplate ? (
-				<Card>
-					<CardHeader>
-						<CardTitle>Select Menu Template</CardTitle>
-						<CardDescription>
-							Choose a menu template to use as the base for this user&apos;s
-							menu.
-						</CardDescription>
-					</CardHeader>
-					<CardContent>
-						<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-							{/* Blank Template Option */}
-							<Card
-								className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
-								onClick={() =>
-									setFormData({
-										name: '',
-										description: null,
-										startDate: null,
-										endDate: null,
-										meals: [],
-									})
-								}
-							>
+		<SidebarProvider defaultOpen={false}>
+			<div className='w-full min-h-svh'>
+				<div className='flex flex-col gap-6 justify-center w-full'>
+					{!isEditMode && !selectedTemplate ? (
+						<div className='flex flex-col gap-6 justify-center p-8 w-full'>
+							<div className='flex justify-between items-center'>
+								<h1 className='text-2xl font-bold'>Create User Menu</h1>
+							</div>
+							<Card>
 								<CardHeader>
-									<CardTitle className='text-lg'>Blank Menu</CardTitle>
-									<CardDescription>Start from scratch</CardDescription>
+									<CardTitle>Select Menu Template</CardTitle>
+									<CardDescription>
+										Choose a menu template to use as the base for this
+										user&apos;s menu.
+									</CardDescription>
 								</CardHeader>
 								<CardContent>
-									<p className='text-sm text-muted-foreground line-clamp-2'>
-										Create a custom menu with no pre-defined structure.
-									</p>
-								</CardContent>
-							</Card>
-
-							{menuTemplates?.map((template) => (
-								<Card
-									key={template.id}
-									className='transition-colors cursor-pointer hover:bg-muted'
-									onClick={() => handleTemplateSelect(template)}
-								>
-									<CardHeader>
-										<CardTitle className='text-lg'>{template.name}</CardTitle>
-										<CardDescription>
-											{template.meals?.length || 0} meals,{' '}
-											{template.recipes?.length || 0} recipes
-										</CardDescription>
-									</CardHeader>
-									<CardContent>
-										<p className='text-sm text-muted-foreground line-clamp-2'>
-											{template.description || 'No description'}
-										</p>
-									</CardContent>
-								</Card>
-							))}
-							{!menuTemplates?.length && (
-								<p className='col-span-full text-muted-foreground'>
-									No menu templates available. Create one first.
-								</p>
-							)}
-						</div>
-					</CardContent>
-				</Card>
-			) : (
-				<form onSubmit={handleSubmit} className='flex flex-col gap-6'>
-					<Button
-						type='button'
-						variant='ghost'
-						onClick={() => {
-							setSelectedTemplate(null)
-							setFormData({
-								name: '',
-								description: null,
-								startDate: null,
-								endDate: null,
-								meals: [],
-							})
-						}}
-						className='w-fit'
-					>
-						← Back to templates
-					</Button>
-
-					<Card>
-						<CardHeader>
-							<CardTitle>Menu Details</CardTitle>
-							<CardDescription>
-								Configure the menu for the selected user
-							</CardDescription>
-						</CardHeader>
-						<CardContent className='space-y-6'>
-							<div className='space-y-4'>
-								<div className='space-y-2'>
-									<Label htmlFor='name'>Menu Name *</Label>
-									<Input
-										id='name'
-										value={formData.name}
-										onChange={(e) =>
-											setFormData((prev) => ({ ...prev, name: e.target.value }))
-										}
-										placeholder='e.g., Weight Loss Week 1'
-										required
-									/>
-								</div>
-
-								<div className='space-y-2'>
-									<Label htmlFor='description'>Description</Label>
-									<Textarea
-										id='description'
-										value={formData.description ?? ''}
-										onChange={(e) =>
-											setFormData((prev) => ({
-												...prev,
-												description: e.target.value || null,
-											}))
-										}
-										placeholder='Optional description for this menu...'
-										className='min-h-20'
-									/>
-								</div>
-
-								<div className='grid grid-cols-2 gap-4'>
-									<div className='space-y-2'>
-										<Label htmlFor='startDate'>Start Date</Label>
-										<Input
-											id='startDate'
-											type='date'
-											value={formData.startDate ?? ''}
-											onChange={(e) =>
-												setFormData((prev) => ({
-													...prev,
-													startDate: e.target.value || null,
-												}))
+									<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+										<Card
+											className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
+											onClick={() =>
+												setFormData({
+													name: '',
+													description: null,
+													startDate: null,
+													endDate: null,
+													meals: [],
+												})
 											}
-										/>
-									</div>
+										>
+											<CardHeader>
+												<CardTitle className='text-lg'>Blank Menu</CardTitle>
+												<CardDescription>Start from scratch</CardDescription>
+											</CardHeader>
+											<CardContent>
+												<p className='text-sm text-muted-foreground line-clamp-2'>
+													Create a custom menu with no pre-defined structure.
+												</p>
+											</CardContent>
+										</Card>
 
-									<div className='space-y-2'>
-										<Label htmlFor='endDate'>End Date</Label>
-										<Input
-											id='endDate'
-											type='date'
-											value={formData.endDate ?? ''}
-											onChange={(e) =>
-												setFormData((prev) => ({
-													...prev,
-													endDate: e.target.value || null,
-												}))
-											}
-										/>
-									</div>
-								</div>
-							</div>
-
-							<div className='pt-4 space-y-4 border-t'>
-								<div className='flex justify-between items-center'>
-									<div>
-										<h2 className='text-lg font-semibold'>Meals</h2>
-										<p className='text-sm text-muted-foreground'>
-											Add, remove, or customize meals and their contents
-										</p>
-									</div>
-									<Button type='button' variant='outline' onClick={addMeal}>
-										<PlusIcon className='mr-2 size-4' />
-										Add Meal
-									</Button>
-								</div>
-
-								<DndContext
-									sensors={sensors}
-									collisionDetection={closestCorners}
-									onDragStart={handleDragStart}
-									onDragEnd={handleDragEnd}
-									onDragOver={handleDragOver}
-								>
-									<div className='space-y-4'>
-										{formData.meals.length === 0 ? (
-											<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
-												No meals added yet. Click &quot;Add Meal&quot; to create
-												your first meal.
-											</div>
-										) : (
-											formData.meals.map((meal, mealIdx) => {
-												const totals = calculateMealTotals(meal)
-												const isExpanded = expandedMeals.has(mealIdx)
-												return (
-													<div key={meal.id} className='rounded-lg border'>
-														<MealHeader
-															meal={meal}
-															mealIdx={mealIdx}
-															totals={totals}
-															isExpanded={isExpanded}
-															isFirst={mealIdx === 0}
-															isLast={mealIdx === formData.meals.length - 1}
-															onToggle={() => toggleMealExpanded(mealIdx)}
-															onRemove={() => removeMeal(mealIdx)}
-															onDuplicate={() => duplicateMeal(mealIdx)}
-															onMoveUp={() => moveMeal(mealIdx, mealIdx - 1)}
-															onMoveDown={() => moveMeal(mealIdx, mealIdx + 1)}
-														/>
-
-														{isExpanded && (
-															<MealContent
-																meal={meal}
-																mealIdx={mealIdx}
-																recipeOptions={recipeOptions}
-																ingredientOptions={ingredientOptions}
-																expandedRecipes={expandedRecipes}
-																onUpdateName={updateMealName}
-																onUpdateTargets={updateMealTargets}
-																onAddRecipe={addRecipeToMeal}
-																onRemoveRecipe={removeRecipeFromMeal}
-																onToggleRecipe={toggleRecipeExpanded}
-																onUpdateIngredient={updateIngredientServeSize}
-																onAdjustIngredient={adjustIngredientServeSize}
-																onAddIngredient={addIngredientToRecipe}
-																onRemoveIngredient={removeIngredientFromRecipe}
-																onBalanceCalories={balanceCalories}
-																onBalanceRecipe={balanceRecipeNutrition}
-																onDuplicateRecipe={duplicateRecipe}
-															/>
-														)}
-													</div>
-												)
-											})
+										{menuTemplates?.map((template) => (
+											<Card
+												key={template.id}
+												className='transition-colors cursor-pointer hover:bg-muted'
+												onClick={() => handleTemplateSelect(template)}
+											>
+												<CardHeader>
+													<CardTitle className='text-lg'>
+														{template.name}
+													</CardTitle>
+													<CardDescription>
+														{template.meals?.length || 0} meals,{' '}
+														{template.recipes?.length || 0} recipes
+													</CardDescription>
+												</CardHeader>
+												<CardContent>
+													<p className='text-sm text-muted-foreground line-clamp-2'>
+														{template.description || 'No description'}
+													</p>
+												</CardContent>
+											</Card>
+										))}
+										{!menuTemplates?.length && (
+											<p className='col-span-full text-muted-foreground'>
+												No menu templates available. Create one first.
+											</p>
 										)}
 									</div>
-									<DragOverlay>
-										{activeId ? (
-											<RecipeCardOverlay
-												recipe={formData.meals
-													.flatMap((m) => m.recipes)
-													.find((r) => r.id === activeId)}
-											/>
-										) : null}
-									</DragOverlay>
-								</DndContext>
-							</div>
-						</CardContent>
-					</Card>
+								</CardContent>
+							</Card>
+						</div>
+					) : (
+						<DndContext
+							sensors={sensors}
+							collisionDetection={closestCorners}
+							onDragStart={handleDragStart}
+							onDragEnd={handleDragEnd}
+							onDragOver={handleDragOver}
+						>
+							<div className='flex gap-0 items-start w-full'>
+								<form
+									onSubmit={handleSubmit}
+									className='flex flex-col flex-1 gap-6 p-8 min-w-0'
+								>
+									<div className='flex justify-between items-center'>
+										<h1 className='text-2xl font-bold'>
+											{isEditMode ? 'Edit User Menu' : 'Create User Menu'}
+										</h1>
+										<SidebarTrigger size='default'>
+											<Button render={<div />} className='cursor-pointer'>
+												Recipes
+												<SidebarIcon />
+											</Button>
+										</SidebarTrigger>
+									</div>
+									<Button
+										type='button'
+										variant='ghost'
+										onClick={() => {
+											setSelectedTemplate(null)
+											setFormData({
+												name: '',
+												description: null,
+												startDate: null,
+												endDate: null,
+												meals: [],
+											})
+										}}
+										className='w-fit'
+									>
+										← Back to templates
+									</Button>
 
-					<div className='flex gap-4 justify-end pt-4'>
-						<Button
-							type='button'
-							variant='outline'
-							onClick={() => {
-								if (isEditMode) {
-									// Navigate back to menu list when editing
-									navigate({
-										to: '/$orgSlug/user-menus',
-										params: { orgSlug },
-										search: user ? { user } : {},
-									})
-								} else {
-									// Reset form when creating
-									setSelectedTemplate(null)
-									setFormData({
-										name: '',
-										description: null,
-										startDate: null,
-										endDate: null,
-										meals: [],
-									})
-								}
-							}}
-						>
-							Cancel
-						</Button>
-						<Button
-							type='submit'
-							disabled={
-								isEditMode
-									? batchUpdateMenuMutation.isPending
-									: batchCreateMenuMutation.isPending
-							}
-						>
-							{isEditMode
-								? batchUpdateMenuMutation.isPending
-									? 'Saving...'
-									: 'Save Changes'
-								: batchCreateMenuMutation.isPending
-									? 'Creating...'
-									: 'Create Menu'}
-						</Button>
-					</div>
-				</form>
-			)}
-		</div>
+									<Card>
+										<CardHeader>
+											<CardTitle>Menu Details</CardTitle>
+											<CardDescription>
+												Configure the menu for the selected user
+											</CardDescription>
+										</CardHeader>
+										<CardContent className='space-y-6'>
+											<div className='space-y-4'>
+												<div className='space-y-2'>
+													<Label htmlFor='name'>Menu Name *</Label>
+													<Input
+														id='name'
+														value={formData.name}
+														onChange={(e) =>
+															setFormData((prev) => ({
+																...prev,
+																name: e.target.value,
+															}))
+														}
+														placeholder='e.g., Weight Loss Week 1'
+														required
+													/>
+												</div>
+
+												<div className='space-y-2'>
+													<Label htmlFor='description'>Description</Label>
+													<Textarea
+														id='description'
+														value={formData.description ?? ''}
+														onChange={(e) =>
+															setFormData((prev) => ({
+																...prev,
+																description: e.target.value || null,
+															}))
+														}
+														placeholder='Optional description for this menu...'
+														className='min-h-20'
+													/>
+												</div>
+
+												<div className='grid grid-cols-2 gap-4'>
+													<div className='space-y-2'>
+														<Label htmlFor='startDate'>Start Date</Label>
+														<Input
+															id='startDate'
+															type='date'
+															value={formData.startDate ?? ''}
+															onChange={(e) =>
+																setFormData((prev) => ({
+																	...prev,
+																	startDate: e.target.value || null,
+																}))
+															}
+														/>
+													</div>
+
+													<div className='space-y-2'>
+														<Label htmlFor='endDate'>End Date</Label>
+														<Input
+															id='endDate'
+															type='date'
+															value={formData.endDate ?? ''}
+															onChange={(e) =>
+																setFormData((prev) => ({
+																	...prev,
+																	endDate: e.target.value || null,
+																}))
+															}
+														/>
+													</div>
+												</div>
+											</div>
+
+											<div className='pt-4 space-y-4 border-t'>
+												<div className='flex justify-between items-center'>
+													<div>
+														<h2 className='text-lg font-semibold'>Meals</h2>
+														<p className='text-sm text-muted-foreground'>
+															Add, remove, or customize meals and their contents
+														</p>
+													</div>
+													<Button
+														type='button'
+														variant='outline'
+														onClick={addMeal}
+													>
+														<PlusIcon className='mr-2 size-4' />
+														Add Meal
+													</Button>
+												</div>
+
+												<div className='space-y-4'>
+													{formData.meals.length === 0 ? (
+														<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
+															No meals added yet. Click &quot;Add Meal&quot; to
+															create your first meal.
+														</div>
+													) : (
+														formData.meals.map((meal, mealIdx) => {
+															const totals = calculateMealTotals(meal)
+															const isExpanded = expandedMeals.has(mealIdx)
+															return (
+																<div
+																	key={meal.id}
+																	className='rounded-lg border'
+																>
+																	<MealHeader
+																		meal={meal}
+																		mealIdx={mealIdx}
+																		totals={totals}
+																		isExpanded={isExpanded}
+																		isFirst={mealIdx === 0}
+																		isLast={
+																			mealIdx === formData.meals.length - 1
+																		}
+																		onToggle={() => toggleMealExpanded(mealIdx)}
+																		onRemove={() => removeMeal(mealIdx)}
+																		onDuplicate={() => duplicateMeal(mealIdx)}
+																		onMoveUp={() =>
+																			moveMeal(mealIdx, mealIdx - 1)
+																		}
+																		onMoveDown={() =>
+																			moveMeal(mealIdx, mealIdx + 1)
+																		}
+																	/>
+
+																	{isExpanded && (
+																		<MealContent
+																			meal={meal}
+																			mealIdx={mealIdx}
+																			recipeOptions={recipeOptions}
+																			ingredientOptions={ingredientOptions}
+																			expandedRecipes={expandedRecipes}
+																			onUpdateName={updateMealName}
+																			onUpdateTargets={updateMealTargets}
+																			onAddRecipe={addRecipeToMeal}
+																			onRemoveRecipe={removeRecipeFromMeal}
+																			onToggleRecipe={toggleRecipeExpanded}
+																			onUpdateIngredient={
+																				updateIngredientServeSize
+																			}
+																			onAdjustIngredient={
+																				adjustIngredientServeSize
+																			}
+																			onAddIngredient={addIngredientToRecipe}
+																			onRemoveIngredient={
+																				removeIngredientFromRecipe
+																			}
+																			onBalanceCalories={balanceCalories}
+																			onBalanceRecipe={balanceRecipeNutrition}
+																			onDuplicateRecipe={duplicateRecipe}
+																		/>
+																	)}
+																</div>
+															)
+														})
+													)}
+												</div>
+											</div>
+										</CardContent>
+									</Card>
+
+									<div className='flex gap-4 justify-end pt-4'>
+										<Button
+											type='button'
+											variant='outline'
+											onClick={() => {
+												if (isEditMode) {
+													navigate({
+														to: '/$orgSlug/user-menus',
+														params: { orgSlug },
+														search: user ? { user } : {},
+													})
+												} else {
+													setSelectedTemplate(null)
+													setFormData({
+														name: '',
+														description: null,
+														startDate: null,
+														endDate: null,
+														meals: [],
+													})
+												}
+											}}
+										>
+											Cancel
+										</Button>
+										<Button
+											type='submit'
+											disabled={
+												isEditMode
+													? batchUpdateMenuMutation.isPending
+													: batchCreateMenuMutation.isPending
+											}
+										>
+											{isEditMode
+												? batchUpdateMenuMutation.isPending
+													? 'Saving...'
+													: 'Save Changes'
+												: batchCreateMenuMutation.isPending
+													? 'Creating...'
+													: 'Create Menu'}
+										</Button>
+									</div>
+								</form>
+
+								<OrgRecipeSidebar
+									recipes={filteredRecipes}
+									searchValue={recipeSearch}
+									totalRecipes={recipes?.length || 0}
+									meals={formData.meals}
+									onSearchChange={setRecipeSearch}
+									onAddToMeal={(mealIndex, recipeId) => {
+										addRecipeToMeal(mealIndex, recipeId)
+									}}
+								/>
+							</div>
+
+							<DragOverlay>
+								{activeId ? (
+									<RecipeCardOverlay
+										recipe={formData.meals
+											.flatMap((m) => m.recipes)
+											.find((r) => r.id === activeId)}
+										sourceRecipe={
+											activeId.startsWith('library-recipe-')
+												? recipes?.find(
+														(recipe) =>
+															recipe.id ===
+															activeId.replace('library-recipe-', ''),
+													)
+												: undefined
+										}
+									/>
+								) : null}
+							</DragOverlay>
+						</DndContext>
+					)}
+				</div>
+			</div>
+		</SidebarProvider>
 	)
 }
 
@@ -1915,13 +2149,26 @@ interface RecipeDropZoneProps {
 }
 
 function RecipeDropZone({ mealIdx, recipes, children }: RecipeDropZoneProps) {
+	const { setNodeRef, isOver } = useDroppable({
+		id: `meal-drop-${mealIdx}`,
+		data: {
+			type: 'meal-drop',
+			mealIdx,
+		},
+	})
+
 	return (
 		<SortableContext
 			items={recipes.map((r) => r.id)}
 			strategy={verticalListSortingStrategy}
-			id={`meal-${mealIdx}`}
+			id={`meal-drop-${mealIdx}`}
 		>
-			<div className='space-y-3 transition-all duration-200 rounded-lg p-3 bg-muted/30 min-h-[60px]'>
+			<div
+				ref={setNodeRef}
+				className={`space-y-3 transition-all duration-200 rounded-lg p-3 min-h-[60px] ${
+					isOver ? 'bg-primary/10 ring-2 ring-primary/30' : 'bg-muted/30'
+				}`}
+			>
 				{children}
 			</div>
 		</SortableContext>
@@ -1962,7 +2209,7 @@ function DraggableRecipeCard({
 			recipeId: recipe.id,
 			mealIdx,
 			recipeIdx,
-			type: 'recipe',
+			type: 'meal-recipe',
 		},
 	})
 
@@ -1997,6 +2244,142 @@ function DraggableRecipeCard({
 				attributes={attributes}
 				listeners={listeners}
 			/>
+		</div>
+	)
+}
+
+interface OrgRecipeSidebarProps {
+	recipes: any[]
+	searchValue: string
+	totalRecipes: number
+	meals: Meal[]
+	onSearchChange: (value: string) => void
+	onAddToMeal: (mealIndex: number, recipeId: string) => void
+}
+
+function OrgRecipeSidebar({
+	recipes,
+	searchValue,
+	totalRecipes,
+	meals,
+	onSearchChange,
+	onAddToMeal,
+}: OrgRecipeSidebarProps) {
+	return (
+		<Sidebar
+			side='right'
+			collapsible='offcanvas'
+			variant='sidebar'
+			className='inset-y-auto border-l h-svh'
+		>
+			<SidebarHeader className='p-4 pb-3'>
+				<p className='text-sm font-semibold'>Org Recipes</p>
+				<p className='text-xs text-muted-foreground'>
+					{totalRecipes} total recipes. Drag into any meal.
+				</p>
+				<SidebarInput
+					value={searchValue}
+					onChange={(event) => onSearchChange(event.target.value)}
+					placeholder='Search recipes...'
+				/>
+			</SidebarHeader>
+			<SidebarContent>
+				<SidebarGroup className='p-3 pt-0'>
+					<div className='space-y-2'>
+						{recipes.length === 0 ? (
+							<p className='text-sm text-muted-foreground'>
+								No recipes match your search.
+							</p>
+						) : (
+							recipes.map((recipe) => (
+								<DraggableOrgRecipeCard
+									key={recipe.id}
+									recipe={recipe}
+									meals={meals}
+									onAddToMeal={onAddToMeal}
+								/>
+							))
+						)}
+					</div>
+				</SidebarGroup>
+			</SidebarContent>
+			<SidebarRail />
+		</Sidebar>
+	)
+}
+
+function DraggableOrgRecipeCard({
+	recipe,
+	meals,
+	onAddToMeal,
+}: {
+	recipe: any
+	meals: Meal[]
+	onAddToMeal: (mealIndex: number, recipeId: string) => void
+}) {
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: `library-recipe-${recipe.id}`,
+			data: {
+				type: 'library-recipe',
+				recipeId: recipe.id,
+			},
+		})
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+	}
+
+	const totals = getSourceRecipeTotals(recipe)
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={`rounded-md border bg-card p-2 space-y-2 transition-all ${
+				isDragging ? 'opacity-50 ring-2 ring-primary ring-offset-1' : ''
+			}`}
+		>
+			<div className='flex gap-2 items-start'>
+				<Button
+					type='button'
+					variant='ghost'
+					size='sm'
+					className='p-0 mt-0.5 w-8 h-8 cursor-grab active:cursor-grabbing'
+					title='Drag into a meal'
+					{...attributes}
+					{...listeners}
+				>
+					<DotsSixVerticalIcon className='size-4 text-muted-foreground' />
+				</Button>
+				<div className='flex-1 min-w-0'>
+					<p className='text-sm font-medium leading-tight truncate'>
+						{recipe.name}
+					</p>
+					<p className='text-xs text-muted-foreground'>
+						{Math.round(totals.calories)} cal • {Math.round(totals.protein)}p
+					</p>
+				</div>
+			</div>
+			<DropdownMenu>
+				<DropdownMenuTrigger render={<Button variant='outline' size='sm' />}>
+					Add To
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align='end' className='w-56'>
+					{meals.length === 0 ? (
+						<DropdownMenuItem disabled>Add a meal first</DropdownMenuItem>
+					) : (
+						meals.map((meal) => (
+							<DropdownMenuItem
+								key={meal.id}
+								onClick={() => onAddToMeal(meal.mealIndex, recipe.id)}
+							>
+								{meal.name}
+							</DropdownMenuItem>
+						))
+					)}
+				</DropdownMenuContent>
+			</DropdownMenu>
 		</div>
 	)
 }
@@ -2050,12 +2433,12 @@ function RecipeCard({
 						type='button'
 						variant='ghost'
 						size='sm'
-						className='p-0 w-6 h-6 cursor-grab active:cursor-grabbing'
+						className='p-0 w-8 h-8 cursor-grab active:cursor-grabbing'
 						title='Drag to reorder'
 						{...attributes}
 						{...listeners}
 					>
-						<DotsSixVerticalIcon className='size-3 text-muted-foreground' />
+						<DotsSixVerticalIcon className='size-4 text-muted-foreground' />
 					</Button>
 					<Button
 						type='button'
@@ -2223,18 +2606,63 @@ function RecipeCard({
 }
 
 // Recipe card overlay for drag preview
-function RecipeCardOverlay({ recipe }: { recipe?: MealRecipe }) {
-	if (!recipe) return null
+function RecipeCardOverlay({
+	recipe,
+	sourceRecipe,
+}: {
+	recipe?: MealRecipe
+	sourceRecipe?: any
+}) {
+	if (!recipe && !sourceRecipe) return null
+
+	const label = recipe?.recipeName || sourceRecipe?.name || 'Recipe'
+	const calories = recipe
+		? recipe.calories
+		: getSourceRecipeTotals(sourceRecipe).calories
 
 	return (
-		<div className='rounded-md border shadow-lg bg-card opacity-90 rotate-2'>
+		<div className='rounded-md border shadow-lg opacity-90 rotate-2 bg-card'>
 			<div className='flex gap-2 items-center p-2 rounded-t-md bg-muted'>
 				<CaretDownIcon className='size-4' />
-				<span className='flex-1'>{recipe.recipeName}</span>
+				<span className='flex-1'>{label}</span>
 				<span className='text-xs text-muted-foreground'>
-					{Math.round(recipe.calories)} cal
+					{Math.round(calories)} cal
 				</span>
 			</div>
 		</div>
 	)
+}
+
+function getSourceRecipeTotals(recipe: any) {
+	if (!recipe) {
+		return { calories: 0, protein: 0, fat: 0, carbohydrate: 0 }
+	}
+
+	const totals = (recipe.ingredients || []).reduce(
+		(
+			acc: {
+				calories: number
+				protein: number
+				fat: number
+				carbohydrate: number
+			},
+			ing: any,
+		) => {
+			const ingredient = ing.ingredient
+			if (!ingredient || !ingredient.serveSize || ingredient.serveSize <= 0) {
+				return acc
+			}
+
+			const ratio = ing.amount / ingredient.serveSize
+			return {
+				calories: acc.calories + ingredient.calories * ratio,
+				protein: acc.protein + ingredient.protein * ratio,
+				fat: acc.fat + ingredient.fat * ratio,
+				carbohydrate: acc.carbohydrate + ingredient.carbohydrate * ratio,
+			}
+		},
+		{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+	)
+
+	return totals
 }

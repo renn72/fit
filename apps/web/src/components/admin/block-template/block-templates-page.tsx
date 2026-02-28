@@ -112,7 +112,7 @@ const columns = [
 			<Checkbox
 				checked={
 					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
+					(table.getIsSomePageRowsSelected() && undefined)
 				}
 				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
 				aria-label='Select all'
@@ -284,7 +284,7 @@ function BlockTemplatesContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Block Templates</h1>
-				<Link to='/$orgSlug/block-templates/create' params={{ orgSlug }}>
+				<Link to='/$orgSlug/block-templates' params={{ orgSlug }}>
 					<Button>Create Block Template</Button>
 				</Link>
 			</div>
@@ -339,7 +339,7 @@ function BlockTemplatesGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 lg:grid-cols-2 gap-4'>
+			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
 				{data.map((blockTemplate) => {
 					const sortedWorkouts = [...blockTemplate.workouts].sort(
 						(a, b) => a.index - b.index,
@@ -399,7 +399,7 @@ function BlockTemplatesGridView({
 										<div className='text-sm font-medium text-muted-foreground'>
 											Schedule
 										</div>
-										<div className='space-y-2 max-h-80 overflow-y-auto'>
+										<div className='overflow-y-auto space-y-2 max-h-80'>
 											{sortedWorkouts.map((item, idx) => {
 												const dayNumber = idx + 1
 												const isRestDay = blockTemplate.restDayIndex === idx
@@ -407,16 +407,16 @@ function BlockTemplatesGridView({
 												return (
 													<div key={item.id}>
 														{isRestDay && (
-															<div className='flex items-center gap-2 p-2 bg-green-50 rounded-lg mb-2'>
-																<MoonIcon className='size-4 text-green-600' />
+															<div className='flex gap-2 items-center p-2 mb-2 bg-green-50 rounded-lg'>
+																<MoonIcon className='text-green-600 size-4' />
 																<span className='text-sm font-medium text-green-700'>
 																	REST DAY
 																</span>
 															</div>
 														)}
-														<div className='border rounded-lg p-3 space-y-2'>
-															<div className='flex items-center gap-2'>
-																<CalendarBlankIcon className='size-4 text-blue-500' />
+														<div className='p-3 space-y-2 rounded-lg border'>
+															<div className='flex gap-2 items-center'>
+																<CalendarBlankIcon className='text-blue-500 size-4' />
 																<span className='text-sm font-medium'>
 																	Day {dayNumber}: {item.workout.name}
 																</span>
@@ -425,7 +425,7 @@ function BlockTemplatesGridView({
 															{/* Warmup */}
 															{item.workout.warmupGroup && (
 																<div className='pl-6 space-y-1'>
-																	<div className='flex items-center gap-2 text-sm text-orange-600'>
+																	<div className='flex gap-2 items-center text-sm text-orange-600'>
 																		<FireIcon className='size-3' />
 																		<span className='font-medium'>
 																			Warmup: {item.workout.warmupGroup.name}
@@ -436,7 +436,7 @@ function BlockTemplatesGridView({
 																		.map((warmup) => (
 																			<div
 																				key={warmup.id}
-																				className='flex items-center gap-2 text-xs text-muted-foreground pl-5'
+																				className='flex gap-2 items-center pl-5 text-xs text-muted-foreground'
 																			>
 																				<PlayCircleIcon className='size-3' />
 																				<span>{warmup.name}</span>
@@ -444,7 +444,7 @@ function BlockTemplatesGridView({
 																		))}
 																	{item.workout.warmupGroup.warmups?.length >
 																		3 && (
-																		<div className='text-xs text-muted-foreground pl-5'>
+																		<div className='pl-5 text-xs text-muted-foreground'>
 																			+
 																			{item.workout.warmupGroup.warmups.length -
 																				3}{' '}
@@ -472,11 +472,11 @@ function BlockTemplatesGridView({
 																	.map((exItem, exIdx) => (
 																		<div
 																			key={`${exItem.id}-${exIdx}`}
-																			className='flex items-center gap-2 text-xs'
+																			className='flex gap-2 items-center text-xs'
 																		>
 																			{exItem.type === 'exercise' ? (
 																				<>
-																					<BarbellIcon className='size-3 text-blue-500' />
+																					<BarbellIcon className='text-blue-500 size-3' />
 																					<span className='flex-1 truncate'>
 																						{exItem.exercise.name}
 																					</span>
@@ -488,8 +488,8 @@ function BlockTemplatesGridView({
 																				</>
 																			) : (
 																				<>
-																					<TargetIcon className='size-3 text-purple-500' />
-																					<span className='flex-1 truncate font-medium'>
+																					<TargetIcon className='text-purple-500 size-3' />
+																					<span className='flex-1 font-medium truncate'>
 																						{exItem.superSet.name}
 																					</span>
 																					<span className='text-xs text-muted-foreground'>
@@ -505,7 +505,7 @@ function BlockTemplatesGridView({
 																{item.workout.exercises?.length +
 																	item.workout.superSets?.length >
 																	5 && (
-																	<div className='text-xs text-muted-foreground pl-5'>
+																	<div className='pl-5 text-xs text-muted-foreground'>
 																		+
 																		{item.workout.exercises?.length +
 																			item.workout.superSets?.length -
@@ -528,12 +528,12 @@ function BlockTemplatesGridView({
 			</div>
 
 			{totalPages > 1 && (
-				<div className='flex items-center justify-between px-2'>
+				<div className='flex justify-between items-center px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
 						{Math.min(page * perPage, total)} of {total} block templates
 					</div>
-					<div className='flex items-center gap-2'>
+					<div className='flex gap-2 items-center'>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>

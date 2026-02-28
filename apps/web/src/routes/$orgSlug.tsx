@@ -1,5 +1,6 @@
 import { AppSidebar } from '@/components/admin-sidebar/app-sidebar'
 import { SidebarHeader } from '@/components/admin-sidebar/sidebar-header'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
 
 import {
@@ -54,14 +55,16 @@ function LayoutRouteComponent() {
 	return (
 		<div className='[--header-height:calc(--spacing(14))]'>
 			<SidebarProvider className='flex flex-col'>
-				<SidebarHeader session={session} />
 				<div className='flex flex-1'>
 					<AppSidebar
 						selectedUserId={selectedUserId}
 						onUserSelect={handleUserSelect}
 					/>
 					<SidebarInset>
-						<Outlet />
+						<SidebarHeader session={session} />
+						<ScrollArea className='h-[calc(100svh-var(--header-height)-1px)]!'>
+							<Outlet />
+						</ScrollArea>
 					</SidebarInset>
 				</div>
 			</SidebarProvider>

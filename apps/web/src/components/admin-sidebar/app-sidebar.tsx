@@ -126,10 +126,7 @@ export function AppSidebar({
 	const { data: usersData } = useQuery(orpc.user.getAllByOrg.queryOptions())
 	const users = usersData ?? []
 	return (
-		<Sidebar
-			className='top-(--header-height) h-[calc(100svh-var(--header-height))]!'
-			{...props}
-		>
+		<Sidebar className='h-100svh' {...props}>
 			<SidebarContent>
 				<SidebarMenu>
 					<NavUserSelect

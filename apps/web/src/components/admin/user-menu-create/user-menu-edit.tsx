@@ -1,6 +1,6 @@
 'use client'
 
-import { getRouteApi, useRouterState } from '@tanstack/react-router'
+import { getRouteApi } from '@tanstack/react-router'
 
 import { UserMenuForm } from './user-menu-form'
 
@@ -10,7 +10,6 @@ const editRoute = getRouteApi('/$orgSlug/user-menu-edit/$menuId')
 
 export function UserMenuEditPage() {
 	// Get the current route path to determine mode
-	const pathname = useRouterState({ select: (s) => s.location.pathname })
 
 	// Get context and params from appropriate route
 	const context = editRoute?.useRouteContext()

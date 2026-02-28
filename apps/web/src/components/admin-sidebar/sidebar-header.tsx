@@ -29,7 +29,7 @@ export function SidebarHeader({ session }: { session: any }) {
 		.replaceAll('-', ' ')
 
 	return (
-		<header className='flex sticky top-0 z-50 items-center w-full border-b bg-background'>
+		<header className='flex top-0 z-50 items-center w-full border-b bg-background'>
 			<div className='flex gap-2 justify-between items-center px-4 w-full h-(--header-height)'>
 				<div className='flex gap-2 items-center'>
 					<Button

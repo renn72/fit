@@ -25,7 +25,6 @@ const route = getRouteApi('/$orgSlug')
 
 export function NavUser({
 	items,
-	...props
 }: {
 	items: {
 		title: string
