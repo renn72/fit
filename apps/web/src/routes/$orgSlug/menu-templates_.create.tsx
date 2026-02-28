@@ -29,8 +29,6 @@ export const Route = createFileRoute('/$orgSlug/menu-templates_/create')({
 })
 
 function CreateMenuTemplatePage() {
-	const navigate = useNavigate()
-	const { orgSlug } = Route.useParams()
 	const { session } = Route.useRouteContext()
 	const userOrgId = session?.user?.organisationId
 
@@ -38,31 +36,5 @@ function CreateMenuTemplatePage() {
 		return <div>Missing organization</div>
 	}
 
-	return (
-		<div className='flex flex-col gap-4 p-4 mx-auto w-full max-w-4xl'>
-			<div className='flex gap-4 items-center'>
-				<Button
-					onClick={() =>
-						navigate({ to: '/$orgSlug/menu-templates', params: { orgSlug } })
-					}
-					variant='ghost'
-					className='text-sm text-muted-foreground hover:text-foreground'
-				>
-					← Back to Menu Templates
-				</Button>
-			</div>
-
-			<div className='space-y-2'>
-				<h1 className='text-2xl font-bold tracking-tight'>
-					Create Menu Template
-				</h1>
-				<p className='text-muted-foreground'>
-					Create a new menu template by adding meals and selecting recipes for
-					each meal.
-				</p>
-			</div>
-
-			<MenuTemplateCreateForm organisationId={userOrgId} />
-		</div>
-	)
+	return <MenuTemplateCreateForm organisationId={userOrgId} />
 }

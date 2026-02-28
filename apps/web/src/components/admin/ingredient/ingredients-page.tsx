@@ -8,7 +8,6 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -295,7 +294,7 @@ function IngredientsGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 				{data.map((ingredient) => (
 					<Card key={ingredient.id} className='flex flex-col'>
 						<CardHeader className='pb-3'>
@@ -303,8 +302,8 @@ function IngredientsGridView({
 						</CardHeader>
 						<CardContent className='flex-1'>
 							<div className='space-y-3'>
-								<div className='flex items-center gap-2'>
-									<FireIcon className='size-4 text-orange-500' />
+								<div className='flex gap-2 items-center'>
+									<FireIcon className='text-orange-500 size-4' />
 									<span className='text-sm font-medium'>
 										{ingredient.calories.toFixed(1)} kcal
 									</span>
@@ -313,19 +312,19 @@ function IngredientsGridView({
 									</span>
 								</div>
 								<div className='grid grid-cols-3 gap-2 text-sm'>
-									<div className='text-center p-2 bg-muted rounded'>
+									<div className='p-2 text-center rounded bg-muted'>
 										<div className='font-medium'>
 											{ingredient.protein.toFixed(1)}g
 										</div>
 										<div className='text-xs text-muted-foreground'>Protein</div>
 									</div>
-									<div className='text-center p-2 bg-muted rounded'>
+									<div className='p-2 text-center rounded bg-muted'>
 										<div className='font-medium'>
 											{ingredient.fat.toFixed(1)}g
 										</div>
 										<div className='text-xs text-muted-foreground'>Fat</div>
 									</div>
-									<div className='text-center p-2 bg-muted rounded'>
+									<div className='p-2 text-center rounded bg-muted'>
 										<div className='font-medium'>
 											{ingredient.carbohydrate.toFixed(1)}g
 										</div>
@@ -339,12 +338,12 @@ function IngredientsGridView({
 			</div>
 
 			{totalPages > 1 && (
-				<div className='flex items-center justify-between px-2'>
+				<div className='flex justify-between items-center px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
 						{Math.min(page * perPage, total)} of {total} ingredients
 					</div>
-					<div className='flex items-center gap-2'>
+					<div className='flex gap-2 items-center'>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>

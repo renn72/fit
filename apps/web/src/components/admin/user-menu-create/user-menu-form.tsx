@@ -77,7 +77,6 @@ import {
 	SidebarIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
-import _ from 'lodash'
 import { toast } from 'sonner'
 
 interface MealIngredient {
