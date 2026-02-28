@@ -22,14 +22,175 @@ import {
 	UserMenuCreateInput,
 	UserMenuDeleteInput,
 	UserMenuGetByUserInput,
-	UserMenuGetTemplatesOrgInput,
 	UserMenuGetInput,
+	UserMenuGetTemplatesOrgInput,
 	UserMenuTemplateCreateInput,
 	UserMenuUpdateInput,
 	UserRecipeCreateInput,
 	UserRecipeDeleteInput,
 	UserRecipeUpdateInput,
 } from '../schemas/user-menu'
+
+export async function generateRandomUserMenuTemplatesForOrg({
+	organisationId,
+	total = 10,
+}: {
+	organisationId: string
+	total?: number
+}) {
+	const orgUsers = await db.query.user.findMany({
+		where: { organisationId },
+		columns: { id: true },
+	})
+
+	if (orgUsers.length === 0) {
+		throw new ORPCError('BAD_REQUEST', {
+			message: 'No users found in this organisation',
+		})
+	}
+
+	const orgRecipes = await db.query.recipe.findMany({
+		where: { organisationId },
+		with: {
+			ingredients: {
+				with: {
+					ingredient: true,
+				},
+			},
+		},
+	})
+
+	if (orgRecipes.length < 3) {
+		throw new ORPCError('BAD_REQUEST', {
+			message:
+				'Not enough recipes to create user menu templates. Please create at least 3 recipes first.',
+		})
+	}
+
+	const templateNames = [
+		'Lean Cut Builder',
+		'Strength Fuel Plan',
+		'Balanced Athlete Menu',
+		'High Protein Week',
+		'Performance Meal Cycle',
+		'Body Recomp Stack',
+		'Metabolic Reset Menu',
+		'Training Day Nutrition',
+		'Recovery Focus Menu',
+		'Daily Fuel Blueprint',
+	]
+	const mealNames = [
+		'Breakfast',
+		'Lunch',
+		'Dinner',
+		'Snack',
+		'Pre-Workout',
+		'Post-Workout',
+	]
+
+	await db.transaction(async (tx) => {
+		for (let templateIndex = 0; templateIndex < total; templateIndex++) {
+			const owner = orgUsers[Math.floor(Math.random() * orgUsers.length)]!
+			const mealsPerTemplate = Math.floor(Math.random() * 3) + 3 // 3-5 meals
+
+			const [createdTemplate] = await tx
+				.insert(userMenu)
+				.values({
+					userId: owner.id,
+					name:
+						templateNames[templateIndex] ||
+						`Generated User Menu Template ${templateIndex + 1}`,
+					description: `Auto-generated template with ${mealsPerTemplate} meals`,
+					isTemplate: true,
+					isActive: false,
+				})
+				.returning()
+
+			if (!createdTemplate) {
+				throw new ORPCError('INTERNAL_SERVER_ERROR', {
+					message: 'Failed to create user menu template',
+				})
+			}
+
+			for (let mealIndex = 0; mealIndex < mealsPerTemplate; mealIndex++) {
+				const recipesInMeal = Math.floor(Math.random() * 2) + 1 // 1-2 recipes
+				const selectedRecipes = [...orgRecipes]
+					.sort(() => Math.random() - 0.5)
+					.slice(0, Math.min(recipesInMeal, orgRecipes.length))
+
+				let mealCalories = 0
+				let mealProtein = 0
+				let mealFat = 0
+				let mealCarbohydrate = 0
+
+				for (
+					let recipeIndex = 0;
+					recipeIndex < selectedRecipes.length;
+					recipeIndex++
+				) {
+					const sourceRecipe = selectedRecipes[recipeIndex]!
+
+					await tx.insert(userRecipe).values({
+						userMenuId: createdTemplate.id,
+						mealIndex,
+						recipeIndex,
+						name: sourceRecipe.name,
+						description: sourceRecipe.description,
+						category: sourceRecipe.category,
+						image: sourceRecipe.image,
+					})
+
+					let recipeCalories = 0
+					let recipeProtein = 0
+					let recipeFat = 0
+					let recipeCarbohydrate = 0
+
+					if (sourceRecipe.ingredients.length > 0) {
+						await tx.insert(userIngredient).values(
+							sourceRecipe.ingredients.map((ingredientLink) => {
+								const baseIngredient = ingredientLink.ingredient
+								if (baseIngredient?.serveSize && baseIngredient.serveSize > 0) {
+									const ratio = ingredientLink.amount / baseIngredient.serveSize
+									recipeCalories += baseIngredient.calories * ratio
+									recipeProtein += baseIngredient.protein * ratio
+									recipeFat += baseIngredient.fat * ratio
+									recipeCarbohydrate += baseIngredient.carbohydrate * ratio
+								}
+
+								return {
+									userMenuId: createdTemplate.id,
+									mealIndex,
+									recipeIndex,
+									ingredientId: ingredientLink.ingredientId,
+									serveSize: ingredientLink.amount,
+									serveUnit: ingredientLink.unit,
+								}
+							}),
+						)
+					}
+
+					mealCalories += recipeCalories
+					mealProtein += recipeProtein
+					mealFat += recipeFat
+					mealCarbohydrate += recipeCarbohydrate
+				}
+
+				const recipeCount = selectedRecipes.length || 1
+				await tx.insert(userMeal).values({
+					userMenuId: createdTemplate.id,
+					mealIndex,
+					name: mealNames[mealIndex] || `Meal ${mealIndex + 1}`,
+					calories: mealCalories / recipeCount,
+					protein: mealProtein / recipeCount,
+					fat: mealFat / recipeCount,
+					carbohydrate: mealCarbohydrate / recipeCount,
+				})
+			}
+		}
+	})
+
+	return { count: total }
+}
 
 export const userMenuRouter = {
 	// ***************** User Menu *******************
@@ -140,7 +301,9 @@ export const userMenuRouter = {
 				orderBy: (menu, operators) => [operators.desc(menu.createdAt)],
 			})
 
-			return templates.filter((template) => orgUserIds.includes(template.userId))
+			return templates.filter((template) =>
+				orgUserIds.includes(template.userId),
+			)
 		}),
 
 	get: protectedProcedure
@@ -268,17 +431,21 @@ export const userMenuRouter = {
 
 			const sourceRecipes =
 				uniqueRecipeIds.length > 0
-					? await db.query.recipe.findMany({
-							where: { organisationId: context.session.user.organisationId },
-							with: {
-								ingredients: true,
-							},
-						}).then((recipes) =>
-							recipes.filter((recipe) => uniqueRecipeIds.includes(recipe.id)),
-						)
+					? await db.query.recipe
+							.findMany({
+								where: { organisationId: context.session.user.organisationId },
+								with: {
+									ingredients: true,
+								},
+							})
+							.then((recipes) =>
+								recipes.filter((recipe) => uniqueRecipeIds.includes(recipe.id)),
+							)
 					: []
 
-			const sourceRecipeMap = new Map(sourceRecipes.map((recipe) => [recipe.id, recipe]))
+			const sourceRecipeMap = new Map(
+				sourceRecipes.map((recipe) => [recipe.id, recipe]),
+			)
 
 			const result = await db.transaction(async (tx) => {
 				const [newTemplate] = await tx

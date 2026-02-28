@@ -71,20 +71,23 @@ export function MealContent({
 }: MealContentProps) {
 	return (
 		<div className='p-4 space-y-4 border-t'>
-			<div className='grid grid-cols-7 gap-2'>
+			<div className='grid grid-cols-7 gap-2 p-4 rounded-lg border bg-primary/3'>
 				<div className='col-span-3'>
-					<Label>Meal Name</Label>
+					<Label className='mb-2'>Meal Name</Label>
 					<Input
 						value={meal.name}
 						onChange={(e) => onUpdateName(mealIdx, e.target.value)}
 						placeholder={`Meal ${mealIdx + 1}`}
+						className='h-9'
 					/>
 				</div>
 
 				<div>
-					<Label>Target Calories</Label>
+					<Label className='mb-2'>Target Calories</Label>
 					<Input
 						type='number'
+						step='0.1'
+						className='h-9'
 						value={meal.targetCalories ?? ''}
 						onChange={(e) =>
 							onUpdateTargets(
@@ -97,9 +100,11 @@ export function MealContent({
 					/>
 				</div>
 				<div>
-					<Label>Target Protein (g)</Label>
+					<Label className='mb-2'>Target Protein (g)</Label>
 					<Input
 						type='number'
+						step='0.1'
+						className='h-9'
 						value={meal.targetProtein ?? ''}
 						onChange={(e) =>
 							onUpdateTargets(
@@ -114,6 +119,7 @@ export function MealContent({
 				<div className='flex items-end'>
 					<Button
 						type='button'
+						size='lg'
 						onClick={() => onBalanceCalories(mealIdx)}
 						className='w-full'
 					>
@@ -126,6 +132,7 @@ export function MealContent({
 						variant='secondary'
 						onClick={() => onBalanceRecipe(mealIdx)}
 						className='w-full'
+						size='lg'
 						disabled={!meal.targetCalories || !meal.targetProtein}
 						title={
 							!meal.targetCalories || !meal.targetProtein
@@ -152,7 +159,7 @@ export function MealContent({
 				/>
 			</div>
 
-			<div className='p-4 space-y-3 rounded-lg border-2 border-primary/30 bg-primary/5'>
+			<div className='p-4 space-y-3 rounded-lg border-2 border-primary/30 bg-primary/3'>
 				<div className='flex justify-between items-center pb-2 border-b border-primary/20'>
 					<div className='flex gap-2 items-center'>
 						<div className='p-1.5 rounded-md bg-primary/10'>

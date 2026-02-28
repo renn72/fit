@@ -319,7 +319,7 @@ function RecipeCard({
 													size='sm'
 													className='p-0 w-5 h-7'
 													onClick={() =>
-														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, -5)
+														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, -1)
 													}
 												>
 													-
@@ -335,7 +335,7 @@ function RecipeCard({
 															Number.parseFloat(e.target.value) || 0,
 														)
 													}
-													className='w-16 h-7 text-right'
+													className='w-16 h-7 text-center'
 												/>
 												<Button
 													type='button'
@@ -343,25 +343,25 @@ function RecipeCard({
 													size='sm'
 													className='p-0 w-5 h-7'
 													onClick={() =>
-														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, 5)
+														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, 1)
 													}
 												>
 													+
 												</Button>
 											</td>
-											<td className='py-1 text-right'>
+											<td className='py-1 w-24 text-right'>
 												{ingredient.serveUnit}
 											</td>
-											<td className='py-1 text-right text-muted-foreground'>
+											<td className='py-1 text-right text-muted-foreground w-18'>
 												{Math.round(ingredient.calories)}
 											</td>
-											<td className='py-1 text-right text-muted-foreground'>
+											<td className='py-1 text-right text-muted-foreground w-18'>
 												{Math.round(ingredient.protein)}g
 											</td>
-											<td className='py-1 text-right text-muted-foreground'>
+											<td className='py-1 text-right text-muted-foreground w-18'>
 												{Math.round(ingredient.fat)}g
 											</td>
-											<td className='py-1 text-right text-muted-foreground'>
+											<td className='py-1 text-right text-muted-foreground w-18'>
 												{Math.round(ingredient.carbohydrate)}g
 											</td>
 											<td className='py-1 text-right'>

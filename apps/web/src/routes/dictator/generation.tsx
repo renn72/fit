@@ -116,12 +116,12 @@ function RouteComponent() {
 		}),
 	)
 
-	const generateMenuTemplates = useMutation(
-		orpc.adminSetup.generateMenuTemplates.mutationOptions({
+	const generateUserMenuTemplates = useMutation(
+		orpc.adminSetup.generateUserMenuTemplates.mutationOptions({
 			onMutate: () => setIsGeneratingMenuTemplates(true),
 			onSettled: () => setIsGeneratingMenuTemplates(false),
 			onSuccess: () =>
-				toast.success('10 menu templates generated successfully'),
+				toast.success('10 user menu templates generated successfully'),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -408,52 +408,6 @@ function RouteComponent() {
 			</div>
 
 			<div className='pt-6 w-full max-w-md border-t'>
-				<h2 className='mb-4 text-xl font-semibold'>Generate Menu Templates</h2>
-				<p className='mb-4 text-sm text-muted-foreground'>
-					Select an organization to generate 10 menu templates with 3-5 meals
-					each and 1-2 recipes per meal.
-				</p>
-
-				<div className='flex flex-col gap-4'>
-					<div className='flex flex-col gap-2'>
-						<label
-							htmlFor='org-select-menu-templates'
-							className='text-sm font-medium'
-						>
-							Select Organization
-						</label>
-						<select
-							id='org-select-menu-templates'
-							value={selectedOrgId}
-							onChange={(e) => setSelectedOrgId(e.target.value)}
-							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
-						>
-							<option value=''>Select an organization...</option>
-							{organisations?.map((org) => (
-								<option key={org.id} value={org.id}>
-									{org.name}
-								</option>
-							))}
-						</select>
-					</div>
-
-					<LoadingButton
-						variant='default'
-						loading={isGeneratingMenuTemplates}
-						disabled={!selectedOrgId}
-						className='w-full cursor-pointer'
-						onMouseDown={() => {
-							if (selectedOrgId) {
-								generateMenuTemplates.mutate({ organisationId: selectedOrgId })
-							}
-						}}
-					>
-						Generate 10 Menu Templates
-					</LoadingButton>
-				</div>
-			</div>
-
-			<div className='pt-6 w-full max-w-md border-t'>
 				<h2 className='mb-4 text-xl font-semibold'>Generate Users</h2>
 				<p className='mb-4 text-sm text-muted-foreground'>
 					Select an organization to generate 5 random users and add them to the
@@ -492,6 +446,56 @@ function RouteComponent() {
 						}}
 					>
 						Generate 5 Users
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>
+					Generate User Menu Templates
+				</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate 10 random user menu templates with
+					3-5 meals and recipe copies.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-user-menu-templates'
+							className='text-sm font-medium'
+						>
+							Select Organization
+						</label>
+						<select
+							id='org-select-user-menu-templates'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingMenuTemplates}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onMouseDown={() => {
+							if (selectedOrgId) {
+								generateUserMenuTemplates.mutate({
+									organisationId: selectedOrgId,
+								})
+							}
+						}}
+					>
+						Generate 10 User Menu Templates
 					</LoadingButton>
 				</div>
 			</div>

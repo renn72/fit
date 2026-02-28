@@ -6,16 +6,13 @@ import {
 } from '@fit/db/schema/block-template'
 import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
-import {
-	menuTemplate,
-	menuTemplateMeal,
-	menuTemplateToRecipe,
-} from '@fit/db/schema/menu-template'
 import { movement } from '@fit/db/schema/movement'
 import { organisation, plan, subscription } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
 import { warmup, warmupGroup } from '@fit/db/schema/warmup'
 import { workout, workoutToExercise } from '@fit/db/schema/workout'
+
+import { generateRandomUserMenuTemplatesForOrg } from './user-menu'
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
@@ -955,11 +952,12 @@ export const adminSetupRouter = {
 			return { message: '10 block templates generated successfully' }
 		}),
 
-	generateMenuTemplates: protectedProcedure
+	generateUserMenuTemplates: protectedProcedure
 		.route({
 			method: 'POST',
-			path: '/admin-setup/generate-menu-templates',
-			summary: 'Generate random menu templates for an org (Dictator only)',
+			path: '/admin-setup/generate-user-menu-templates',
+			summary:
+				'Generate random user menu templates in user_menu storage for an org (Dictator only)',
 			tags: ['Admin Setup'],
 		})
 		.input(
@@ -971,135 +969,16 @@ export const adminSetupRouter = {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to generate menu templates',
+					message: 'You do not have permission to generate user menu templates',
 				})
 			}
 
-			const orgUser = await db.query.user.findFirst({
-				where: { organisationId: input.organisationId },
+			const { count } = await generateRandomUserMenuTemplatesForOrg({
+				organisationId: input.organisationId,
+				total: 10,
 			})
 
-			if (!orgUser) {
-				throw new ORPCError('BAD_REQUEST', {
-					message: 'No users found in this organisation',
-				})
-			}
-
-			const orgRecipes = await db.query.recipe.findMany({
-				where: { organisationId: input.organisationId },
-			})
-
-			if (orgRecipes.length < 6) {
-				throw new ORPCError('BAD_REQUEST', {
-					message:
-						'Not enough recipes to create menu templates. Please create at least 6 recipes first.',
-				})
-			}
-
-			const menuTemplateNames = [
-				'Muscle Building Menu',
-				'Fat Loss Meal Plan',
-				'Maintenance Menu',
-				'Athletic Performance Plan',
-				'Vegetarian Menu',
-				'High Protein Plan',
-				'Clean Eating Menu',
-				'Keto Meal Plan',
-				'Mediterranean Menu',
-				'Balanced Nutrition Plan',
-			]
-
-			const categories = [
-				'Muscle Building',
-				'Fat Loss',
-				'Maintenance',
-				'Performance',
-				'Vegetarian',
-				'High Protein',
-			]
-
-			const mealNames = [
-				'Breakfast',
-				'Mid-Morning Snack',
-				'Lunch',
-				'Afternoon Snack',
-				'Dinner',
-				'Pre-Workout Meal',
-				'Post-Workout Meal',
-				'Evening Snack',
-			]
-
-			await db.transaction(async (tx) => {
-				for (let i = 0; i < 10; i++) {
-					// Generate 3-5 meals for this menu template
-					const mealCount = Math.floor(Math.random() * 3) + 3 // 3-5 meals
-					const shuffled = [...orgRecipes].sort(() => Math.random() - 0.5)
-					const selectedRecipes = shuffled.slice(0, mealCount * 2) // 2 recipes per meal on average
-
-					const category =
-						categories[Math.floor(Math.random() * categories.length)]
-
-					const [newMenuTemplate] = await tx
-						.insert(menuTemplate)
-						.values({
-							name: menuTemplateNames[i] || `Menu Template ${i + 1}`,
-							description: `A ${category!.toLowerCase()} focused meal plan with ${mealCount} meals per day`,
-							category: category,
-							creatorId: orgUser.id,
-							organisationId: input.organisationId,
-						})
-						.returning()
-
-					if (!newMenuTemplate) {
-						throw new ORPCError('INTERNAL_SERVER_ERROR', {
-							message: 'Failed to create menu template',
-						})
-					}
-
-					// Create meals with names
-					const shuffledMealNames = [...mealNames].sort(
-						() => Math.random() - 0.5,
-					)
-					const selectedMealNames = shuffledMealNames.slice(0, mealCount)
-
-					await tx.insert(menuTemplateMeal).values(
-						selectedMealNames.map((name, index) => ({
-							menuTemplateId: newMenuTemplate.id,
-							mealIndex: index,
-							name: name,
-						})),
-					)
-
-					// Add recipes to menu template with mealIndex and recipeIndex
-					const menuTemplateRecipes: {
-						menuTemplateId: string
-						recipeId: string
-						mealIndex: number
-						recipeIndex: number
-					}[] = []
-
-					let recipeIdx = 0
-					for (let mealIdx = 0; mealIdx < mealCount; mealIdx++) {
-						// 1-2 recipes per meal
-						const recipesInMeal = Math.floor(Math.random() * 2) + 1
-						for (let r = 0; r < recipesInMeal; r++) {
-							if (recipeIdx < selectedRecipes.length) {
-								menuTemplateRecipes.push({
-									menuTemplateId: newMenuTemplate.id,
-									recipeId: selectedRecipes[recipeIdx]!.id,
-									mealIndex: mealIdx,
-									recipeIndex: r,
-								})
-								recipeIdx++
-							}
-						}
-					}
-
-					await tx.insert(menuTemplateToRecipe).values(menuTemplateRecipes)
-				}
-			})
-
-			return { message: '10 menu templates generated successfully' }
+			return { message: `${count} user menu templates generated successfully` }
 		}),
 
 	generateUsers: protectedProcedure

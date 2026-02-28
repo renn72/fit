@@ -58,6 +58,19 @@ import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { PlusIcon, SidebarIcon } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 
+function getDateInputValue(date: Date): string {
+	const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+	return localDate.toISOString().split('T')[0]!
+}
+
+function getTodayDateString(): string {
+	return getDateInputValue(new Date())
+}
+
+function roundToOneDecimal(value: number): number {
+	return Math.round(value * 10) / 10
+}
+
 export function UserMenuForm({
 	userOrgId,
 	menuId,
@@ -95,7 +108,7 @@ export function UserMenuForm({
 	const [formData, setFormData] = React.useState<MenuFormData>({
 		name: '',
 		description: null,
-		startDate: null,
+		startDate: getTodayDateString(),
 		endDate: null,
 		meals: [],
 	})
@@ -115,8 +128,10 @@ export function UserMenuForm({
 				id: crypto.randomUUID(),
 				mealIndex: meal.mealIndex,
 				name: meal.name || `Meal ${meal.mealIndex + 1}`,
-				targetCalories: meal.calories || null,
-				targetProtein: meal.protein || null,
+				targetCalories:
+					meal.calories === null ? null : roundToOneDecimal(meal.calories),
+				targetProtein:
+					meal.protein === null ? null : roundToOneDecimal(meal.protein),
 				recipes: existingMenu.recipes
 					.filter((r: any) => r.mealIndex === meal.mealIndex)
 					.sort((a: any, b: any) => a.recipeIndex - b.recipeIndex)
@@ -194,10 +209,10 @@ export function UserMenuForm({
 				name: existingMenu.name,
 				description: existingMenu.description,
 				startDate: existingMenu.startDate
-					? new Date(existingMenu.startDate).toISOString().split('T')[0]
-					: null,
+					? getDateInputValue(new Date(existingMenu.startDate))
+					: getTodayDateString(),
 				endDate: existingMenu.endDate
-					? new Date(existingMenu.endDate).toISOString().split('T')[0]
+					? getDateInputValue(new Date(existingMenu.endDate))
 					: null,
 				meals: transformedMeals,
 			})
@@ -469,7 +484,7 @@ export function UserMenuForm({
 		setFormData({
 			name: template.name,
 			description: template.description,
-			startDate: null,
+			startDate: getTodayDateString(),
 			endDate: null,
 			meals: initialMeals,
 		})
@@ -513,7 +528,12 @@ export function UserMenuForm({
 	) => {
 		const newMeals = [...formData.meals]
 		if (newMeals[mealIndex]) {
-			newMeals[mealIndex] = { ...newMeals[mealIndex], [field]: value }
+			const normalizedValue =
+				value === null || Number.isNaN(value) ? null : roundToOneDecimal(value)
+			newMeals[mealIndex] = {
+				...newMeals[mealIndex],
+				[field]: normalizedValue,
+			}
 			setFormData((prev) => ({ ...prev, meals: newMeals }))
 		}
 	}
@@ -1289,10 +1309,10 @@ export function UserMenuForm({
 			return {
 				mealIndex: meal.mealIndex,
 				name: meal.name,
-				calories: meal.targetCalories ?? avgCalories,
-				protein: meal.targetProtein ?? avgProtein,
-				fat: avgFat,
-				carbohydrate: avgCarbs,
+				calories: roundToOneDecimal(meal.targetCalories ?? avgCalories),
+				protein: roundToOneDecimal(meal.targetProtein ?? avgProtein),
+				fat: roundToOneDecimal(avgFat),
+				carbohydrate: roundToOneDecimal(avgCarbs),
 				recipes: meal.recipes.map((recipe) => ({
 					recipeIndex: recipe.recipeIndex,
 					name: recipe.recipeName,
@@ -1373,15 +1393,18 @@ export function UserMenuForm({
 									<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
 										<Card
 											className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
-											onClick={() =>
+											onClick={() => {
+												setSelectedTemplate({ id: null, isBlank: true })
+												setExpandedMeals(new Set())
+												setExpandedRecipes(new Set())
 												setFormData({
 													name: '',
 													description: null,
-													startDate: null,
+													startDate: getTodayDateString(),
 													endDate: null,
 													meals: [],
 												})
-											}
+											}}
 										>
 											<CardHeader>
 												<CardTitle className='text-lg'>Blank Menu</CardTitle>
@@ -1457,7 +1480,7 @@ export function UserMenuForm({
 											setFormData({
 												name: '',
 												description: null,
-												startDate: null,
+												startDate: getTodayDateString(),
 												endDate: null,
 												meals: [],
 											})
@@ -1518,7 +1541,8 @@ export function UserMenuForm({
 															onChange={(e) =>
 																setFormData((prev) => ({
 																	...prev,
-																	startDate: e.target.value || null,
+																	startDate:
+																		e.target.value || getTodayDateString(),
 																}))
 															}
 														/>
@@ -1646,7 +1670,7 @@ export function UserMenuForm({
 													setFormData({
 														name: '',
 														description: null,
-														startDate: null,
+														startDate: getTodayDateString(),
 														endDate: null,
 														meals: [],
 													})
