@@ -5,6 +5,10 @@ export const UserMenuGetByUserInput = z.object({
 	userId: z.string().min(1),
 })
 
+export const UserMenuGetTemplatesOrgInput = z.object({
+	organisationId: z.string().min(1),
+})
+
 export const UserMenuGetInput = z.object({
 	id: z.string().min(1),
 })
@@ -29,6 +33,23 @@ export const UserMenuUpdateInput = z.object({
 
 export const UserMenuDeleteInput = z.object({
 	id: z.string().min(1),
+})
+
+export const UserMenuTemplateCreateInput = z.object({
+	name: z.string().min(1),
+	description: z.string().optional().nullable(),
+	meals: z.array(
+		z.object({
+			mealIndex: z.number().int().min(0),
+			name: z.string().min(1),
+			recipes: z.array(
+				z.object({
+					recipeId: z.string().min(1),
+					recipeIndex: z.number().int().min(0),
+				}),
+			),
+		}),
+	),
 })
 
 // ***************** User Meal *******************

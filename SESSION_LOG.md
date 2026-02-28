@@ -246,3 +246,28 @@
     - Meal totals automatically reflect target overrides or recipe averages in real-time
     - Ingredient rows show updated nutrition values immediately when serveSize changes
 
+# 2026-02-28
+
+- **Menu Template Storage Migration (Schema + API):**
+    - Migrated template source-of-truth from legacy `menu_template*` tables to `user_menu` using `isTemplate`.
+    - Added `isTemplate` boolean column and index to `user_menu` schema.
+    - Added and generated DB migration: `packages/db/src/migrations/20260228061525_abnormal_proudstar/migration.sql`.
+    - Added new user-menu API contracts and endpoints:
+    - `getTemplatesOrg` for org-scoped template retrieval from `user_menu`.
+    - `createTemplate` for creating templates with meals/recipes/ingredients in a single transactional flow.
+
+- **Menu Template UI/Route Migration:**
+    - Rewired menu-template create and list flows to use `orpc.userMenu.*` template endpoints.
+    - Updated route prefetching for:
+    - `/$orgSlug/menu-templates`
+    - `/$orgSlug/menu-templates_/create`
+    - Updated template list/table rendering to the new `user_menu` response shape (user/meals/recipes).
+
+- **Template Consumption in User Menu Builder:**
+    - Updated user menu create/edit template prefetches to use `orpc.userMenu.getTemplatesOrg`.
+    - Updated template selection hydration in `user-menu-form` to map template recipes/ingredients from new `user_menu` template shape.
+    - Ensured template ingredient data is included in `getTemplatesOrg` response for downstream meal/recipe population.
+
+- **Compatibility + Cleanup:**
+    - Marked legacy `menu-template` schema/relations as deprecated (kept for backward compatibility during transition).
+    - Removed/adjusted stale fields and references tied to old template shape where they blocked new flow.

@@ -21,7 +21,7 @@ export const Route = createFileRoute('/$orgSlug/user-menu-edit/$menuId')({
 
 		// Also prefetch menu templates (for potential re-templating)
 		await context.queryClient.prefetchQuery(
-			orpc.menuTemplate.getAllOrg.queryOptions({
+			orpc.userMenu.getTemplatesOrg.queryOptions({
 				input: { organisationId: userOrgId },
 			}),
 		)

@@ -25,6 +25,10 @@ export const userMenu = s.sqliteTable(
 			.integer('is_active', { mode: 'boolean' })
 			.notNull()
 			.default(true),
+		isTemplate: s
+			.integer('is_template', { mode: 'boolean' })
+			.notNull()
+			.default(false),
 		createdAt: s
 			.integer('created_at', { mode: 'timestamp_ms' })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
@@ -38,6 +42,7 @@ export const userMenu = s.sqliteTable(
 	(table) => [
 		s.index('user_menu_userId_idx').on(table.userId),
 		s.index('user_menu_isActive_idx').on(table.isActive),
+		s.index('user_menu_isTemplate_idx').on(table.isTemplate),
 		s.index('user_menu_startDate_idx').on(table.startDate),
 	],
 )

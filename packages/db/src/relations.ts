@@ -416,7 +416,8 @@ export const relations = defineRelations(schema, (r) => ({
 		}),
 	},
 
-	// ***************** Menu Template *******************
+	// ***************** Menu Template (Deprecated) *******************
+	// New templates are stored in `userMenu` with `isTemplate = true`.
 	menuTemplate: {
 		creator: r.one.user({
 			from: r.menuTemplate.creatorId,

@@ -22,7 +22,9 @@ import {
 	UserMenuCreateInput,
 	UserMenuDeleteInput,
 	UserMenuGetByUserInput,
+	UserMenuGetTemplatesOrgInput,
 	UserMenuGetInput,
+	UserMenuTemplateCreateInput,
 	UserMenuUpdateInput,
 	UserRecipeCreateInput,
 	UserRecipeDeleteInput,
@@ -80,6 +82,65 @@ export const userMenuRouter = {
 			})
 
 			return menus
+		}),
+
+	getTemplatesOrg: protectedProcedure
+		.route({
+			method: 'GET',
+			path: '/user-menu/templates/org',
+			summary: 'Get all menu templates for an organisation',
+			tags: ['User Menu'],
+		})
+		.input(UserMenuGetTemplatesOrgInput)
+		.handler(async ({ input, context }) => {
+			const userOrgId = context.session.user.organisationId
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			const isDictator = metaTags.includes('dictator')
+
+			if (input.organisationId !== userOrgId && !isDictator) {
+				throw new ORPCError('FORBIDDEN', {
+					message:
+						'You do not have permission to view templates for this organisation',
+				})
+			}
+
+			const orgUsers = await db.query.user.findMany({
+				where: { organisationId: input.organisationId },
+				columns: { id: true },
+			})
+			const orgUserIds = orgUsers.map((u) => u.id)
+			if (orgUserIds.length === 0) return []
+
+			const templates = await db.query.userMenu.findMany({
+				where: { isTemplate: true },
+				with: {
+					user: {
+						columns: {
+							id: true,
+							name: true,
+							email: true,
+						},
+					},
+					meals: {
+						orderBy: (meal, { asc }) => [asc(meal.mealIndex)],
+					},
+					recipes: {
+						orderBy: (recipe, { asc }) => [
+							asc(recipe.mealIndex),
+							asc(recipe.recipeIndex),
+						],
+					},
+					ingredients: {
+						with: {
+							ingredient: true,
+							altIngredient: true,
+						},
+					},
+				},
+				orderBy: (menu, operators) => [operators.desc(menu.createdAt)],
+			})
+
+			return templates.filter((template) => orgUserIds.includes(template.userId))
 		}),
 
 	get: protectedProcedure
@@ -171,6 +232,118 @@ export const userMenuRouter = {
 			}
 
 			return newMenu
+		}),
+
+	createTemplate: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/user-menu/template',
+			summary: 'Create a menu template in user_menu storage',
+			tags: ['User Menu'],
+		})
+		.input(UserMenuTemplateCreateInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			const canUpdate =
+				metaTags.includes('itemUpdater') || metaTags.includes('dictator')
+			if (!canUpdate) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to create menu templates',
+				})
+			}
+
+			if (!context.session.user.organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			const uniqueRecipeIds = Array.from(
+				new Set(
+					input.meals.flatMap((meal) =>
+						meal.recipes.map((recipe) => recipe.recipeId),
+					),
+				),
+			)
+
+			const sourceRecipes =
+				uniqueRecipeIds.length > 0
+					? await db.query.recipe.findMany({
+							where: { organisationId: context.session.user.organisationId },
+							with: {
+								ingredients: true,
+							},
+						}).then((recipes) =>
+							recipes.filter((recipe) => uniqueRecipeIds.includes(recipe.id)),
+						)
+					: []
+
+			const sourceRecipeMap = new Map(sourceRecipes.map((recipe) => [recipe.id, recipe]))
+
+			const result = await db.transaction(async (tx) => {
+				const [newTemplate] = await tx
+					.insert(userMenu)
+					.values({
+						userId: context.session.user.id,
+						name: input.name,
+						description: input.description,
+						isTemplate: true,
+						isActive: false,
+					})
+					.returning()
+
+				if (!newTemplate) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: 'Failed to create menu template',
+					})
+				}
+
+				for (const mealData of input.meals) {
+					await tx.insert(userMeal).values({
+						userMenuId: newTemplate.id,
+						mealIndex: mealData.mealIndex,
+						name: mealData.name,
+						calories: 0,
+						protein: 0,
+						fat: 0,
+						carbohydrate: 0,
+					})
+
+					for (const recipeData of mealData.recipes) {
+						const sourceRecipe = sourceRecipeMap.get(recipeData.recipeId)
+						if (!sourceRecipe) {
+							throw new ORPCError('BAD_REQUEST', {
+								message: `Recipe not found: ${recipeData.recipeId}`,
+							})
+						}
+
+						await tx.insert(userRecipe).values({
+							userMenuId: newTemplate.id,
+							mealIndex: mealData.mealIndex,
+							recipeIndex: recipeData.recipeIndex,
+							name: sourceRecipe.name,
+							description: sourceRecipe.description,
+							category: sourceRecipe.category,
+							image: sourceRecipe.image,
+						})
+
+						for (const ingredientData of sourceRecipe.ingredients || []) {
+							await tx.insert(userIngredient).values({
+								userMenuId: newTemplate.id,
+								mealIndex: mealData.mealIndex,
+								recipeIndex: recipeData.recipeIndex,
+								ingredientId: ingredientData.ingredientId,
+								serveSize: ingredientData.amount,
+								serveUnit: ingredientData.unit,
+							})
+						}
+					}
+				}
+
+				return newTemplate
+			})
+
+			return result
 		}),
 
 	batchCreate: protectedProcedure

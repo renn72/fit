@@ -33,7 +33,7 @@ import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useNavigate, useParams, useRouter } from '@tanstack/react-router'
+import { useParams, useRouter } from '@tanstack/react-router'
 
 import {
 	closestCorners,
@@ -95,7 +95,6 @@ const mealSchema = z.object({
 const menuTemplateCreateSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
 	description: z.string().nullable(),
-	category: z.string().nullable(),
 	meals: z.array(mealSchema).min(1, 'At least one meal is required'),
 })
 
@@ -109,7 +108,6 @@ export function MenuTemplateCreateForm({
 	const queryClient = useQueryClient()
 	const router = useRouter()
 	const { orgSlug } = useParams({ strict: false })
-	const navigate = useNavigate()
 
 	const { data: recipes } = useQuery(
 		orpc.recipe.getOrg.queryOptions({
@@ -118,11 +116,11 @@ export function MenuTemplateCreateForm({
 	)
 
 	const createMenuTemplate = useMutation(
-		orpc.menuTemplate.create.mutationOptions({
+		orpc.userMenu.createTemplate.mutationOptions({
 			onSuccess: () => {
 				toast.success('Menu template created successfully')
 				queryClient.invalidateQueries({
-					queryKey: orpc.menuTemplate.getAllOrg.key(),
+					queryKey: orpc.userMenu.getTemplatesOrg.key(),
 				})
 				if (!orgSlug) return
 				router.navigate({
@@ -134,14 +132,6 @@ export function MenuTemplateCreateForm({
 				toast.error(error.message)
 			},
 		}),
-	)
-
-	const createMealMutation = useMutation(
-		orpc.menuTemplate.createMeal.mutationOptions(),
-	)
-
-	const addRecipeMutation = useMutation(
-		orpc.menuTemplate.addRecipe.mutationOptions(),
 	)
 
 	const recipeOptions = React.useMemo(() => {
@@ -189,35 +179,24 @@ export function MenuTemplateCreateForm({
 		defaultValues: {
 			name: '',
 			description: '' as string | null,
-			category: '' as string | null,
 			meals: [] as Meal[],
 		},
 		validators: {
 			onSubmit: menuTemplateCreateSchema,
 		},
 		onSubmit: async ({ value }) => {
-			const menuTemplateData = await createMenuTemplate.mutateAsync({
+			await createMenuTemplate.mutateAsync({
 				name: value.name,
 				description: value.description || null,
-				category: value.category || null,
-			})
-
-			for (const meal of value.meals) {
-				await createMealMutation.mutateAsync({
-					menuTemplateId: menuTemplateData.id,
+				meals: value.meals.map((meal) => ({
 					mealIndex: meal.mealIndex,
 					name: meal.name,
-				})
-
-				for (const recipe of meal.recipes) {
-					await addRecipeMutation.mutateAsync({
-						menuTemplateId: menuTemplateData.id,
+					recipes: meal.recipes.map((recipe) => ({
 						recipeId: recipe.recipeId,
-						mealIndex: meal.mealIndex,
 						recipeIndex: recipe.recipeIndex,
-					})
-				}
-			}
+					})),
+				})),
+			})
 		},
 	})
 
@@ -523,7 +502,7 @@ export function MenuTemplateCreateForm({
 							<div className='flex justify-between items-center pb-4'>
 								<Button
 									onClick={() =>
-										navigate({
+										router.navigate({
 											to: '/$orgSlug/menu-templates',
 											params: { orgSlug: orgSlug || '' },
 										})
@@ -578,23 +557,6 @@ export function MenuTemplateCreateForm({
 										)}
 									</form.Field>
 
-									<form.Field name='category'>
-										{(field) => (
-											<Field>
-												<FieldLabel htmlFor={field.name}>Category</FieldLabel>
-												<Input
-													id={field.name}
-													name={field.name}
-													value={field.state.value ?? ''}
-													onBlur={field.handleBlur}
-													onChange={(e) =>
-														field.handleChange(e.target.value || null)
-													}
-													placeholder='e.g., Weight Loss, Muscle Gain, Maintenance'
-												/>
-											</Field>
-										)}
-									</form.Field>
 								</div>
 
 								<div className='pt-4 space-y-4 border-t'>

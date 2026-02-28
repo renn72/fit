@@ -1,8 +1,7 @@
 import { MenuTemplateCreateForm } from '@/components/admin/menu-template/menu-template-create-form'
-import { Button } from '@/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/menu-templates_/create')({
 	component: CreateMenuTemplatePage,
@@ -19,7 +18,7 @@ export const Route = createFileRoute('/$orgSlug/menu-templates_/create')({
 				}),
 			),
 			context.queryClient.prefetchQuery(
-				orpc.menuTemplate.getAllOrg.queryOptions({
+				orpc.userMenu.getTemplatesOrg.queryOptions({
 					input: { organisationId: userOrgId },
 				}),
 			),

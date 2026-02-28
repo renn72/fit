@@ -6,6 +6,8 @@ import { sql } from 'drizzle-orm'
 import * as s from 'drizzle-orm/sqlite-core'
 import { v4 as uuid } from 'uuid'
 
+// Deprecated: new template storage uses `user_menu.is_template`.
+// Keep this schema for backward compatibility until legacy data is removed.
 export const menuTemplate = s.sqliteTable(
 	'menu_template',
 	{

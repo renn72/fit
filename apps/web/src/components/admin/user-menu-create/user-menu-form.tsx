@@ -285,7 +285,7 @@ export function UserMenuForm({
 	}, [isEditMode, existingMenu])
 
 	const { data: menuTemplates } = useSuspenseQuery(
-		orpc.menuTemplate.getAllOrg.queryOptions({
+		orpc.userMenu.getTemplatesOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
@@ -463,46 +463,51 @@ export function UserMenuForm({
 			)
 			if (!meal) continue
 
-			const fullRecipe = recipes?.find((r) => r.id === templateRecipe.recipe.id)
-			if (!fullRecipe) continue
-
 			const recipeIngredients: MealIngredient[] = (
-				fullRecipe.ingredients || []
-			).map((ing: any) => {
-				const ingredientData = ing.ingredient
-				if (!ingredientData) {
+				template.ingredients || []
+			)
+				.filter(
+					(ing: any) =>
+						ing.mealIndex === templateRecipe.mealIndex &&
+						ing.recipeIndex === templateRecipe.recipeIndex,
+				)
+				.map((ing: any) => {
+					const ingredientData =
+						ing.ingredient ||
+						ingredients?.find((item: any) => item.id === ing.ingredientId)
+					if (!ingredientData) {
+						return {
+							id: crypto.randomUUID(),
+							recipeToIngredientId: '',
+							ingredientId: ing.ingredientId,
+							ingredientName: 'Unknown',
+							serveSize: Math.round(ing.serveSize * 10) / 10,
+							serveUnit: ing.serveUnit,
+							calories: 0,
+							protein: 0,
+							fat: 0,
+							carbohydrate: 0,
+						}
+					}
+
+					const multiplier =
+						ingredientData.serveSize > 0
+							? ing.serveSize / ingredientData.serveSize
+							: 1
+
 					return {
 						id: crypto.randomUUID(),
-						recipeToIngredientId: ing.id,
+						recipeToIngredientId: '',
 						ingredientId: ing.ingredientId,
-						ingredientName: 'Unknown',
-						serveSize: Math.round(ing.amount * 10) / 10,
-						serveUnit: ing.unit,
-						calories: 0,
-						protein: 0,
-						fat: 0,
-						carbohydrate: 0,
+						ingredientName: ingredientData.name,
+						serveSize: Math.round(ing.serveSize * 10) / 10,
+						serveUnit: ing.serveUnit,
+						calories: ingredientData.calories * multiplier,
+						protein: ingredientData.protein * multiplier,
+						fat: ingredientData.fat * multiplier,
+						carbohydrate: ingredientData.carbohydrate * multiplier,
 					}
-				}
-
-				const multiplier =
-					ingredientData.serveSize > 0
-						? ing.amount / ingredientData.serveSize
-						: 1
-
-				return {
-					id: crypto.randomUUID(),
-					recipeToIngredientId: ing.id,
-					ingredientId: ing.ingredientId,
-					ingredientName: ingredientData.name,
-					serveSize: Math.round(ing.amount * 10) / 10,
-					serveUnit: ing.unit,
-					calories: ingredientData.calories * multiplier,
-					protein: ingredientData.protein * multiplier,
-					fat: ingredientData.fat * multiplier,
-					carbohydrate: ingredientData.carbohydrate * multiplier,
-				}
-			})
+				})
 
 			const recipeCalories = recipeIngredients.reduce(
 				(sum, ing) => sum + ing.calories,
@@ -520,8 +525,8 @@ export function UserMenuForm({
 
 			const mealRecipe: MealRecipe = {
 				id: crypto.randomUUID(),
-				recipeId: templateRecipe.recipe.id,
-				recipeName: templateRecipe.recipe.name,
+				recipeId: '',
+				recipeName: templateRecipe.name,
 				recipeIndex: templateRecipe.recipeIndex,
 				calories: recipeCalories,
 				protein: recipeProtein,
@@ -649,8 +654,6 @@ export function UserMenuForm({
 		const recipe = recipes?.find((r) => r.id === recipeId)
 		if (!recipe) return
 
-		let addedRecipeId: string | null = null
-
 		setFormData((prev) => {
 			const meal = prev.meals[mealIndex]
 			if (!meal) return prev
@@ -661,8 +664,6 @@ export function UserMenuForm({
 					: Math.max(0, Math.min(insertAt, meal.recipes.length))
 
 			const newRecipe = buildMealRecipeFromSource(recipe, targetIndex)
-			addedRecipeId = newRecipe.id
-
 			const nextRecipes = [...meal.recipes]
 			nextRecipes.splice(targetIndex, 0, newRecipe)
 

@@ -10,7 +10,6 @@ import { Button } from '@/components/ui/button'
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
@@ -31,12 +30,6 @@ import {
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 
-interface Recipe {
-	id: string
-	name: string
-	category: string | null
-}
-
 interface MenuTemplateMeal {
 	id: string
 	mealIndex: number
@@ -47,20 +40,21 @@ interface MenuTemplateRecipe {
 	id: string
 	mealIndex: number
 	recipeIndex: number
-	recipe: Recipe
+	name: string
+	category: string | null
 }
 
 interface Creator {
-	name: string
+	name: string | null
 }
 
 interface MenuTemplate {
 	id: string
 	name: string
 	description: string | null
-	category: string | null
+	isTemplate: boolean
 	createdAt: Date
-	creator?: Creator
+	user?: Creator
 	meals: MenuTemplateMeal[]
 	recipes: MenuTemplateRecipe[]
 }
@@ -116,12 +110,13 @@ const columns = [
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('category', {
+	columnHelper.accessor('isTemplate', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Category' />
+			<DataTableColumnHeader column={column} label='Template' />
 		),
+		cell: ({ row }) => (row.original.isTemplate ? 'Yes' : 'No'),
 		meta: {
-			label: 'Category',
+			label: 'Template',
 			variant: 'text',
 		},
 	}),
@@ -144,12 +139,13 @@ const columns = [
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('creator', {
+	columnHelper.accessor('user', {
+		id: 'createdBy',
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created By' />
 		),
 		cell: ({ row }) => {
-			const creator = row.original.creator?.name
+			const creator = row.original.user?.name ?? '-'
 			return <span className='capitalize'>{creator}</span>
 		},
 		meta: {
@@ -185,12 +181,12 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	const { view, page, perPage, sort } = route.useSearch()
 
 	const { data: menuTemplates } = useSuspenseQuery(
-		orpc.menuTemplate.getAllOrg.queryOptions({
+		orpc.userMenu.getTemplatesOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const menuTemplatesData = (menuTemplates as MenuTemplate[]) ?? []
+	const menuTemplatesData = (menuTemplates as unknown as MenuTemplate[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...menuTemplatesData]
@@ -316,9 +312,6 @@ function MenuTemplatesGridView({
 						<Card key={menuTemplate.id} className='flex flex-col'>
 							<CardHeader className='pb-3'>
 								<CardTitle className='text-lg'>{menuTemplate.name}</CardTitle>
-								{menuTemplate.category && (
-									<CardDescription>{menuTemplate.category}</CardDescription>
-								)}
 							</CardHeader>
 							<CardContent className='flex-1'>
 								<div className='space-y-4'>
@@ -372,11 +365,11 @@ function MenuTemplatesGridView({
 																>
 																	<ForkKnifeIcon className='text-green-500 size-3' />
 																	<span className='flex-1 truncate'>
-																		{recipeItem.recipe.name}
+																		{recipeItem.name}
 																	</span>
-																	{recipeItem.recipe.category && (
+																	{recipeItem.category && (
 																		<span className='text-muted-foreground'>
-																			({recipeItem.recipe.category})
+																			({recipeItem.category})
 																		</span>
 																	)}
 																</div>
