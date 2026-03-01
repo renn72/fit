@@ -518,13 +518,14 @@ export const userMenuRouter = {
 			method: 'POST',
 			path: '/user-menu/batch',
 			summary:
-				'Create a user menu with all meals, recipes, and ingredients in a single transaction',
+				'Create a user menu or template with all meals, recipes, and ingredients in a single transaction',
 			tags: ['User Menu'],
 		})
 		.input(UserMenuBatchCreateInput)
 		.handler(async ({ input, context }) => {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			const isDictator = metaTags.includes('dictator')
+			const isTemplate = input.isTemplate === true
 
 			// Users can only create menus for themselves unless they're a dictator
 			if (input.userId !== context.session.user.id && !isDictator) {
@@ -542,8 +543,10 @@ export const userMenuRouter = {
 						userId: input.userId,
 						name: input.name,
 						description: input.description,
-						startDate: input.startDate || new Date(),
-						endDate: input.endDate,
+						startDate: isTemplate ? null : input.startDate || new Date(),
+						endDate: isTemplate ? null : input.endDate,
+						isTemplate: isTemplate,
+						isActive: !isTemplate,
 					})
 					.returning()
 

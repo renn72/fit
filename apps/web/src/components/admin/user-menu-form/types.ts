@@ -45,6 +45,7 @@ export interface UserMenuFormProps {
 	menuId?: string
 	orgSlug: string
 	user?: string
+	mode?: 'menu' | 'template'
 }
 
 export interface MacroTotals {

@@ -7,13 +7,9 @@ import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-adv
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
@@ -34,6 +30,10 @@ interface MenuTemplateMeal {
 	id: string
 	mealIndex: number
 	name: string
+	calories?: number | null
+	protein?: number | null
+	fat?: number | null
+	carbohydrate?: number | null
 }
 
 interface MenuTemplateRecipe {
@@ -42,6 +42,22 @@ interface MenuTemplateRecipe {
 	recipeIndex: number
 	name: string
 	category: string | null
+}
+
+interface IngredientNutrition {
+	calories: number
+	protein: number
+	fat: number
+	carbohydrate: number
+	serveSize: number
+}
+
+interface MenuTemplateIngredient {
+	id: string
+	mealIndex: number
+	recipeIndex: number
+	serveSize: number
+	ingredient: IngredientNutrition | null
 }
 
 interface Creator {
@@ -57,6 +73,66 @@ interface MenuTemplate {
 	user?: Creator
 	meals: MenuTemplateMeal[]
 	recipes: MenuTemplateRecipe[]
+	ingredients: MenuTemplateIngredient[]
+}
+
+interface MacroTotals {
+	calories: number
+	protein: number
+	carbohydrate: number
+	fat: number
+}
+
+const EMPTY_MACROS: MacroTotals = {
+	calories: 0,
+	protein: 0,
+	carbohydrate: 0,
+	fat: 0,
+}
+
+function roundOneDecimal(value: number): number {
+	return Math.round(value * 10) / 10
+}
+
+function addMacros(a: MacroTotals, b: MacroTotals): MacroTotals {
+	return {
+		calories: a.calories + b.calories,
+		protein: a.protein + b.protein,
+		carbohydrate: a.carbohydrate + b.carbohydrate,
+		fat: a.fat + b.fat,
+	}
+}
+
+function isZeroMacro(totals: MacroTotals): boolean {
+	return (
+		totals.calories === 0 &&
+		totals.protein === 0 &&
+		totals.carbohydrate === 0 &&
+		totals.fat === 0
+	)
+}
+
+function getMacroFromIngredients(
+	ingredients: MenuTemplateIngredient[],
+): MacroTotals {
+	return ingredients.reduce((totals, item) => {
+		const base = item.ingredient
+		if (!base || !base.serveSize || base.serveSize <= 0) {
+			return totals
+		}
+
+		const ratio = item.serveSize / base.serveSize
+		return {
+			calories: totals.calories + base.calories * ratio,
+			protein: totals.protein + base.protein * ratio,
+			carbohydrate: totals.carbohydrate + base.carbohydrate * ratio,
+			fat: totals.fat + base.fat * ratio,
+		}
+	}, EMPTY_MACROS)
+}
+
+function formatMacro(value: number, suffix: string): string {
+	return `${roundOneDecimal(value).toFixed(1)}${suffix}`
 }
 
 const columnHelper = createColumnHelper<MenuTemplate>()
@@ -294,7 +370,7 @@ function MenuTemplatesGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+			<div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
 				{data.map((menuTemplate) => {
 					const sortedMeals = [...menuTemplate.meals].sort(
 						(a, b) => a.mealIndex - b.mealIndex,
@@ -305,80 +381,255 @@ function MenuTemplatesGridView({
 						}
 						return a.recipeIndex - b.recipeIndex
 					})
-					const totalItems = sortedRecipes.length
+					const recipeCount = sortedRecipes.length
 					const mealCount = sortedMeals.length
 
+					const ingredientsByRecipeKey = new Map<
+						string,
+						MenuTemplateIngredient[]
+					>()
+					for (const ingredientItem of menuTemplate.ingredients || []) {
+						const key = `${ingredientItem.mealIndex}-${ingredientItem.recipeIndex}`
+						const existing = ingredientsByRecipeKey.get(key)
+						if (existing) {
+							existing.push(ingredientItem)
+						} else {
+							ingredientsByRecipeKey.set(key, [ingredientItem])
+						}
+					}
+
+					const recipeMacrosByKey = new Map<string, MacroTotals>()
+					for (const recipeItem of sortedRecipes) {
+						const key = `${recipeItem.mealIndex}-${recipeItem.recipeIndex}`
+						recipeMacrosByKey.set(
+							key,
+							getMacroFromIngredients(ingredientsByRecipeKey.get(key) ?? []),
+						)
+					}
+
+					const mealMacrosByIndex = new Map<number, MacroTotals>()
+					for (const meal of sortedMeals) {
+						const mealRecipes = sortedRecipes.filter(
+							(recipeItem) => recipeItem.mealIndex === meal.mealIndex,
+						)
+
+						let mealTotals = mealRecipes.reduce((totals, recipeItem) => {
+							const key = `${recipeItem.mealIndex}-${recipeItem.recipeIndex}`
+							return addMacros(
+								totals,
+								recipeMacrosByKey.get(key) ?? EMPTY_MACROS,
+							)
+						}, EMPTY_MACROS)
+
+						// Fallback for older templates that may have meal-level nutrition only.
+						if (isZeroMacro(mealTotals)) {
+							mealTotals = {
+								calories: meal.calories ?? 0,
+								protein: meal.protein ?? 0,
+								carbohydrate: meal.carbohydrate ?? 0,
+								fat: meal.fat ?? 0,
+							}
+						}
+
+						mealMacrosByIndex.set(meal.mealIndex, mealTotals)
+					}
+
+					const menuMacros = Array.from(mealMacrosByIndex.values()).reduce(
+						(totals, mealTotals) => addMacros(totals, mealTotals),
+						EMPTY_MACROS,
+					)
+
 					return (
-						<Card key={menuTemplate.id} className='flex flex-col'>
-							<CardHeader className='pb-3'>
-								<CardTitle className='text-lg'>{menuTemplate.name}</CardTitle>
-							</CardHeader>
-							<CardContent className='flex-1'>
-								<div className='space-y-4'>
-									{/* Stats */}
-									<div className='grid grid-cols-2 gap-2 text-center'>
-										<div className='p-2 bg-orange-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Recipes
-											</div>
-											<div className='font-semibold text-orange-600'>
-												{totalItems}
-											</div>
+						<Card
+							key={menuTemplate.id}
+							className='overflow-hidden shadow-sm transition-shadow hover:shadow-md border-border/70 bg-card'
+						>
+							<CardHeader className='pb-4 space-y-3 bg-gradient-to-r border-b from-orange-50/70 to-emerald-50/70 dark:from-orange-950/20 dark:to-emerald-950/20'>
+								<div className='flex gap-3 justify-between items-start'>
+									<div className='min-w-0'>
+										<CardTitle className='text-lg leading-tight truncate'>
+											{menuTemplate.name}
+										</CardTitle>
+										<p className='text-xs text-muted-foreground'>
+											By {menuTemplate.user?.name ?? 'Unknown'} •{' '}
+											{new Date(menuTemplate.createdAt).toLocaleDateString()}
+										</p>
+									</div>
+									<div className='flex gap-2 shrink-0'>
+										<div className='py-1 px-2 text-xs font-medium rounded-md border bg-background/80'>
+											{mealCount} meals
 										</div>
-										<div className='p-2 bg-green-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>Meals</div>
-											<div className='font-semibold text-green-600'>
-												{mealCount}
+										<div className='py-1 px-2 text-xs font-medium rounded-md border bg-background/80'>
+											{recipeCount} recipes
+										</div>
+									</div>
+								</div>
+								{menuTemplate.description && (
+									<p className='text-sm leading-relaxed text-muted-foreground line-clamp-2'>
+										{menuTemplate.description}
+									</p>
+								)}
+							</CardHeader>
+							<CardContent className='pt-4 space-y-4'>
+								<div className='space-y-4'>
+									<div>
+										<div className='mb-2 text-sm font-medium'>
+											Menu Nutrition
+										</div>
+										<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+											<div className='p-2 rounded-lg border bg-orange-50/80 dark:bg-orange-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Calories
+												</div>
+												<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+													{formatMacro(menuMacros.calories, ' kcal')}
+												</div>
+											</div>
+											<div className='p-2 rounded-lg border bg-emerald-50/80 dark:bg-emerald-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Protein
+												</div>
+												<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+													{formatMacro(menuMacros.protein, ' g')}
+												</div>
+											</div>
+											<div className='p-2 rounded-lg border bg-blue-50/80 dark:bg-blue-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Carbs
+												</div>
+												<div className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+													{formatMacro(menuMacros.carbohydrate, ' g')}
+												</div>
+											</div>
+											<div className='p-2 rounded-lg border bg-pink-50/80 dark:bg-pink-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Fat
+												</div>
+												<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+													{formatMacro(menuMacros.fat, ' g')}
+												</div>
 											</div>
 										</div>
 									</div>
 
-									{/* Meals */}
 									<div className='space-y-3'>
-										<div className='text-sm font-medium text-muted-foreground'>
-											Meal Schedule
+										<div className='flex justify-between items-center'>
+											<div className='text-sm font-medium text-muted-foreground'>
+												Meal Schedule
+											</div>
+											<div className='text-xs text-muted-foreground'>
+												Scroll for full details
+											</div>
 										</div>
-										<div className='overflow-y-auto space-y-2 max-h-80'>
-											{sortedMeals.map((meal) => {
-												const mealRecipes = sortedRecipes.filter(
-													(r) => r.mealIndex === meal.mealIndex,
-												)
-												return (
-													<div
-														key={meal.id}
-														className='p-3 space-y-2 rounded-lg border'
-													>
-														<div className='flex gap-2 items-center'>
-															<CookingPotIcon className='text-orange-500 size-4' />
-															<span className='text-sm font-medium'>
-																{meal.name}
-															</span>
-															<span className='text-xs text-muted-foreground'>
-																({mealRecipes.length} recipes)
-															</span>
-														</div>
-														<div className='pl-6 space-y-1'>
-															{mealRecipes.map((recipeItem) => (
-																<div
-																	key={recipeItem.id}
-																	className='flex gap-2 items-center text-xs'
-																>
-																	<ForkKnifeIcon className='text-green-500 size-3' />
-																	<span className='flex-1 truncate'>
-																		{recipeItem.name}
-																	</span>
-																	{recipeItem.category && (
-																		<span className='text-muted-foreground'>
-																			({recipeItem.category})
-																		</span>
-																	)}
+
+										<ScrollArea className='h-80 rounded-xl border bg-muted/20'>
+											<div className='p-3 pr-4 space-y-3'>
+												{sortedMeals.map((meal) => {
+													const mealRecipes = sortedRecipes.filter(
+														(recipeItem) =>
+															recipeItem.mealIndex === meal.mealIndex,
+													)
+													const mealTotals =
+														mealMacrosByIndex.get(meal.mealIndex) ??
+														EMPTY_MACROS
+
+													return (
+														<div
+															key={meal.id}
+															className='p-3 space-y-3 rounded-lg border shadow-sm bg-background'
+														>
+															<div className='flex gap-2 justify-between items-center'>
+																<div className='flex gap-2 items-center min-w-0'>
+																	<div className='p-1.5 bg-orange-100 rounded-md dark:bg-orange-950/40'>
+																		<CookingPotIcon className='text-orange-600 dark:text-orange-300 size-4' />
+																	</div>
+																	<div className='min-w-0'>
+																		<p className='text-sm font-semibold truncate'>
+																			{meal.name}
+																		</p>
+																		<p className='text-xs text-muted-foreground'>
+																			{mealRecipes.length} recipe
+																			{mealRecipes.length === 1 ? '' : 's'}
+																		</p>
+																	</div>
 																</div>
-															))}
+															</div>
+
+															<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+																<div className='py-1 px-2 rounded-md border bg-orange-50/70 dark:bg-orange-950/20'>
+																	<div className='uppercase text-[10px] text-muted-foreground'>
+																		Cal
+																	</div>
+																	<div className='text-xs font-medium'>
+																		{formatMacro(mealTotals.calories, ' kcal')}
+																	</div>
+																</div>
+																<div className='py-1 px-2 rounded-md border bg-emerald-50/70 dark:bg-emerald-950/20'>
+																	<div className='uppercase text-[10px] text-muted-foreground'>
+																		Protein
+																	</div>
+																	<div className='text-xs font-medium'>
+																		{formatMacro(mealTotals.protein, ' g')}
+																	</div>
+																</div>
+																<div className='py-1 px-2 rounded-md border bg-blue-50/70 dark:bg-blue-950/20'>
+																	<div className='uppercase text-[10px] text-muted-foreground'>
+																		Carbs
+																	</div>
+																	<div className='text-xs font-medium'>
+																		{formatMacro(mealTotals.carbohydrate, ' g')}
+																	</div>
+																</div>
+																<div className='py-1 px-2 rounded-md border bg-pink-50/70 dark:bg-pink-950/20'>
+																	<div className='uppercase text-[10px] text-muted-foreground'>
+																		Fat
+																	</div>
+																	<div className='text-xs font-medium'>
+																		{formatMacro(mealTotals.fat, ' g')}
+																	</div>
+																</div>
+															</div>
+
+															<div className='space-y-1.5'>
+																{mealRecipes.map((recipeItem) => {
+																	const key = `${recipeItem.mealIndex}-${recipeItem.recipeIndex}`
+																	const recipeTotals =
+																		recipeMacrosByKey.get(key) ?? EMPTY_MACROS
+
+																	return (
+																		<div
+																			key={recipeItem.id}
+																			className='flex gap-2 items-center py-1.5 px-2 rounded-md border bg-muted/30'
+																		>
+																			<ForkKnifeIcon className='text-emerald-600 dark:text-emerald-300 shrink-0 size-3.5' />
+																			<div className='flex-1 min-w-0'>
+																				<p className='text-xs font-medium truncate'>
+																					{recipeItem.name}
+																				</p>
+																				<p className='text-[11px] text-muted-foreground'>
+																					{formatMacro(
+																						recipeTotals.calories,
+																						' kcal',
+																					)}
+																					{' • '}
+																					{formatMacro(
+																						recipeTotals.protein,
+																						' g protein',
+																					)}
+																					{recipeItem.category
+																						? ` • ${recipeItem.category}`
+																						: ''}
+																				</p>
+																			</div>
+																		</div>
+																	)
+																})}
+															</div>
 														</div>
-													</div>
-												)
-											})}
-										</div>
+													)
+												})}
+											</div>
+										</ScrollArea>
 									</div>
 								</div>
 							</CardContent>

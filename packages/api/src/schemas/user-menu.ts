@@ -151,6 +151,7 @@ export const UserIngredientDeleteInput = z.object({
 export const UserMenuBatchCreateInput = z.object({
 	userId: z.string().min(1),
 	menuTemplateId: z.string().optional().nullable(),
+	isTemplate: z.boolean().optional(),
 	name: z.string().min(1),
 	description: z.string().optional().nullable(),
 	startDate: z.date().optional().nullable(),

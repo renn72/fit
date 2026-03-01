@@ -1,4 +1,4 @@
-import { MenuTemplateCreateForm } from '@/components/admin/menu-template/menu-template-create-form'
+import { UserMenuForm } from '@/components/admin/user-menu-form'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute } from '@tanstack/react-router'
@@ -29,11 +29,20 @@ export const Route = createFileRoute('/$orgSlug/menu-templates_/create')({
 
 function CreateMenuTemplatePage() {
 	const { session } = Route.useRouteContext()
+	const { orgSlug } = Route.useParams()
 	const userOrgId = session?.user?.organisationId
+	const userId = session?.user?.id
 
-	if (!userOrgId) {
+	if (!userOrgId || !userId) {
 		return <div>Missing organization</div>
 	}
 
-	return <MenuTemplateCreateForm organisationId={userOrgId} />
+	return (
+		<UserMenuForm
+			mode='template'
+			userOrgId={userOrgId}
+			orgSlug={orgSlug}
+			user={userId}
+		/>
+	)
 }

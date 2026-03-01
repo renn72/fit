@@ -76,14 +76,18 @@ export function UserMenuForm({
 	menuId,
 	orgSlug,
 	user,
+	mode = 'menu',
 }: UserMenuFormProps) {
 	const navigate = useNavigate()
 	const queryClient = useQueryClient()
 
 	// Determine if we're in edit mode
 	const isEditMode = !!menuId
+	const isTemplateMode = mode === 'template'
 
-	const [selectedTemplate, setSelectedTemplate] = React.useState<any>(null)
+	const [selectedTemplate, setSelectedTemplate] = React.useState<any>(() =>
+		isTemplateMode ? { id: null, isBlank: true } : null,
+	)
 	const [expandedMeals, setExpandedMeals] = React.useState<Set<number>>(
 		new Set(),
 	)
@@ -250,6 +254,18 @@ export function UserMenuForm({
 	const batchCreateMenuMutation = useMutation(
 		orpc.userMenu.batchCreate.mutationOptions({
 			onSuccess: () => {
+				if (isTemplateMode) {
+					toast.success('Menu template created successfully')
+					queryClient.invalidateQueries({
+						queryKey: orpc.userMenu.getTemplatesOrg.key(),
+					})
+					navigate({
+						to: '/$orgSlug/menu-templates',
+						params: { orgSlug },
+					})
+					return
+				}
+
 				toast.success('Menu created successfully')
 				queryClient.invalidateQueries({
 					queryKey: orpc.userMenu.getByUser.key(),
@@ -260,7 +276,12 @@ export function UserMenuForm({
 				})
 			},
 			onError: (error) => {
-				toast.error(error.message || 'Failed to create menu')
+				toast.error(
+					error.message ||
+						(isTemplateMode
+							? 'Failed to create menu template'
+							: 'Failed to create menu'),
+				)
 			},
 		}),
 	)
@@ -1286,7 +1307,11 @@ export function UserMenuForm({
 	const handleSubmit = async (e: React.FormEvent) => {
 		e.preventDefault()
 		if (!user) {
-			toast.error('No user selected')
+			toast.error(
+				isTemplateMode
+					? 'Unable to resolve template owner'
+					: 'No user selected',
+			)
 			return
 		}
 
@@ -1341,23 +1366,30 @@ export function UserMenuForm({
 				meals,
 			})
 		} else {
-			// Create new menu
+			// Create new menu/template
 			await batchCreateMenuMutation.mutateAsync({
 				userId: user,
-				menuTemplateId: selectedTemplate?.id || null,
+				menuTemplateId: isTemplateMode ? null : selectedTemplate?.id || null,
 				name: formData.name,
 				description: formData.description,
-				startDate: formData.startDate
-					? new Date(formData.startDate)
-					: new Date(),
-				endDate: formData.endDate ? new Date(formData.endDate) : null,
+				startDate: isTemplateMode
+					? null
+					: formData.startDate
+						? new Date(formData.startDate)
+						: new Date(),
+				endDate: isTemplateMode
+					? null
+					: formData.endDate
+						? new Date(formData.endDate)
+						: null,
+				isTemplate: isTemplateMode,
 				meals,
 			})
 		}
 	}
 
 	// Show user selector only in create mode when no user selected
-	if (!isEditMode && !user) {
+	if (!isEditMode && !isTemplateMode && !user) {
 		return (
 			<div className='flex flex-col gap-4 p-8'>
 				<Card>
@@ -1379,7 +1411,9 @@ export function UserMenuForm({
 					{!isEditMode && !selectedTemplate ? (
 						<div className='flex flex-col gap-6 justify-center p-8 w-full'>
 							<div className='flex justify-between items-center'>
-								<h1 className='text-2xl font-bold'>Create User Menu</h1>
+								<h1 className='text-2xl font-bold'>
+									{isTemplateMode ? 'Create Menu Template' : 'Create User Menu'}
+								</h1>
 							</div>
 							<Card>
 								<CardHeader>
@@ -1463,7 +1497,11 @@ export function UserMenuForm({
 								>
 									<div className='flex justify-between items-center'>
 										<h1 className='text-2xl font-bold'>
-											{isEditMode ? 'Edit User Menu' : 'Create User Menu'}
+											{isEditMode
+												? 'Edit User Menu'
+												: isTemplateMode
+													? 'Create Menu Template'
+													: 'Create User Menu'}
 										</h1>
 										<SidebarTrigger size='default'>
 											<Button render={<div />} className='cursor-pointer'>
@@ -1472,29 +1510,33 @@ export function UserMenuForm({
 											</Button>
 										</SidebarTrigger>
 									</div>
-									<Button
-										type='button'
-										variant='ghost'
-										onClick={() => {
-											setSelectedTemplate(null)
-											setFormData({
-												name: '',
-												description: null,
-												startDate: getTodayDateString(),
-												endDate: null,
-												meals: [],
-											})
-										}}
-										className='w-fit'
-									>
-										← Back to templates
-									</Button>
+									{!isEditMode && !isTemplateMode && (
+										<Button
+											type='button'
+											variant='ghost'
+											onClick={() => {
+												setSelectedTemplate(null)
+												setFormData({
+													name: '',
+													description: null,
+													startDate: getTodayDateString(),
+													endDate: null,
+													meals: [],
+												})
+											}}
+											className='w-fit'
+										>
+											← Back to templates
+										</Button>
+									)}
 
 									<Card>
 										<CardHeader>
 											<CardTitle>Menu Details</CardTitle>
 											<CardDescription>
-												Configure the menu for the selected user
+												{isTemplateMode
+													? 'Configure the reusable menu template'
+													: 'Configure the menu for the selected user'}
 											</CardDescription>
 										</CardHeader>
 										<CardContent className='space-y-6'>
@@ -1531,38 +1573,40 @@ export function UserMenuForm({
 													/>
 												</div>
 
-												<div className='grid grid-cols-2 gap-4'>
-													<div className='space-y-2'>
-														<Label htmlFor='startDate'>Start Date</Label>
-														<Input
-															id='startDate'
-															type='date'
-															value={formData.startDate ?? ''}
-															onChange={(e) =>
-																setFormData((prev) => ({
-																	...prev,
-																	startDate:
-																		e.target.value || getTodayDateString(),
-																}))
-															}
-														/>
-													</div>
+												{!isTemplateMode && (
+													<div className='grid grid-cols-2 gap-4'>
+														<div className='space-y-2'>
+															<Label htmlFor='startDate'>Start Date</Label>
+															<Input
+																id='startDate'
+																type='date'
+																value={formData.startDate ?? ''}
+																onChange={(e) =>
+																	setFormData((prev) => ({
+																		...prev,
+																		startDate:
+																			e.target.value || getTodayDateString(),
+																	}))
+																}
+															/>
+														</div>
 
-													<div className='space-y-2'>
-														<Label htmlFor='endDate'>End Date</Label>
-														<Input
-															id='endDate'
-															type='date'
-															value={formData.endDate ?? ''}
-															onChange={(e) =>
-																setFormData((prev) => ({
-																	...prev,
-																	endDate: e.target.value || null,
-																}))
-															}
-														/>
+														<div className='space-y-2'>
+															<Label htmlFor='endDate'>End Date</Label>
+															<Input
+																id='endDate'
+																type='date'
+																value={formData.endDate ?? ''}
+																onChange={(e) =>
+																	setFormData((prev) => ({
+																		...prev,
+																		endDate: e.target.value || null,
+																	}))
+																}
+															/>
+														</div>
 													</div>
-												</div>
+												)}
 											</div>
 
 											<div className='pt-4 space-y-4 border-t'>
@@ -1665,6 +1709,11 @@ export function UserMenuForm({
 														params: { orgSlug },
 														search: user ? { user } : {},
 													})
+												} else if (isTemplateMode) {
+													navigate({
+														to: '/$orgSlug/menu-templates',
+														params: { orgSlug },
+													})
 												} else {
 													setSelectedTemplate(null)
 													setFormData({
@@ -1692,8 +1741,12 @@ export function UserMenuForm({
 													? 'Saving...'
 													: 'Save Changes'
 												: batchCreateMenuMutation.isPending
-													? 'Creating...'
-													: 'Create Menu'}
+													? isTemplateMode
+														? 'Creating Template...'
+														: 'Creating...'
+													: isTemplateMode
+														? 'Create Template'
+														: 'Create Menu'}
 										</Button>
 									</div>
 								</form>
