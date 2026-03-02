@@ -17,6 +17,12 @@ export const Route = createFileRoute('/$orgSlug/exercises_/create')({
 				input: { organisationId: userOrgId },
 			}),
 		)
+
+		await context.queryClient.prefetchQuery(
+			orpc.exercise.getAllOrg.queryOptions({
+				input: { organisationId: userOrgId },
+			}),
+		)
 	},
 	ssr: false,
 })

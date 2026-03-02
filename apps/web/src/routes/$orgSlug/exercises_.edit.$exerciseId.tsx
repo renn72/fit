@@ -22,6 +22,11 @@ export const Route = createFileRoute('/$orgSlug/exercises_/edit/$exerciseId')({
 				}),
 			),
 			context.queryClient.prefetchQuery(
+				orpc.exercise.getAllOrg.queryOptions({
+					input: { organisationId: userOrgId },
+				}),
+			),
+			context.queryClient.prefetchQuery(
 				orpc.movement.getAllOrg.queryOptions({
 					input: { organisationId: userOrgId },
 				}),
@@ -51,6 +56,26 @@ function EditExercisePage() {
 		return <div>Exercise not found</div>
 	}
 
+	type SuperSetLink = {
+		id: string
+		exerciseId: string
+		order: number
+		exercise: {
+			id: string
+			name: string
+			movementId: string | null
+			movementName: string | null
+			sets: number | null
+			reps: number | null
+			repUnit: string | null
+			ormPercent: number | null
+			tempoDown: number | null
+			tempoPause: number | null
+			tempoUp: number | null
+			notes: string | null
+		} | null
+	}
+
 	const formExercise: ExerciseFormExercise = {
 		id: exercise.id,
 		name: exercise.name,
@@ -66,6 +91,30 @@ function EditExercisePage() {
 		tempoPause: exercise.tempoPause,
 		tempoUp: exercise.tempoUp,
 		notes: exercise.notes,
+		isSuperSet: exercise.isSuperSet,
+		superSetExercises: (
+			(exercise.superSetExercises ?? []) as SuperSetLink[]
+		).map((link) => ({
+			id: link.id,
+			exerciseId: link.exerciseId,
+			order: link.order,
+			exercise: link.exercise
+				? {
+						id: link.exercise.id,
+						name: link.exercise.name,
+						movementId: link.exercise.movementId,
+						movementName: link.exercise.movementName,
+						sets: link.exercise.sets,
+						reps: link.exercise.reps,
+						repUnit: link.exercise.repUnit,
+						ormPercent: link.exercise.ormPercent,
+						tempoDown: link.exercise.tempoDown,
+						tempoPause: link.exercise.tempoPause,
+						tempoUp: link.exercise.tempoUp,
+						notes: link.exercise.notes,
+					}
+				: null,
+		})),
 	}
 
 	return (

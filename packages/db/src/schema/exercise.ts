@@ -28,6 +28,10 @@ export const exercise = s.sqliteTable(
 		tempoPause: s.integer('tempo_pause'),
 		tempoUp: s.integer('tempo_up'),
 		notes: s.text('notes'),
+		isSuperSetChild: s
+			.integer('is_superset', { mode: 'boolean' })
+			.default(false)
+			.notNull(),
 		isSuperSet: s
 			.integer('is_superset', { mode: 'boolean' })
 			.default(false)

@@ -9,6 +9,7 @@ import { DataTableColumnHeader } from '@/components/data-table/data-table-column
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
@@ -30,6 +31,7 @@ import _ from 'lodash'
 interface Exercise {
 	id: string
 	name: string
+	isSuperSet: boolean
 	movementId: string | null
 	movementName: string | null
 	sets: number | null
@@ -43,6 +45,19 @@ interface Exercise {
 	tempoPause: number | null
 	tempoUp: number | null
 	notes: string | null
+	superSetExercises: Array<{
+		id: string
+		exerciseId: string
+		order: number
+		exercise: {
+			id: string
+			name: string
+			movementName: string | null
+			sets: number | null
+			reps: number | null
+			repUnit: string | null
+		} | null
+	}>
 	createdAt: Date
 }
 
@@ -59,6 +74,22 @@ const columns = [
 		},
 		enableSorting: true,
 		enableHiding: false,
+	}),
+	columnHelper.accessor('isSuperSet', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Superset' />
+		),
+		cell: ({ row }) => (
+			<Checkbox
+				checked={row.getValue('isSuperSet')}
+				disabled
+				aria-label='Is superset'
+			/>
+		),
+		meta: {
+			label: 'Superset',
+			variant: 'boolean',
+		},
 	}),
 	columnHelper.accessor('movementName', {
 		header: ({ column }) => (
@@ -162,7 +193,13 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 						const movementMatch = (exercise.movementName ?? '')
 							.toLowerCase()
 							.includes(normalizedQuery)
-						return nameMatch || movementMatch
+						const memberMatch = (exercise.superSetExercises ?? []).some(
+							(link) =>
+								(link.exercise?.name ?? '')
+									.toLowerCase()
+									.includes(normalizedQuery),
+						)
+						return nameMatch || movementMatch || memberMatch
 					})
 
 		if (sort && sort.length > 0) {
@@ -231,7 +268,7 @@ function ExercisesContent({ userOrgId }: { userOrgId: string }) {
 				<Input
 					value={q}
 					onChange={(event) => handleSearchChange(event.target.value)}
-					placeholder='Search by name or movement...'
+					placeholder='Search by name, movement, or superset member...'
 				/>
 			</div>
 
@@ -305,66 +342,155 @@ function ExercisesGridView({
 								/>
 							</div>
 
-							{exercise.movementName && (
-								<div className='flex gap-1'>
+							<div className='flex flex-wrap gap-1'>
+								{exercise.isSuperSet ? (
+									<Badge variant='default'>Superset</Badge>
+								) : exercise.movementName ? (
 									<Badge variant='secondary'>{exercise.movementName}</Badge>
-								</div>
-							)}
+								) : (
+									<Badge variant='outline'>No movement</Badge>
+								)}
+							</div>
 						</CardHeader>
 
 						<CardContent className='space-y-4 pt-4'>
-							<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
-								<div className='rounded-lg border bg-orange-50/80 p-2 dark:bg-orange-950/20'>
-									<div className='text-[11px] text-muted-foreground'>
-										Volume
+							{exercise.isSuperSet ? (
+								<>
+									<div className='grid grid-cols-2 gap-2 sm:grid-cols-3'>
+										<div className='rounded-lg border bg-pink-50/80 p-2 dark:bg-pink-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												RPE
+											</div>
+											<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+												{exercise.targetRpe ?? '-'}
+											</div>
+										</div>
+										<div className='rounded-lg border bg-cyan-50/80 p-2 dark:bg-cyan-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Rest
+											</div>
+											<div className='text-sm font-semibold text-cyan-700 dark:text-cyan-300'>
+												{exercise.restTime ?? '-'} {exercise.restUnit || ''}
+											</div>
+										</div>
+										<div className='rounded-lg border bg-violet-50/80 p-2 dark:bg-violet-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Members
+											</div>
+											<div className='text-sm font-semibold text-violet-700 dark:text-violet-300'>
+												{exercise.superSetExercises?.length ?? 0}
+											</div>
+										</div>
 									</div>
-									<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
-										{exercise.sets ?? '-'} x {exercise.reps ?? '-'}
-									</div>
-								</div>
-								<div className='rounded-lg border bg-emerald-50/80 p-2 dark:bg-emerald-950/20'>
-									<div className='text-[11px] text-muted-foreground'>Unit</div>
-									<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
-										{exercise.repUnit || '-'}
-									</div>
-								</div>
-								<div className='rounded-lg border bg-sky-50/80 p-2 dark:bg-sky-950/20'>
-									<div className='text-[11px] text-muted-foreground'>% 1RM</div>
-									<div className='text-sm font-semibold text-sky-700 dark:text-sky-300'>
-										{exercise.ormPercent ? `${exercise.ormPercent}%` : '-'}
-									</div>
-								</div>
-								<div className='rounded-lg border bg-pink-50/80 p-2 dark:bg-pink-950/20'>
-									<div className='text-[11px] text-muted-foreground'>RPE</div>
-									<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
-										{exercise.targetRpe ?? '-'}
-									</div>
-								</div>
-							</div>
 
-							<div className='space-y-2 rounded-xl border bg-muted/20 p-3 text-sm'>
-								<div className='flex items-center gap-2'>
-									<ClockCountdownIcon className='size-4 text-cyan-600 dark:text-cyan-300' />
-									<span>
-										Rest: {exercise.restTime ?? '-'} {exercise.restUnit || ''}
-									</span>
-								</div>
-								<div className='flex items-center gap-2'>
-									<TargetIcon className='size-4 text-emerald-600 dark:text-emerald-300' />
-									<span>
-										Tempo: {exercise.tempoDown ?? '-'} /{' '}
-										{exercise.tempoPause ?? '-'} / {exercise.tempoUp ?? '-'}
-									</span>
-								</div>
-								{exercise.notes && (
-									<div className='flex items-start gap-2'>
-										<BarbellIcon className='mt-0.5 size-4 text-orange-600 dark:text-orange-300' />
-										<p className='line-clamp-2 text-muted-foreground'>
-											{exercise.notes}
-										</p>
+									<div className='space-y-2 rounded-xl border bg-muted/20 p-3 text-sm'>
+										<div className='font-medium text-muted-foreground'>
+											Superset exercises
+										</div>
+										{exercise.superSetExercises?.length ? (
+											exercise.superSetExercises.map((link) => (
+												<div
+													key={link.id}
+													className='flex items-center justify-between rounded-md border bg-background px-2 py-1.5'
+												>
+													<div className='min-w-0'>
+														<p className='truncate font-medium'>
+															{link.exercise?.name ?? 'Unknown exercise'}
+														</p>
+														{link.exercise?.movementName && (
+															<p className='truncate text-xs text-muted-foreground'>
+																{link.exercise.movementName}
+															</p>
+														)}
+													</div>
+													{link.exercise && (
+														<span className='text-xs text-muted-foreground'>
+															{link.exercise.sets ?? '-'} x{' '}
+															{link.exercise.reps ?? '-'}{' '}
+															{link.exercise.repUnit ?? ''}
+														</span>
+													)}
+												</div>
+											))
+										) : (
+											<p className='text-muted-foreground'>
+												No member exercises configured.
+											</p>
+										)}
 									</div>
-								)}
-							</div>
+
+									{exercise.notes && (
+										<div className='flex items-start gap-2 rounded-xl border bg-muted/20 p-3 text-sm'>
+											<BarbellIcon className='mt-0.5 size-4 text-orange-600 dark:text-orange-300' />
+											<p className='line-clamp-2 text-muted-foreground'>
+												{exercise.notes}
+											</p>
+										</div>
+									)}
+								</>
+							) : (
+								<>
+									<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+										<div className='rounded-lg border bg-orange-50/80 p-2 dark:bg-orange-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Volume
+											</div>
+											<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+												{exercise.sets ?? '-'} x {exercise.reps ?? '-'}
+											</div>
+										</div>
+										<div className='rounded-lg border bg-emerald-50/80 p-2 dark:bg-emerald-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Unit
+											</div>
+											<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+												{exercise.repUnit || '-'}
+											</div>
+										</div>
+										<div className='rounded-lg border bg-sky-50/80 p-2 dark:bg-sky-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												% 1RM
+											</div>
+											<div className='text-sm font-semibold text-sky-700 dark:text-sky-300'>
+												{exercise.ormPercent ? `${exercise.ormPercent}%` : '-'}
+											</div>
+										</div>
+										<div className='rounded-lg border bg-pink-50/80 p-2 dark:bg-pink-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												RPE
+											</div>
+											<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+												{exercise.targetRpe ?? '-'}
+											</div>
+										</div>
+									</div>
+
+									<div className='space-y-2 rounded-xl border bg-muted/20 p-3 text-sm'>
+										<div className='flex items-center gap-2'>
+											<ClockCountdownIcon className='size-4 text-cyan-600 dark:text-cyan-300' />
+											<span>
+												Rest: {exercise.restTime ?? '-'}{' '}
+												{exercise.restUnit || ''}
+											</span>
+										</div>
+										<div className='flex items-center gap-2'>
+											<TargetIcon className='size-4 text-emerald-600 dark:text-emerald-300' />
+											<span>
+												Tempo: {exercise.tempoDown ?? '-'} /{' '}
+												{exercise.tempoPause ?? '-'} / {exercise.tempoUp ?? '-'}
+											</span>
+										</div>
+										{exercise.notes && (
+											<div className='flex items-start gap-2'>
+												<BarbellIcon className='mt-0.5 size-4 text-orange-600 dark:text-orange-300' />
+												<p className='line-clamp-2 text-muted-foreground'>
+													{exercise.notes}
+												</p>
+											</div>
+										)}
+									</div>
+								</>
+							)}
 						</CardContent>
 					</Card>
 				))}
