@@ -22,7 +22,7 @@ export const Route = createFileRoute('/$orgSlug/recipes_/create')({
 
 function CreateRecipePage() {
 	const { session } = useRouteContext({
-		from: '/$orgSlug/recipes/create',
+		from: '/$orgSlug/recipes_/create',
 	})
 	const userOrgId = session?.user?.organisationId
 
