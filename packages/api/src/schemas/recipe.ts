@@ -37,6 +37,7 @@ export const RecipeUpdateInput = z.object({
 	category: z.string().optional().nullable(),
 	image: z.string().optional().nullable(),
 	metaTags: z.string().optional().nullable(),
+	ingredients: z.array(RecipeIngredientInput).optional(),
 })
 
 export const RecipeDeleteInput = z.object({

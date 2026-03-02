@@ -2,19 +2,16 @@
 
 import * as React from 'react'
 
+import { RecipeRowActions } from '@/components/admin/recipe/recipe-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
@@ -23,13 +20,7 @@ import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
-import {
-	ChefHatIcon,
-	FireIcon,
-	ListIcon,
-	SquaresFourIcon,
-	TagIcon,
-} from '@phosphor-icons/react'
+import { ForkKnifeIcon, ListIcon, SquaresFourIcon } from '@phosphor-icons/react'
 import _ from 'lodash'
 
 interface RecipeIngredient {
@@ -43,13 +34,14 @@ interface RecipeIngredient {
 		protein: number
 		fat: number
 		carbohydrate: number
+		serveSize?: number
 	}
 }
 
 interface Recipe {
 	id: string
 	name: string
-	description: string
+	description: string | null
 	category: string | null
 	image: string | null
 	metaTags: string
@@ -66,6 +58,44 @@ interface RecipeWithTotals extends Recipe {
 }
 
 const columnHelper = createColumnHelper<RecipeWithTotals>()
+
+function splitCsv(value: string | null | undefined): string[] {
+	if (!value) return []
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
+function calculateRecipeTotals(recipe: Recipe): RecipeWithTotals {
+	const totals = recipe.ingredients.reduce(
+		(acc, item) => {
+			const baseServeSize =
+				item.ingredient.serveSize && item.ingredient.serveSize > 0
+					? item.ingredient.serveSize
+					: 100
+			const ratio = item.amount / baseServeSize
+			acc.calories += item.ingredient.calories * ratio
+			acc.protein += item.ingredient.protein * ratio
+			acc.fat += item.ingredient.fat * ratio
+			acc.carbs += item.ingredient.carbohydrate * ratio
+			return acc
+		},
+		{ calories: 0, protein: 0, fat: 0, carbs: 0 },
+	)
+
+	return {
+		...recipe,
+		totalCalories: totals.calories,
+		totalProtein: totals.protein,
+		totalFat: totals.fat,
+		totalCarbs: totals.carbs,
+	}
+}
+
+function formatMacro(value: number, suffix: string): string {
+	return `${Math.round(value * 10) / 10}${suffix}`
+}
 
 const columns = [
 	columnHelper.accessor('name', {
@@ -84,7 +114,9 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Description' />
 		),
 		cell: ({ row }) => (
-			<div className='max-w-60 truncate'>{row.getValue('description')}</div>
+			<div className='max-w-60 truncate'>
+				{(row.getValue('description') as string | null) ?? '-'}
+			</div>
 		),
 		meta: {
 			label: 'Description',
@@ -95,6 +127,27 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Category' />
 		),
+		cell: ({ row }) => {
+			const categories = splitCsv(row.getValue('category') as string | null)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
 		meta: {
 			label: 'Category',
 			variant: 'text',
@@ -157,22 +210,19 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Tags' />
 		),
 		cell: ({ row }) => {
-			const tags = row.getValue('metaTags') as string
-			if (!tags) return null
-			const tagList = tags.split(',').filter(Boolean).slice(0, 3)
+			const tags = splitCsv(row.getValue('metaTags') as string)
+			if (tags.length === 0)
+				return <span className='text-muted-foreground'>-</span>
 			return (
 				<div className='flex flex-wrap gap-1'>
-					{tagList.map((tag, i) => (
-						<span
-							key={i}
-							className='inline-flex items-center py-1 px-2 text-xs font-medium rounded-md ring-1 ring-inset bg-muted ring-gray-500/10'
-						>
-							{tag.trim()}
-						</span>
+					{tags.slice(0, 3).map((tag) => (
+						<Badge key={tag} variant='secondary'>
+							{tag}
+						</Badge>
 					))}
-					{tags.split(',').filter(Boolean).length > 3 && (
+					{tags.length > 3 && (
 						<span className='text-xs text-muted-foreground'>
-							+{tags.split(',').filter(Boolean).length - 3} more
+							+{tags.length - 3} more
 						</span>
 					)}
 				</div>
@@ -187,6 +237,7 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created By' />
 		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
 		meta: {
 			label: 'Created By',
 			variant: 'text',
@@ -202,31 +253,20 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => (
+			<RecipeRowActions
+				recipe={{
+					id: row.original.id,
+					name: row.original.name,
+				}}
+			/>
+		),
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/recipes')
-
-function calculateRecipeTotals(recipe: Recipe): RecipeWithTotals {
-	const totals = recipe.ingredients.reduce(
-		(acc, item) => {
-			const ratio = item.amount / 100 // Assuming ingredient macros are per 100g
-			acc.calories += item.ingredient.calories * ratio
-			acc.protein += item.ingredient.protein * ratio
-			acc.fat += item.ingredient.fat * ratio
-			acc.carbs += item.ingredient.carbohydrate * ratio
-			return acc
-		},
-		{ calories: 0, protein: 0, fat: 0, carbs: 0 },
-	)
-
-	return {
-		...recipe,
-		totalCalories: totals.calories,
-		totalProtein: totals.protein,
-		totalFat: totals.fat,
-		totalCarbs: totals.carbs,
-	}
-}
 
 export function RecipesPage() {
 	const { session } = route.useRouteContext()
@@ -245,18 +285,31 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 	)
 
 	const navigate = route.useNavigate()
-	const { view, page, perPage, sort } = route.useSearch()
+	const { view, q, page, perPage, sort } = route.useSearch()
 
 	const recipesData: RecipeWithTotals[] = React.useMemo(() => {
 		return ((recipes as Recipe[]) ?? []).map(calculateRecipeTotals)
 	}, [recipes])
 
-	const { paginatedData, pageCount } = React.useMemo(() => {
+	const { paginatedData, pageCount, totalCount } = React.useMemo(() => {
 		const processed = [...recipesData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((recipe) => {
+						const nameMatch = recipe.name
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const categoryMatch = (recipe.category ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						return nameMatch || categoryMatch
+					})
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof RecipeWithTotals]
 				const bValue = b[id as keyof RecipeWithTotals]
 
@@ -269,14 +322,14 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
-		return { paginatedData, pageCount }
-	}, [recipesData, page, perPage, sort])
+		return { paginatedData, pageCount, totalCount: total }
+	}, [recipesData, q, sort, page, perPage])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -285,13 +338,24 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
 			sorting: sort as any,
+			columnPinning: { right: ['actions'] },
 		},
 	})
 
 	const handleViewChange = (newView: string) => {
 		navigate({
 			to: '/$orgSlug/recipes',
+			params: { orgSlug },
 			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
+			replace: true,
+		})
+	}
+
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/recipes',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
 			replace: true,
 		})
 	}
@@ -300,9 +364,17 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Recipes</h1>
-				<Link to='/$orgSlug/recipes/create' params={{ orgSlug: orgSlug }}>
-					<Button>Create</Button>
+				<Link to='/$orgSlug/recipes/create' params={{ orgSlug }}>
+					<Button>Create Recipe</Button>
 				</Link>
+			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
@@ -330,7 +402,7 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={recipesData.length}
+						total={totalCount}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -350,128 +422,115 @@ function RecipesGridView({ data, page, perPage, total }: RecipesGridViewProps) {
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-				{data.map((recipe) => (
-					<Card key={recipe.id} className='flex flex-col'>
-						<CardHeader className='pb-3'>
-							<CardTitle className='text-lg'>{recipe.name}</CardTitle>
-							{recipe.category && (
-								<CardDescription className='flex gap-1 items-center'>
-									<ChefHatIcon className='size-3' />
-									{recipe.category}
-								</CardDescription>
-							)}
-						</CardHeader>
-						<CardContent className='flex-1'>
-							<div className='space-y-4'>
-								{/* Nutrition Totals */}
-								<div className='grid grid-cols-4 gap-2 text-center'>
-									<div className='p-2 bg-orange-50 rounded-lg'>
-										<div className='text-xs text-muted-foreground'>Cal</div>
-										<div className='font-semibold text-orange-600'>
-											{recipe.totalCalories.toFixed(0)}
-										</div>
+			<div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
+				{data.map((recipe) => {
+					const categories = splitCsv(recipe.category)
+					const tags = splitCsv(recipe.metaTags)
+
+					return (
+						<Card
+							key={recipe.id}
+							className='overflow-hidden shadow-sm transition-shadow hover:shadow-md border-border/70 bg-card'
+						>
+							<CardHeader className='pb-4 space-y-3 bg-gradient-to-r border-b from-orange-50/70 to-emerald-50/70 dark:from-orange-950/20 dark:to-emerald-950/20'>
+								<div className='flex gap-3 justify-between items-start'>
+									<div className='min-w-0'>
+										<CardTitle className='text-lg leading-tight truncate'>
+											{recipe.name}
+										</CardTitle>
+										<p className='text-xs text-muted-foreground'>
+											By {recipe.creatorName || 'Unknown'} •{' '}
+											{new Date(recipe.createdAt).toLocaleDateString()}
+										</p>
 									</div>
-									<div className='p-2 bg-blue-50 rounded-lg'>
-										<div className='text-xs text-muted-foreground'>Pro</div>
-										<div className='font-semibold text-blue-600'>
-											{recipe.totalProtein.toFixed(0)}g
-										</div>
+									<RecipeRowActions
+										recipe={{ id: recipe.id, name: recipe.name }}
+										buttonClassName='h-8 w-8'
+									/>
+								</div>
+
+								{(categories.length > 0 || tags.length > 0) && (
+									<div className='flex flex-wrap gap-1'>
+										{categories.map((category) => (
+											<Badge key={`category-${category}`} variant='secondary'>
+												{category}
+											</Badge>
+										))}
+										{tags.map((tag) => (
+											<Badge key={`tag-${tag}`} variant='outline'>
+												{tag}
+											</Badge>
+										))}
 									</div>
-									<div className='p-2 bg-green-50 rounded-lg'>
-										<div className='text-xs text-muted-foreground'>Carb</div>
-										<div className='font-semibold text-green-600'>
-											{recipe.totalCarbs.toFixed(0)}g
+								)}
+							</CardHeader>
+							<CardContent className='pt-4 space-y-4'>
+								<div>
+									<div className='mb-2 text-sm font-medium'>Nutrition</div>
+									<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+										<div className='p-2 rounded-lg border bg-orange-50/80 dark:bg-orange-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Calories
+											</div>
+											<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+												{formatMacro(recipe.totalCalories, ' kcal')}
+											</div>
 										</div>
-									</div>
-									<div className='p-2 bg-yellow-50 rounded-lg'>
-										<div className='text-xs text-muted-foreground'>Fat</div>
-										<div className='font-semibold text-yellow-600'>
-											{recipe.totalFat.toFixed(0)}g
+										<div className='p-2 rounded-lg border bg-emerald-50/80 dark:bg-emerald-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Protein
+											</div>
+											<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+												{formatMacro(recipe.totalProtein, ' g')}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-blue-50/80 dark:bg-blue-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Carbs
+											</div>
+											<div className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+												{formatMacro(recipe.totalCarbs, ' g')}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-pink-50/80 dark:bg-pink-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Fat
+											</div>
+											<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+												{formatMacro(recipe.totalFat, ' g')}
+											</div>
 										</div>
 									</div>
 								</div>
 
-								{/* Ingredients ListIcon */}
-								{recipe.ingredients.length > 0 && (
-									<div className='space-y-2'>
+								<ScrollArea className='h-40 rounded-xl border bg-muted/20'>
+									<div className='p-3 space-y-2'>
 										<div className='text-sm font-medium text-muted-foreground'>
 											Ingredients ({recipe.ingredients.length})
 										</div>
-										<div className='space-y-2'>
-											{recipe.ingredients.slice(0, 3).map((item) => {
-												const ratio = item.amount / 100
-												const cal = item.ingredient.calories * ratio
-												const pro = item.ingredient.protein * ratio
-												const carb = item.ingredient.carbohydrate * ratio
-												const fat = item.ingredient.fat * ratio
-												return (
-													<div
-														key={item.id}
-														className='py-2 text-sm border-b last:border-0 border-border/50'
-													>
-														<div className='flex justify-between items-center mb-1'>
-															<span className='flex-1 font-medium truncate'>
-																{item.ingredient.name}
-															</span>
-															<span className='text-xs text-muted-foreground'>
-																{item.amount}
-																{item.unit}
-															</span>
-														</div>
-														<div className='grid grid-cols-4 gap-1 text-xs'>
-															<div className='text-orange-600'>
-																{cal.toFixed(0)} cal
-															</div>
-															<div className='text-blue-600'>
-																{pro.toFixed(1)}g pro
-															</div>
-															<div className='text-green-600'>
-																{carb.toFixed(1)}g carb
-															</div>
-															<div className='text-yellow-600'>
-																{fat.toFixed(1)}g fat
-															</div>
-														</div>
-													</div>
-												)
-											})}
-											{recipe.ingredients.length > 3 && (
-												<div className='py-1 text-sm text-muted-foreground'>
-													+{recipe.ingredients.length - 3} more ingredients
+										{recipe.ingredients.map((item) => (
+											<div
+												key={item.id}
+												className='flex gap-2 items-center py-1.5 px-2 rounded-md border bg-background'
+											>
+												<ForkKnifeIcon className='size-3.5 text-emerald-600 dark:text-emerald-300 shrink-0' />
+												<div className='min-w-0 flex-1'>
+													<p className='text-xs font-medium truncate'>
+														{item.ingredient.name}
+													</p>
+													<p className='text-[11px] text-muted-foreground'>
+														{item.amount}
+														{item.unit}
+													</p>
 												</div>
-											)}
-										</div>
+											</div>
+										))}
 									</div>
-								)}
-
-								{/* Tags */}
-								{recipe.metaTags && (
-									<div className='flex flex-wrap gap-1 pt-2'>
-										<TagIcon className='mt-0.5 size-3 text-muted-foreground' />
-										{recipe.metaTags
-											.split(',')
-											.filter(Boolean)
-											.slice(0, 3)
-											.map((tag, i) => (
-												<span
-													key={i}
-													className='inline-flex items-center py-0.5 px-1.5 text-xs font-medium rounded-md ring-1 ring-inset bg-muted ring-gray-500/10'
-												>
-													{tag.trim()}
-												</span>
-											))}
-										{recipe.metaTags.split(',').filter(Boolean).length > 3 && (
-											<span className='text-xs text-muted-foreground'>
-												+{recipe.metaTags.split(',').filter(Boolean).length - 3}
-											</span>
-										)}
-									</div>
-								)}
-							</div>
-						</CardContent>
-					</Card>
-				))}
+								</ScrollArea>
+							</CardContent>
+						</Card>
+					)
+				})}
 			</div>
 
 			{totalPages > 1 && (

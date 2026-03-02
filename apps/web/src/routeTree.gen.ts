@@ -43,6 +43,7 @@ import { Route as OrgSlugUserMenuEditMenuIdRouteImport } from './routes/$orgSlug
 import { Route as OrgSlugRecipesCreateRouteImport } from './routes/$orgSlug/recipes_.create'
 import { Route as OrgSlugMenuTemplatesCreateRouteImport } from './routes/$orgSlug/menu-templates_.create'
 import { Route as OrgSlugIngredientsCreateRouteImport } from './routes/$orgSlug/ingredients_.create'
+import { Route as OrgSlugRecipesEditRecipeIdRouteImport } from './routes/$orgSlug/recipes_.edit.$recipeId'
 import { Route as OrgSlugIngredientsEditIngredientIdRouteImport } from './routes/$orgSlug/ingredients_.edit.$ingredientId'
 
 const SigninRoute = SigninRouteImport.update({
@@ -218,6 +219,12 @@ const OrgSlugIngredientsCreateRoute =
     path: '/ingredients/create',
     getParentRoute: () => OrgSlugRoute,
   } as any)
+const OrgSlugRecipesEditRecipeIdRoute =
+  OrgSlugRecipesEditRecipeIdRouteImport.update({
+    id: '/recipes_/edit/$recipeId',
+    path: '/recipes/edit/$recipeId',
+    getParentRoute: () => OrgSlugRoute,
+  } as any)
 const OrgSlugIngredientsEditIngredientIdRoute =
   OrgSlugIngredientsEditIngredientIdRouteImport.update({
     id: '/ingredients_/edit/$ingredientId',
@@ -261,6 +268,7 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/user-menu/$menuId': typeof OrgSlugUserMenuMenuIdRoute
   '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/ingredients/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/recipes/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -298,6 +306,7 @@ export interface FileRoutesByTo {
   '/$orgSlug/user-menu/$menuId': typeof OrgSlugUserMenuMenuIdRoute
   '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/ingredients/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/recipes/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -336,6 +345,7 @@ export interface FileRoutesById {
   '/$orgSlug/user-menu/$menuId': typeof OrgSlugUserMenuMenuIdRoute
   '/$orgSlug/workouts_/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/ingredients_/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/recipes_/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -375,6 +385,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menu/$menuId'
     | '/$orgSlug/workouts/create'
     | '/$orgSlug/ingredients/edit/$ingredientId'
+    | '/$orgSlug/recipes/edit/$recipeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -412,6 +423,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menu/$menuId'
     | '/$orgSlug/workouts/create'
     | '/$orgSlug/ingredients/edit/$ingredientId'
+    | '/$orgSlug/recipes/edit/$recipeId'
   id:
     | '__root__'
     | '/'
@@ -449,6 +461,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menu/$menuId'
     | '/$orgSlug/workouts_/create'
     | '/$orgSlug/ingredients_/edit/$ingredientId'
+    | '/$orgSlug/recipes_/edit/$recipeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -702,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugIngredientsCreateRouteImport
       parentRoute: typeof OrgSlugRoute
     }
+    '/$orgSlug/recipes_/edit/$recipeId': {
+      id: '/$orgSlug/recipes_/edit/$recipeId'
+      path: '/recipes/edit/$recipeId'
+      fullPath: '/$orgSlug/recipes/edit/$recipeId'
+      preLoaderRoute: typeof OrgSlugRecipesEditRecipeIdRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
     '/$orgSlug/ingredients_/edit/$ingredientId': {
       id: '/$orgSlug/ingredients_/edit/$ingredientId'
       path: '/ingredients/edit/$ingredientId'
@@ -731,6 +751,7 @@ interface OrgSlugRouteChildren {
   OrgSlugUserMenuMenuIdRoute: typeof OrgSlugUserMenuMenuIdRoute
   OrgSlugWorkoutsCreateRoute: typeof OrgSlugWorkoutsCreateRoute
   OrgSlugIngredientsEditIngredientIdRoute: typeof OrgSlugIngredientsEditIngredientIdRoute
+  OrgSlugRecipesEditRecipeIdRoute: typeof OrgSlugRecipesEditRecipeIdRoute
 }
 
 const OrgSlugRouteChildren: OrgSlugRouteChildren = {
@@ -753,6 +774,7 @@ const OrgSlugRouteChildren: OrgSlugRouteChildren = {
   OrgSlugWorkoutsCreateRoute: OrgSlugWorkoutsCreateRoute,
   OrgSlugIngredientsEditIngredientIdRoute:
     OrgSlugIngredientsEditIngredientIdRoute,
+  OrgSlugRecipesEditRecipeIdRoute: OrgSlugRecipesEditRecipeIdRoute,
 }
 
 const OrgSlugRouteWithChildren =

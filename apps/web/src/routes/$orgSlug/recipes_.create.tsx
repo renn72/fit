@@ -1,7 +1,11 @@
 import { RecipeCreateForm } from '@/components/admin/recipe/recipe-create-form'
 import { orpc } from '@/utils/orpc'
 
-import { createFileRoute, useRouteContext } from '@tanstack/react-router'
+import {
+	createFileRoute,
+	useNavigate,
+	useRouteContext,
+} from '@tanstack/react-router'
 
 export const Route = createFileRoute('/$orgSlug/recipes_/create')({
 	component: CreateRecipePage,
@@ -21,6 +25,8 @@ export const Route = createFileRoute('/$orgSlug/recipes_/create')({
 })
 
 function CreateRecipePage() {
+	const navigate = useNavigate()
+	const { orgSlug } = Route.useParams()
 	const { session } = useRouteContext({
 		from: '/$orgSlug/recipes_/create',
 	})
@@ -31,15 +37,16 @@ function CreateRecipePage() {
 	}
 
 	return (
-		<div className='flex flex-col gap-6 p-6 mx-auto w-full max-w-4xl'>
-			<div className='space-y-2'>
-				<h1 className='text-3xl font-bold tracking-tight'>Create Recipe</h1>
-				<p className='text-muted-foreground'>
-					Create a new recipe by filling in the details below and adding
-					ingredients.
-				</p>
-			</div>
-			<RecipeCreateForm organisationId={userOrgId} />
+		<div className='w-full'>
+			<RecipeCreateForm
+				organisationId={userOrgId}
+				onSuccess={() => {
+					navigate({
+						to: '/$orgSlug/recipes',
+						params: { orgSlug },
+					})
+				}}
+			/>
 		</div>
 	)
 }

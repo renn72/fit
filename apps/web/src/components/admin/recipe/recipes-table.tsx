@@ -2,13 +2,15 @@
 
 import * as React from 'react'
 
+import { RecipeRowActions } from '@/components/admin/recipe/recipe-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -16,13 +18,11 @@ import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
-// Define the shape of our data
 interface Recipe {
 	id: string
 	name: string
-	description: string
+	description: string | null
 	category: string | null
 	image: string | null
 	metaTags: string
@@ -31,6 +31,14 @@ interface Recipe {
 }
 
 const columnHelper = createColumnHelper<Recipe>()
+
+function splitCsv(value: string | null | undefined): string[] {
+	if (!value) return []
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
 
 const columns = [
 	columnHelper.accessor('name', {
@@ -49,7 +57,9 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Description' />
 		),
 		cell: ({ row }) => (
-			<div className='max-w-60 truncate'>{row.getValue('description')}</div>
+			<div className='max-w-60 truncate'>
+				{(row.getValue('description') as string | null) ?? '-'}
+			</div>
 		),
 		meta: {
 			label: 'Description',
@@ -60,6 +70,27 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Category' />
 		),
+		cell: ({ row }) => {
+			const categories = splitCsv(row.getValue('category') as string | null)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
 		meta: {
 			label: 'Category',
 			variant: 'text',
@@ -70,22 +101,21 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Tags' />
 		),
 		cell: ({ row }) => {
-			const tags = row.getValue('metaTags') as string
-			if (!tags) return null
-			const tagList = tags.split(',').filter(Boolean).slice(0, 3)
+			const tags = splitCsv(row.getValue('metaTags') as string)
+			if (tags.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
 			return (
 				<div className='flex flex-wrap gap-1'>
-					{tagList.map((tag, i) => (
-						<span
-							key={i}
-							className='inline-flex items-center py-1 px-2 text-xs font-medium rounded-md ring-1 ring-inset bg-muted ring-gray-500/10'
-						>
-							{tag.trim()}
-						</span>
+					{tags.slice(0, 3).map((tag) => (
+						<Badge key={tag} variant='outline'>
+							{tag}
+						</Badge>
 					))}
-					{tags.split(',').filter(Boolean).length > 3 && (
+					{tags.length > 3 && (
 						<span className='text-xs text-muted-foreground'>
-							+{tags.split(',').filter(Boolean).length - 3} more
+							+{tags.length - 3} more
 						</span>
 					)}
 				</div>
@@ -100,6 +130,7 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created By' />
 		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
 		meta: {
 			label: 'Created By',
 			variant: 'text',
@@ -115,6 +146,17 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => (
+			<RecipeRowActions
+				recipe={{
+					id: row.original.id,
+					name: row.original.name,
+				}}
+			/>
+		),
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/recipes')
@@ -127,7 +169,8 @@ export function RecipesTable() {
 	return <Table userOrgId={userOrgId} />
 }
 
-const Table = ({ userOrgId }: { userOrgId: string }) => {
+function Table({ userOrgId }: { userOrgId: string }) {
+	const navigate = route.useNavigate()
 	const { orgSlug } = route.useParams()
 	const { data: recipes } = useSuspenseQuery(
 		orpc.recipe.getOrg.queryOptions({
@@ -135,25 +178,28 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		}),
 	)
 
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<Recipe>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
-
+	const { q, page, perPage, sort } = route.useSearch()
 	const recipesData = (recipes as Recipe[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...recipesData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((recipe) => {
+						const nameMatch = recipe.name
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const categoryMatch = (recipe.category ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						return nameMatch || categoryMatch
+					})
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
-			processed.sort((a, b) => {
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Recipe]
 				const bValue = b[id as keyof Recipe]
 
@@ -166,14 +212,14 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [recipesData, page, perPage, sorting])
+	}, [recipesData, q, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -181,18 +227,35 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
+			columnPinning: { right: ['actions'] },
 		},
 	})
+
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/recipes',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
 
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Recipes</h1>
+				<Link to='/$orgSlug/recipes/create' params={{ orgSlug }}>
+					<Button>Create Recipe</Button>
+				</Link>
 			</div>
-			<Link to='/$orgSlug/recipes/create' params={{ orgSlug: orgSlug }}>
-				<Button>Create</Button>
-			</Link>
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
+			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>
 					<DataTableFilterList table={table} />

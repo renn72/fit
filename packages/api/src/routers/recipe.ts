@@ -99,7 +99,10 @@ export const recipeRouter = {
 				},
 			})
 
-			return recipes
+			return recipes.map((r) => ({
+				...r,
+				creatorName: r.creator?.name ?? 'Unknown',
+			}))
 		}),
 
 	getAllAdmin: protectedProcedure
@@ -252,6 +255,25 @@ export const recipeRouter = {
 				})
 				.where(eq(recipe.id, input.id))
 				.returning()
+
+			if (input.ingredients) {
+				await db
+					.delete(recipeToIngredient)
+					.where(eq(recipeToIngredient.recipeId, input.id))
+
+				if (input.ingredients.length > 0) {
+					const ingredientLinks = input.ingredients.map((ing) => ({
+						recipeId: input.id,
+						ingredientId: ing.ingredientId,
+						isBaseIngredient: ing.isBaseIngredient,
+						altIngredientId: ing.altIngredientId ?? null,
+						amount: ing.amount,
+						unit: ing.unit,
+					}))
+
+					await db.insert(recipeToIngredient).values(ingredientLinks)
+				}
+			}
 
 			return updatedRecipe
 		}),

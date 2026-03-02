@@ -2,19 +2,22 @@
 
 import { RecipeForm } from '@/components/admin/recipe/recipe-form'
 
-export interface RecipeCreateFormProps {
+export interface RecipeEditFormProps {
 	organisationId: string
+	recipeId: string
 	onSuccess?: () => void
 }
 
-export function RecipeCreateForm({
+export function RecipeEditForm({
 	organisationId,
+	recipeId,
 	onSuccess,
-}: RecipeCreateFormProps) {
+}: RecipeEditFormProps) {
 	return (
 		<RecipeForm
-			mode='create'
+			mode='edit'
 			organisationId={organisationId}
+			recipeId={recipeId}
 			onSuccess={onSuccess}
 		/>
 	)
