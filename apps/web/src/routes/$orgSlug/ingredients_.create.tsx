@@ -19,7 +19,6 @@ function CreateIngredientPage() {
 					onClick={() =>
 						navigate({ to: '/$orgSlug/ingredients', params: { orgSlug } })
 					}
-					className='text-sm text-muted-foreground hover:text-foreground'
 				>
 					← Back to Ingredients
 				</Button>
