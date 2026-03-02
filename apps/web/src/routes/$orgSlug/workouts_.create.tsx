@@ -31,9 +31,15 @@ export const Route = createFileRoute('/$orgSlug/workouts_/create')({
 function WorkoutCreatePage() {
 	const navigate = useNavigate()
 	const { orgSlug } = Route.useParams()
+	const { session } = Route.useRouteContext()
+	const userOrgId = session?.user?.organisationId
+
+	if (!userOrgId) {
+		return <div>Missing organization</div>
+	}
 
 	return (
-		<div className='flex flex-col gap-4 p-4 mx-auto w-full max-w-4xl'>
+		<div className='flex flex-col gap-4 p-4 mx-auto w-full max-w-6xl'>
 			<div className='flex gap-4 items-center'>
 				<Button
 					onClick={() =>
@@ -53,6 +59,8 @@ function WorkoutCreatePage() {
 			</div>
 
 			<WorkoutCreateForm
+				mode='create'
+				organisationId={userOrgId}
 				onSuccess={() => {
 					navigate({ to: '/$orgSlug/workouts', params: { orgSlug } })
 				}}

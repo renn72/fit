@@ -1,6 +1,10 @@
 'use client'
 
+import * as React from 'react'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
 	Field,
 	FieldError,
@@ -8,23 +12,56 @@ import {
 	FieldLabel,
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
+import {
+	closestCorners,
+	DndContext,
+	DragOverlay,
+	KeyboardSensor,
+	PointerSensor,
+	type DragEndEvent,
+	type DragStartEvent,
+	useDraggable,
+	useDroppable,
+	useSensor,
+	useSensors,
+} from '@dnd-kit/core'
+import {
+	arrayMove,
+	SortableContext,
+	sortableKeyboardCoordinates,
+	useSortable,
+	verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import {
+	BarbellIcon,
+	DotsSixVerticalIcon,
+	PlusIcon,
+	StackPlusIcon,
+	TrashIcon,
+} from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+const WORKOUT_DROPZONE_ID = 'workout-dropzone'
+
 const workoutItemSchema = z.object({
 	id: z.string().min(1),
+	sourceId: z.string().min(1),
 	name: z.string().min(1),
 	type: z.enum(['exercise', 'superset']),
-	index: z.number().int(),
+	movementName: z.string().nullable().optional(),
+	memberCount: z.number().int().min(0).optional(),
 })
 
-const workoutCreateSchema = z.object({
+const workoutFormSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
 	description: z.string().nullable().optional(),
 	category: z.string().nullable().optional(),
@@ -34,352 +71,817 @@ const workoutCreateSchema = z.object({
 		.min(1, 'At least one exercise or superset is required'),
 })
 
-type WorkoutItem = {
+type WorkoutBuilderItem = z.infer<typeof workoutItemSchema>
+
+type LibraryItem = {
 	id: string
 	name: string
 	type: 'exercise' | 'superset'
+	movementName?: string | null
+	memberCount?: number
+}
+
+type DragData =
+	| {
+			kind: 'library'
+			item: LibraryItem
+	  }
+	| {
+			kind: 'builder'
+			item: WorkoutBuilderItem
+	  }
+
+interface WorkoutExerciseLink {
+	id: string
 	index: number
+	exercise: {
+		id: string
+		name: string
+		movementName?: string | null
+		movement?: {
+			name: string
+		} | null
+	}
+}
+
+interface WorkoutSuperSetLink {
+	id: string
+	index: number
+	superSet: {
+		id: string
+		name: string
+		superSetExercises?: Array<unknown>
+	}
+}
+
+export interface WorkoutFormWorkout {
+	id: string
+	name: string
+	description: string | null
+	category: string | null
+	warmupGroupId: string | null
+	exercises: WorkoutExerciseLink[]
+	superSets: WorkoutSuperSetLink[]
+}
+
+interface OrgExerciseOption {
+	id: string
+	name: string
+	isSuperSet: boolean
+	movementName: string | null
+	superSetExercises?: Array<unknown>
+}
+
+interface WarmupGroupOption {
+	id: string
+	name: string
+	warmups?: Array<unknown>
 }
 
 export interface WorkoutCreateFormProps {
+	mode: 'create' | 'edit'
+	organisationId: string
+	workout?: WorkoutFormWorkout
 	onSuccess?: () => void
 }
 
-export function WorkoutCreateForm({ onSuccess }: WorkoutCreateFormProps) {
+function mapWorkoutToBuilderItems(
+	workout: WorkoutFormWorkout | undefined,
+): WorkoutBuilderItem[] {
+	if (!workout) return []
+
+	return [
+		...(workout.exercises ?? []).map((link) => ({
+			id: crypto.randomUUID(),
+			sourceId: link.exercise.id,
+			name: link.exercise.name,
+			type: 'exercise' as const,
+			movementName: link.exercise.movementName ?? link.exercise.movement?.name ?? null,
+			memberCount: undefined,
+			index: link.index,
+		})),
+		...(workout.superSets ?? []).map((link) => ({
+			id: crypto.randomUUID(),
+			sourceId: link.superSet.id,
+			name: link.superSet.name,
+			type: 'superset' as const,
+			movementName: null,
+			memberCount: link.superSet.superSetExercises?.length ?? 0,
+			index: link.index,
+		})),
+	]
+		.sort((a, b) => a.index - b.index)
+		.map(({ index: _index, ...item }) => item)
+}
+
+export function WorkoutCreateForm({
+	mode,
+	organisationId,
+	workout,
+	onSuccess,
+}: WorkoutCreateFormProps) {
+	const isEditMode = mode === 'edit'
 	const queryClient = useQueryClient()
 
-	const { data: exercises } = useQuery(
+	const { data: exercisesData } = useQuery(
 		orpc.exercise.getAllOrg.queryOptions({
-			input: { organisationId: '' }, // Will be filled by session
+			input: { organisationId },
 		}),
 	)
 
-	const { data: warmupGroups } = useQuery(
+	const { data: warmupGroupsData } = useQuery(
 		orpc.warmup.getAllGroups.queryOptions({
-			input: { organisationId: '' }, // Will be filled by session
+			input: { organisationId },
 		}),
 	)
 
-	const createWorkout = useMutation(
-		orpc.workout.create.mutationOptions({
-			onSuccess: () => {
-				toast.success('Workout created successfully')
-				queryClient.invalidateQueries({
-					queryKey: orpc.workout.getAllOrg.key(),
-				})
-				onSuccess?.()
-			},
-			onError: (error) => {
-				toast.error(error.message)
-			},
+	const createWorkout = useMutation(orpc.workout.create.mutationOptions())
+	const updateWorkout = useMutation(orpc.workout.update.mutationOptions())
+	const addExerciseToWorkout = useMutation(
+		orpc.workout.addExercise.mutationOptions(),
+	)
+	const addSuperSetToWorkout = useMutation(
+		orpc.workout.addSuperSet.mutationOptions(),
+	)
+	const removeExerciseFromWorkout = useMutation(
+		orpc.workout.removeExercise.mutationOptions(),
+	)
+	const removeSuperSetFromWorkout = useMutation(
+		orpc.workout.removeSuperSet.mutationOptions(),
+	)
+
+	const [libraryQuery, setLibraryQuery] = React.useState('')
+	const [activeDragData, setActiveDragData] =
+		React.useState<DragData | null>(null)
+
+	const sensors = useSensors(
+		useSensor(PointerSensor, {
+			activationConstraint: { distance: 6 },
 		}),
+		useSensor(KeyboardSensor, {
+			coordinateGetter: sortableKeyboardCoordinates,
+		}),
+	)
+
+	const initialItems = React.useMemo(
+		() => mapWorkoutToBuilderItems(workout),
+		[workout],
 	)
 
 	const form = useForm({
 		defaultValues: {
-			name: '',
-			description: '' as string | null,
-			category: '' as string | null,
-			warmupGroupId: '' as string | null,
-			items: [] as WorkoutItem[],
+			name: workout?.name ?? '',
+			description: workout?.description ?? ('' as string | null),
+			category: workout?.category ?? ('' as string | null),
+			warmupGroupId: workout?.warmupGroupId ?? ('' as string | null),
+			items: initialItems,
 		},
 		validators: {
-			onSubmit: workoutCreateSchema,
+			onSubmit: workoutFormSchema,
 		},
 		onSubmit: async ({ value }) => {
-			// First create the workout
-			const workoutData = await createWorkout.mutateAsync({
-				name: value.name,
-				description: value.description || null,
-				category: value.category || null,
-			})
-
-			// Then add exercises and supersets with their indices
-			for (const item of value.items) {
-				if (item.type === 'exercise') {
-					await orpc.workout.addExercise.mutate({
-						workoutId: workoutData.id,
-						exerciseId: item.id,
-						index: item.index,
-					})
-				} else {
-					await orpc.workout.addSuperSet.mutate({
-						workoutId: workoutData.id,
-						superSetId: item.id,
-						index: item.index,
-					})
+			try {
+				const trimmedName = value.name.trim()
+				if (!trimmedName) {
+					toast.error('Workout name is required.')
+					return
 				}
-			}
 
-			// Add warmup if selected
-			if (value.warmupGroupId) {
-				await orpc.workout.update.mutate({
-					id: workoutData.id,
-					warmupGroupId: value.warmupGroupId,
+				if (value.items.length === 0) {
+					toast.error('Add at least one exercise or superset.')
+					return
+				}
+
+				let workoutId = workout?.id
+				const payload = {
+					name: trimmedName,
+					description: value.description?.trim() || null,
+					category: value.category?.trim() || null,
+					warmupGroupId: value.warmupGroupId || null,
+				}
+
+				if (isEditMode) {
+					if (!workoutId) return
+					await updateWorkout.mutateAsync({
+						id: workoutId,
+						...payload,
+					})
+
+					for (const existingExercise of workout?.exercises ?? []) {
+						await removeExerciseFromWorkout.mutateAsync({
+							workoutId,
+							exerciseId: existingExercise.exercise.id,
+						})
+					}
+
+					for (const existingSuperSet of workout?.superSets ?? []) {
+						await removeSuperSetFromWorkout.mutateAsync({
+							workoutId,
+							superSetId: existingSuperSet.superSet.id,
+						})
+					}
+				} else {
+					const created = await createWorkout.mutateAsync(payload)
+					workoutId = created.id
+				}
+
+				if (!workoutId) {
+					throw new Error('Workout could not be saved.')
+				}
+
+				for (const [index, item] of value.items.entries()) {
+					if (item.type === 'exercise') {
+						await addExerciseToWorkout.mutateAsync({
+							workoutId,
+							exerciseId: item.sourceId,
+							index,
+						})
+					} else {
+						await addSuperSetToWorkout.mutateAsync({
+							workoutId,
+							superSetId: item.sourceId,
+							index,
+						})
+					}
+				}
+
+				queryClient.invalidateQueries({
+					queryKey: orpc.workout.getAllOrg.key(),
 				})
+				queryClient.invalidateQueries({
+					queryKey: orpc.workout.get.key(),
+				})
+
+				toast.success(
+					isEditMode
+						? 'Workout updated successfully'
+						: 'Workout created successfully',
+				)
+				onSuccess?.()
+			} catch (error) {
+				const message =
+					error instanceof Error
+						? error.message
+						: isEditMode
+							? 'Failed to update workout'
+							: 'Failed to create workout'
+				toast.error(message)
 			}
 		},
 	})
 
-	const addItem = (item: {
-		id: string
-		name: string
-		type: 'exercise' | 'superset'
-	}) => {
+	const builderItems = form.useStore((state) => state.values.items)
+
+	const exercises = (exercisesData as OrgExerciseOption[] | undefined) ?? []
+	const warmupGroups =
+		(warmupGroupsData as WarmupGroupOption[] | undefined) ?? []
+
+	const filteredExercises = React.useMemo(() => {
+		const searchTerm = libraryQuery.trim().toLowerCase()
+		return exercises
+			.filter((item) => !item.isSuperSet)
+			.filter((item) => {
+				if (!searchTerm) return true
+				const nameMatch = item.name.toLowerCase().includes(searchTerm)
+				const movementMatch = (item.movementName ?? '')
+					.toLowerCase()
+					.includes(searchTerm)
+				return nameMatch || movementMatch
+			})
+			.map((item) => ({
+				id: item.id,
+				name: item.name,
+				type: 'exercise' as const,
+				movementName: item.movementName,
+			}))
+	}, [exercises, libraryQuery])
+
+	const filteredSupersets = React.useMemo(() => {
+		const searchTerm = libraryQuery.trim().toLowerCase()
+		return exercises
+			.filter((item) => item.isSuperSet)
+			.filter((item) => {
+				if (!searchTerm) return true
+				return item.name.toLowerCase().includes(searchTerm)
+			})
+			.map((item) => ({
+				id: item.id,
+				name: item.name,
+				type: 'superset' as const,
+				movementName: null,
+				memberCount: item.superSetExercises?.length ?? 0,
+			}))
+	}, [exercises, libraryQuery])
+
+	const addLibraryItem = (item: LibraryItem, insertIndex?: number) => {
 		const currentItems = form.getFieldValue('items')
-		form.setFieldValue('items', [
-			...currentItems,
-			{ ...item, index: currentItems.length },
-		])
+		const alreadyAdded = currentItems.some(
+			(existing) =>
+				existing.type === item.type && existing.sourceId === item.id,
+		)
+
+		if (alreadyAdded) {
+			toast.error('This item is already in the workout.')
+			return
+		}
+
+		const nextItem: WorkoutBuilderItem = {
+			id: crypto.randomUUID(),
+			sourceId: item.id,
+			name: item.name,
+			type: item.type,
+			movementName: item.movementName ?? null,
+			memberCount: item.memberCount,
+		}
+
+		if (insertIndex === undefined || insertIndex < 0 || insertIndex > currentItems.length) {
+			form.setFieldValue('items', [...currentItems, nextItem])
+			return
+		}
+
+		const nextItems = [...currentItems]
+		nextItems.splice(insertIndex, 0, nextItem)
+		form.setFieldValue('items', nextItems)
 	}
 
-	const removeItem = (index: number) => {
+	const removeBuilderItem = (builderId: string) => {
 		const currentItems = form.getFieldValue('items')
-		const newItems = currentItems
-			.filter((_, i) => i !== index)
-			.map((item, i) => ({ ...item, index: i }))
-		form.setFieldValue('items', newItems)
+		form.setFieldValue(
+			'items',
+			currentItems.filter((item) => item.id !== builderId),
+		)
 	}
 
-	const moveItem = (fromIndex: number, toIndex: number) => {
+	const moveBuilderItem = (fromId: string, toId: string) => {
 		const currentItems = form.getFieldValue('items')
-		if (toIndex < 0 || toIndex >= currentItems.length) return
+		const fromIndex = currentItems.findIndex((item) => item.id === fromId)
+		const toIndex = currentItems.findIndex((item) => item.id === toId)
+		if (fromIndex === -1 || toIndex === -1 || fromIndex === toIndex) return
 
-		const newItems = [...currentItems]
-		const [movedItem] = newItems.splice(fromIndex, 1)
-		newItems.splice(toIndex, 0, movedItem)
+		form.setFieldValue('items', arrayMove(currentItems, fromIndex, toIndex))
+	}
 
-		// Update indices
-		const reindexedItems = newItems.map((item, i) => ({ ...item, index: i }))
-		form.setFieldValue('items', reindexedItems)
+	const { setNodeRef: setDropZoneRef, isOver } = useDroppable({
+		id: WORKOUT_DROPZONE_ID,
+	})
+
+	const onDragStart = (event: DragStartEvent) => {
+		const dragData = event.active.data.current as DragData | undefined
+		setActiveDragData(dragData ?? null)
+	}
+
+	const onDragEnd = (event: DragEndEvent) => {
+		const dragData = event.active.data.current as DragData | undefined
+		const over = event.over
+		setActiveDragData(null)
+
+		if (!dragData || !over) return
+
+		if (dragData.kind === 'library') {
+			const currentItems = form.getFieldValue('items')
+			const overId = String(over.id)
+			const insertIndex =
+				overId === WORKOUT_DROPZONE_ID
+					? currentItems.length
+					: currentItems.findIndex((item) => item.id === overId)
+			addLibraryItem(
+				dragData.item,
+				insertIndex === -1 ? currentItems.length : insertIndex,
+			)
+			return
+		}
+
+		if (dragData.kind === 'builder') {
+			const overId = String(over.id)
+			if (overId === WORKOUT_DROPZONE_ID) {
+				const currentItems = form.getFieldValue('items')
+				const fromIndex = currentItems.findIndex(
+					(item) => item.id === dragData.item.id,
+				)
+				if (fromIndex === -1 || fromIndex === currentItems.length - 1) return
+				form.setFieldValue(
+					'items',
+					arrayMove(currentItems, fromIndex, currentItems.length - 1),
+				)
+				return
+			}
+			moveBuilderItem(dragData.item.id, overId)
+		}
+	}
+
+	const renderOverlay = () => {
+		if (!activeDragData) return null
+
+		if (activeDragData.kind === 'library') {
+			return <WorkoutItemPreview item={mapLibraryToBuilderItem(activeDragData.item)} />
+		}
+
+		return <WorkoutItemPreview item={activeDragData.item} />
 	}
 
 	return (
 		<form
-			onSubmit={(e) => {
-				e.preventDefault()
-				e.stopPropagation()
+			onSubmit={(event) => {
+				event.preventDefault()
+				event.stopPropagation()
 				form.handleSubmit()
 			}}
-			className='flex flex-col gap-4'
+			className='grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]'
 		>
-			<FieldGroup>
-				<form.Field name='name'>
-					{(field) => (
-						<Field data-invalid={field.state.meta.errors.length > 0}>
-							<FieldLabel htmlFor={field.name}>Workout Name *</FieldLabel>
-							<Input
-								id={field.name}
-								name={field.name}
-								value={field.state.value}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value)}
-								placeholder='e.g., Upper Body Strength'
-							/>
-							<FieldError errors={field.state.meta.errors} />
-						</Field>
-					)}
-				</form.Field>
+			<DndContext
+				sensors={sensors}
+				collisionDetection={closestCorners}
+				onDragStart={onDragStart}
+				onDragEnd={onDragEnd}
+			>
+				<div className='space-y-6'>
+					<Card className='border-border/70'>
+						<CardHeader>
+							<CardTitle>{isEditMode ? 'Edit Workout' : 'Create Workout'}</CardTitle>
+						</CardHeader>
+						<CardContent>
+							<FieldGroup>
+								<form.Field name='name'>
+									{(field) => (
+										<Field data-invalid={field.state.meta.errors.length > 0}>
+											<FieldLabel htmlFor={field.name}>Workout Name *</FieldLabel>
+											<Input
+												id={field.name}
+												name={field.name}
+												value={field.state.value}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value)}
+												placeholder='e.g., Lower Body Strength'
+											/>
+											<FieldError errors={field.state.meta.errors} />
+										</Field>
+									)}
+								</form.Field>
 
-				<form.Field name='description'>
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>Description</FieldLabel>
-							<Textarea
-								id={field.name}
-								name={field.name}
-								value={field.state.value ?? ''}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-								placeholder='Optional description for this workout...'
-								className='min-h-20'
-							/>
-						</Field>
-					)}
-				</form.Field>
+								<form.Field name='description'>
+									{(field) => (
+										<Field>
+											<FieldLabel htmlFor={field.name}>Description</FieldLabel>
+											<Textarea
+												id={field.name}
+												name={field.name}
+												value={field.state.value ?? ''}
+												onBlur={field.handleBlur}
+												onChange={(e) => field.handleChange(e.target.value || null)}
+												placeholder='Optional coaching notes or workout intent.'
+												className='min-h-20'
+											/>
+										</Field>
+									)}
+								</form.Field>
 
-				<form.Field name='category'>
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>Category</FieldLabel>
-							<Input
-								id={field.name}
-								name={field.name}
-								value={field.state.value ?? ''}
-								onBlur={field.handleBlur}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-								placeholder='e.g., Strength, Cardio, Hypertrophy'
-							/>
-						</Field>
-					)}
-				</form.Field>
+								<div className='grid gap-4 lg:grid-cols-2'>
+									<form.Field name='category'>
+										{(field) => (
+											<Field>
+												<FieldLabel htmlFor={field.name}>Category</FieldLabel>
+												<Input
+													id={field.name}
+													name={field.name}
+													value={field.state.value ?? ''}
+													onBlur={field.handleBlur}
+													onChange={(e) => field.handleChange(e.target.value || null)}
+													placeholder='e.g., Strength, Hypertrophy'
+												/>
+											</Field>
+										)}
+									</form.Field>
 
-				<form.Field name='warmupGroupId'>
-					{(field) => (
-						<Field>
-							<FieldLabel htmlFor={field.name}>
-								Warmup Group (Optional)
-							</FieldLabel>
-							<select
-								id={field.name}
-								name={field.name}
-								value={field.state.value ?? ''}
-								onChange={(e) => field.handleChange(e.target.value || null)}
-								className='flex w-full h-9 px-3 py-1 text-sm rounded-md border border-input bg-background'
-							>
-								<option value=''>No warmup</option>
-								{warmupGroups?.map((group) => (
-									<option key={group.id} value={group.id}>
-										{group.name} ({group.warmups?.length || 0} exercises)
-									</option>
-								))}
-							</select>
-						</Field>
-					)}
-				</form.Field>
-
-				{/* Workout Builder */}
-				<div className='space-y-4 pt-4 border-t'>
-					<div className='font-medium'>Workout Structure</div>
-
-					{/* Add Items Section */}
-					<div className='grid grid-cols-2 gap-4'>
-						<div>
-							<div className='text-sm font-medium mb-2'>Add Exercises</div>
-							<div className='max-h-40 overflow-y-auto border rounded-md p-2 space-y-1'>
-								{exercises?.map((exercise) => (
-									<button
-										key={exercise.id}
-										type='button'
-										onClick={() =>
-											addItem({
-												id: exercise.id,
-												name: exercise.name,
-												type: 'exercise',
-											})
-										}
-										className='w-full text-left px-2 py-1 text-sm hover:bg-muted rounded'
-									>
-										{exercise.name}
-									</button>
-								))}
-							</div>
-						</div>
-
-						<div>
-							<div className='text-sm font-medium mb-2'>Add Supersets</div>
-							<div className='max-h-40 overflow-y-auto border rounded-md p-2 space-y-1'>
-								{exercises
-									?.filter((e) => e.isSuperSet)
-									.map((superset) => (
-										<button
-											key={superset.id}
-											type='button'
-											onClick={() =>
-												addItem({
-													id: superset.id,
-													name: superset.name,
-													type: 'superset',
-												})
-											}
-											className='w-full text-left px-2 py-1 text-sm hover:bg-muted rounded'
-										>
-											{superset.name} (Superset)
-										</button>
-									))}
-							</div>
-						</div>
-					</div>
-
-					{/* Selected Items */}
-					<form.Field name='items'>
-						{(field) => (
-							<div className='space-y-2'>
-								<div className='text-sm font-medium'>
-									Selected Items ({field.state.value.length})
-								</div>
-								{field.state.value.length === 0 ? (
-									<div className='text-sm text-muted-foreground border rounded-md p-4 text-center'>
-										No items selected. Click exercises or supersets above to add
-										them.
-									</div>
-								) : (
-									<div className='space-y-2'>
-										{field.state.value.map((item, index) => (
-											<div
-												key={`${item.id}-${index}`}
-												className='flex items-center gap-2 p-2 bg-muted rounded-md'
-											>
-												<span className='text-muted-foreground w-6'>
-													{index + 1}.
-												</span>
-												<span
-													className={`px-2 py-0.5 text-xs rounded ${
-														item.type === 'exercise'
-															? 'bg-blue-100 text-blue-700'
-															: 'bg-purple-100 text-purple-700'
-													}`}
+									<form.Field name='warmupGroupId'>
+										{(field) => (
+											<Field>
+												<FieldLabel htmlFor={field.name}>Warmup Group</FieldLabel>
+												<select
+													id={field.name}
+													name={field.name}
+													value={field.state.value ?? ''}
+													onBlur={field.handleBlur}
+													onChange={(e) => field.handleChange(e.target.value || null)}
+													className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm'
 												>
-													{item.type === 'exercise' ? 'Ex' : 'SS'}
-												</span>
-												<span className='flex-1'>{item.name}</span>
-												<div className='flex gap-1'>
-													<Button
-														type='button'
-														variant='ghost'
-														size='sm'
-														className='h-7 w-7 p-0'
-														onClick={() => moveItem(index, index - 1)}
-														disabled={index === 0}
-													>
-														↑
-													</Button>
-													<Button
-														type='button'
-														variant='ghost'
-														size='sm'
-														className='h-7 w-7 p-0'
-														onClick={() => moveItem(index, index + 1)}
-														disabled={index === field.state.value.length - 1}
-													>
-														↓
-													</Button>
-													<Button
-														type='button'
-														variant='ghost'
-														size='sm'
-														className='h-7 w-7 p-0 text-red-500'
-														onClick={() => removeItem(index)}
-													>
-														×
-													</Button>
-												</div>
-											</div>
-										))}
+													<option value=''>No warmup group</option>
+													{warmupGroups.map((group) => (
+														<option key={group.id} value={group.id}>
+															{group.name} ({group.warmups?.length ?? 0})
+														</option>
+													))}
+												</select>
+											</Field>
+										)}
+									</form.Field>
+								</div>
+							</FieldGroup>
+						</CardContent>
+					</Card>
+
+					<Card className='border-border/70'>
+						<CardHeader className='space-y-2 border-b bg-gradient-to-r from-orange-50/70 to-cyan-50/70 pb-4 dark:from-orange-950/20 dark:to-cyan-950/20'>
+							<CardTitle>Workout Builder</CardTitle>
+							<p className='text-sm text-muted-foreground'>
+								Drag exercises or supersets from the right panel into this list.
+							</p>
+						</CardHeader>
+						<CardContent className='pt-4'>
+							<form.Field name='items'>
+								{(field) => (
+									<div className='space-y-3'>
+										<div
+											ref={setDropZoneRef}
+											className={`rounded-xl border p-3 transition-colors ${
+												isOver ? 'border-primary bg-primary/5' : 'border-border'
+											}`}
+										>
+											<SortableContext
+												items={builderItems.map((item) => item.id)}
+												strategy={verticalListSortingStrategy}
+											>
+												{builderItems.length === 0 ? (
+													<div className='py-8 text-center text-sm text-muted-foreground'>
+														Drop exercises/supersets here or use the add buttons.
+													</div>
+												) : (
+													<div className='space-y-2'>
+														{builderItems.map((item, index) => (
+															<SortableWorkoutItem
+																key={item.id}
+																item={item}
+																index={index}
+																onRemove={removeBuilderItem}
+															/>
+														))}
+													</div>
+												)}
+											</SortableContext>
+										</div>
+
+										{field.state.meta.errors.length > 0 && (
+											<p className='text-sm text-destructive'>
+												{field.state.meta.errors.join(', ')}
+											</p>
+										)}
 									</div>
 								)}
-								{field.state.meta.errors.length > 0 && (
-									<p className='text-sm text-destructive'>
-										{field.state.meta.errors.join(', ')}
-									</p>
-								)}
-							</div>
-						)}
-					</form.Field>
-				</div>
-			</FieldGroup>
+							</form.Field>
+						</CardContent>
+					</Card>
 
-			<div className='flex justify-end pt-4'>
-				<form.Subscribe
-					selector={(state) => [state.canSubmit, state.isSubmitting]}
-				>
-					{([canSubmit, isSubmitting]) => (
-						<Button type='submit' disabled={!canSubmit || isSubmitting}>
-							{isSubmitting ? 'Creating...' : 'Create Workout'}
-						</Button>
-					)}
-				</form.Subscribe>
-			</div>
+					<div className='flex justify-end border-t pt-2'>
+						<form.Subscribe
+							selector={(state) => [state.canSubmit, state.isSubmitting]}
+						>
+							{([canSubmit, isSubmitting]) => (
+								<Button type='submit' disabled={!canSubmit || isSubmitting}>
+									{isSubmitting
+										? isEditMode
+											? 'Updating...'
+											: 'Creating...'
+										: isEditMode
+											? 'Update Workout'
+											: 'Create Workout'}
+								</Button>
+							)}
+						</form.Subscribe>
+					</div>
+				</div>
+
+				<Card className='h-fit border-border/70 xl:sticky xl:top-4'>
+					<CardHeader className='pb-3'>
+						<CardTitle>Exercise Library</CardTitle>
+					</CardHeader>
+					<CardContent className='space-y-4'>
+						<Input
+							value={libraryQuery}
+							onChange={(event) => setLibraryQuery(event.target.value)}
+							placeholder='Search exercises or supersets...'
+						/>
+
+						<div className='space-y-2'>
+							<div className='text-sm font-medium text-muted-foreground'>
+								Exercises
+							</div>
+							<ScrollArea className='h-60 rounded-md border p-2'>
+								<div className='space-y-2'>
+									{filteredExercises.length === 0 ? (
+										<p className='px-2 py-6 text-center text-sm text-muted-foreground'>
+											No exercises found.
+										</p>
+									) : (
+										filteredExercises.map((item) => (
+											<LibraryDraggableItem
+												key={`exercise-${item.id}`}
+												item={item}
+												onAdd={addLibraryItem}
+											/>
+										))
+									)}
+								</div>
+							</ScrollArea>
+						</div>
+
+						<div className='space-y-2'>
+							<div className='text-sm font-medium text-muted-foreground'>
+								Supersets
+							</div>
+							<ScrollArea className='h-52 rounded-md border p-2'>
+								<div className='space-y-2'>
+									{filteredSupersets.length === 0 ? (
+										<p className='px-2 py-6 text-center text-sm text-muted-foreground'>
+											No supersets found.
+										</p>
+									) : (
+										filteredSupersets.map((item) => (
+											<LibraryDraggableItem
+												key={`superset-${item.id}`}
+												item={item}
+												onAdd={addLibraryItem}
+											/>
+										))
+									)}
+								</div>
+							</ScrollArea>
+						</div>
+					</CardContent>
+				</Card>
+
+				<DragOverlay>{renderOverlay()}</DragOverlay>
+			</DndContext>
 		</form>
+	)
+}
+
+function mapLibraryToBuilderItem(item: LibraryItem): WorkoutBuilderItem {
+	return {
+		id: `overlay-${item.type}-${item.id}`,
+		sourceId: item.id,
+		name: item.name,
+		type: item.type,
+		movementName: item.movementName ?? null,
+		memberCount: item.memberCount,
+	}
+}
+
+function WorkoutItemPreview({ item }: { item: WorkoutBuilderItem }) {
+	return (
+		<div className='w-[320px] rounded-lg border bg-background p-3 shadow-lg'>
+			<div className='flex items-center gap-2'>
+				<Badge variant='outline' className='px-1.5'>
+					{item.type === 'exercise' ? 'EX' : 'SS'}
+				</Badge>
+				{item.type === 'exercise' ? (
+					<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+				) : (
+					<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+				)}
+				<div className='min-w-0 flex-1'>
+					<p className='truncate font-medium'>{item.name}</p>
+					<p className='truncate text-xs text-muted-foreground'>
+						{item.type === 'superset'
+							? `${item.memberCount ?? 0} exercises`
+							: item.movementName || 'No movement'}
+					</p>
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function LibraryDraggableItem({
+	item,
+	onAdd,
+}: {
+	item: LibraryItem
+	onAdd: (item: LibraryItem) => void
+}) {
+	const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+		id: `library-${item.type}-${item.id}`,
+		data: {
+			kind: 'library',
+			item,
+		} satisfies DragData,
+	})
+
+	const style = {
+		transform: CSS.Translate.toString(transform),
+	}
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={`flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 ${
+				isDragging ? 'opacity-60' : ''
+			}`}
+		>
+			<button
+				type='button'
+				className='cursor-grab text-muted-foreground hover:text-foreground'
+				{...attributes}
+				{...listeners}
+			>
+				<DotsSixVerticalIcon className='size-4' />
+			</button>
+
+			{item.type === 'exercise' ? (
+				<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+			) : (
+				<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+			)}
+
+			<div className='min-w-0 flex-1'>
+				<p className='truncate text-sm font-medium'>{item.name}</p>
+				<p className='truncate text-xs text-muted-foreground'>
+					{item.type === 'superset'
+						? `${item.memberCount ?? 0} exercises`
+						: item.movementName || 'No movement'}
+				</p>
+			</div>
+
+			<Button
+				type='button'
+				variant='ghost'
+				size='icon'
+				onClick={() => onAdd(item)}
+				className='h-7 w-7'
+			>
+				<PlusIcon className='size-4' />
+			</Button>
+		</div>
+	)
+}
+
+function SortableWorkoutItem({
+	item,
+	index,
+	onRemove,
+}: {
+	item: WorkoutBuilderItem
+	index: number
+	onRemove: (itemId: string) => void
+}) {
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+		useSortable({
+			id: item.id,
+			data: {
+				kind: 'builder',
+				item,
+			} satisfies DragData,
+		})
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	}
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={style}
+			className={`flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 ${
+				isDragging ? 'opacity-60' : ''
+			}`}
+		>
+			<button
+				type='button'
+				className='cursor-grab text-muted-foreground hover:text-foreground'
+				{...attributes}
+				{...listeners}
+			>
+				<DotsSixVerticalIcon className='size-4' />
+			</button>
+
+			<Badge variant='outline' className='px-1.5'>
+				{index + 1}
+			</Badge>
+
+			{item.type === 'exercise' ? (
+				<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+			) : (
+				<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+			)}
+
+			<div className='min-w-0 flex-1'>
+				<p className='truncate text-sm font-medium'>{item.name}</p>
+				<p className='truncate text-xs text-muted-foreground'>
+					{item.type === 'superset'
+						? `${item.memberCount ?? 0} exercises`
+						: item.movementName || 'No movement'}
+				</p>
+			</div>
+
+			<Button
+				type='button'
+				variant='ghost'
+				size='icon'
+				onClick={() => onRemove(item.id)}
+				className='h-7 w-7 text-destructive'
+			>
+				<TrashIcon className='size-4' />
+			</Button>
+		</div>
 	)
 }

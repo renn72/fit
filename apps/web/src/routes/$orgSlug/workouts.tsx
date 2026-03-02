@@ -8,6 +8,7 @@ import { z } from 'zod'
 
 const workoutsSearchSchema = z.object({
 	view: z.enum(['table', 'grid']).default('table'),
+	q: z.string().default(''),
 	page: z.number().int().min(1).default(1),
 	perPage: z.number().int().min(1).max(100).default(10),
 	sort: z

@@ -12,6 +12,7 @@ export const WorkoutCreateInput = z.object({
 	name: z.string().min(1),
 	description: z.string().optional().nullable(),
 	category: z.string().optional().nullable(),
+	warmupGroupId: z.string().optional().nullable(),
 })
 
 export const WorkoutUpdateInput = z.object({
@@ -19,6 +20,7 @@ export const WorkoutUpdateInput = z.object({
 	name: z.string().min(1).optional(),
 	description: z.string().optional().nullable(),
 	category: z.string().optional().nullable(),
+	warmupGroupId: z.string().optional().nullable(),
 })
 
 export const WorkoutDeleteInput = z.object({

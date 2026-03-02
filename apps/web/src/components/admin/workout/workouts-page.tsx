@@ -2,19 +2,15 @@
 
 import * as React from 'react'
 
+import { WorkoutRowActions } from '@/components/admin/workout/workout-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
@@ -28,8 +24,7 @@ import {
 	FireIcon,
 	ListIcon,
 	SquaresFourIcon,
-	TargetIcon,
-	TimerIcon,
+	StackPlusIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 
@@ -75,43 +70,30 @@ interface Workout {
 	description: string | null
 	category: string | null
 	createdAt: Date
-	creatorName?: string
+	creatorName?: string | null
+	creator?: {
+		name?: string | null
+	} | null
 	exercises: WorkoutExercise[]
 	superSets: WorkoutSuperSet[]
 	warmupGroup?: {
 		id: string
 		name: string
 		warmups: WorkoutWarmup[]
-	}
+	} | null
 }
 
 const columnHelper = createColumnHelper<Workout>()
 
+function splitCsv(value: string | null | undefined): string[] {
+	if (!value) return []
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && undefined)
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -129,7 +111,8 @@ const columns = [
 		),
 		cell: ({ row }) => {
 			const desc = row.getValue('description') as string | null
-			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
+			if (!desc) return <span className='text-muted-foreground'>-</span>
+			return <div className='max-w-60 truncate'>{desc}</div>
 		},
 		meta: {
 			label: 'Description',
@@ -140,6 +123,27 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Category' />
 		),
+		cell: ({ row }) => {
+			const categories = splitCsv(row.getValue('category') as string | null)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
 		meta: {
 			label: 'Category',
 			variant: 'text',
@@ -147,16 +151,16 @@ const columns = [
 	}),
 	columnHelper.accessor('exercises', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Exercises' />
+			<DataTableColumnHeader column={column} label='Items' />
 		),
 		cell: ({ row }) => {
 			const exercises = row.getValue('exercises') as WorkoutExercise[]
 			const superSets = row.original.superSets as WorkoutSuperSet[]
 			const totalItems = (exercises?.length || 0) + (superSets?.length || 0)
-			return <span>{totalItems} items</span>
+			return <span>{totalItems}</span>
 		},
 		meta: {
-			label: 'Exercises',
+			label: 'Items',
 			variant: 'number',
 		},
 	}),
@@ -167,7 +171,9 @@ const columns = [
 		cell: ({ row }) => {
 			const warmupGroup = row.getValue('warmupGroup') as Workout['warmupGroup']
 			return warmupGroup ? (
-				<span className='text-green-600'>{warmupGroup.name}</span>
+				<span className='text-emerald-700 dark:text-emerald-300'>
+					{warmupGroup.name}
+				</span>
 			) : (
 				<span className='text-muted-foreground'>-</span>
 			)
@@ -181,6 +187,9 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created By' />
 		),
+		cell: ({ row }) => {
+			return row.original.creatorName ?? row.original.creator?.name ?? 'Unknown'
+		},
 		meta: {
 			label: 'Created By',
 			variant: 'text',
@@ -195,6 +204,10 @@ const columns = [
 			label: 'Created At',
 			variant: 'date',
 		},
+	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <WorkoutRowActions row={row} />,
 	}),
 ]
 
@@ -217,16 +230,29 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 	)
 
 	const navigate = route.useNavigate()
-	const { view, page, perPage, sort } = route.useSearch()
+	const { view, q, page, perPage, sort } = route.useSearch()
 
 	const workoutsData = (workouts as Workout[]) ?? []
 
-	const { paginatedData, pageCount } = React.useMemo(() => {
+	const { paginatedData, pageCount, totalCount } = React.useMemo(() => {
 		const processed = [...workoutsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((workout) => {
+						const nameMatch = workout.name
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const categoryMatch = (workout.category ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						return nameMatch || categoryMatch
+				  })
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Workout]
 				const bValue = b[id as keyof Workout]
 
@@ -239,14 +265,14 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
-		return { paginatedData, pageCount }
-	}, [workoutsData, page, perPage, sort])
+		return { paginatedData, pageCount, totalCount: total }
+	}, [workoutsData, q, sort, page, perPage])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -268,13 +294,30 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 		})
 	}
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/workouts',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
+		<div className='flex h-full w-full flex-col gap-4 p-4'>
+			<div className='flex items-center justify-between'>
 				<h1 className='text-2xl font-bold tracking-tight'>Workouts</h1>
-				<Link to='/$orgSlug/workouts/create' params={{ orgSlug: orgSlug }}>
+				<Link to='/$orgSlug/workouts/create' params={{ orgSlug }}>
 					<Button>Create Workout</Button>
 				</Link>
+			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
@@ -291,9 +334,7 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 
 				<TabsContent value='table' className='mt-4'>
 					<DataTable table={table}>
-						<DataTableAdvancedToolbar table={table} className='border-b'>
-							<DataTableFilterList table={table} />
-						</DataTableAdvancedToolbar>
+						<DataTableAdvancedToolbar table={table} className='border-b' />
 					</DataTable>
 				</TabsContent>
 
@@ -302,7 +343,7 @@ function WorkoutsContent({ userOrgId }: { userOrgId: string }) {
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={workoutsData.length}
+						total={totalCount}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -327,124 +368,159 @@ function WorkoutsGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
+			<div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
 				{data.map((workout) => {
-					const totalItems =
-						(workout.exercises?.length || 0) + (workout.superSets?.length || 0)
+					const orderedItems = [
+						...(workout.exercises?.map((item) => ({
+							id: item.id,
+							index: item.index,
+							type: 'exercise' as const,
+							name: item.exercise.name,
+							movementName: item.exercise.movement?.name ?? null,
+						})) ?? []),
+						...(workout.superSets?.map((item) => ({
+							id: item.id,
+							index: item.index,
+							type: 'superset' as const,
+							name: item.superSet.name,
+							movementName: null,
+							memberCount: item.superSet.superSetExercises?.length ?? 0,
+						})) ?? []),
+					].sort((a, b) => a.index - b.index)
+
+					const categories = splitCsv(workout.category)
+					const creatorName = workout.creatorName ?? workout.creator?.name ?? 'Unknown'
+					const totalItems = orderedItems.length
+					const regularCount = workout.exercises?.length ?? 0
+					const supersetCount = workout.superSets?.length ?? 0
+
 					return (
-						<Card key={workout.id} className='flex flex-col'>
-							<CardHeader className='pb-3'>
-								<CardTitle className='text-lg'>{workout.name}</CardTitle>
-								{workout.category && (
-									<CardDescription>{workout.category}</CardDescription>
+						<Card
+							key={workout.id}
+							className='overflow-hidden border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md'
+						>
+							<CardHeader className='space-y-3 border-b bg-gradient-to-r from-orange-50/70 to-cyan-50/70 pb-4 dark:from-orange-950/20 dark:to-cyan-950/20'>
+								<div className='flex items-start justify-between gap-3'>
+									<div className='min-w-0'>
+										<CardTitle className='truncate text-lg leading-tight'>
+											{workout.name}
+										</CardTitle>
+										<p className='text-xs text-muted-foreground'>
+											By {creatorName} •{' '}
+											{new Date(workout.createdAt).toLocaleDateString()}
+										</p>
+									</div>
+									<WorkoutRowActions
+										workout={{ id: workout.id, name: workout.name }}
+										buttonClassName='h-8 w-8'
+									/>
+								</div>
+
+								{categories.length > 0 && (
+									<div className='flex flex-wrap gap-1'>
+										{categories.map((category) => (
+											<Badge key={category} variant='secondary'>
+												{category}
+											</Badge>
+										))}
+									</div>
+								)}
+
+								{workout.description && (
+									<p className='line-clamp-2 text-sm text-muted-foreground'>
+										{workout.description}
+									</p>
 								)}
 							</CardHeader>
-							<CardContent className='flex-1'>
-								<div className='space-y-4'>
-									{/* Stats */}
-									<div className='grid grid-cols-3 gap-2 text-center'>
-										<div className='p-2 bg-blue-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Exercises
-											</div>
-											<div className='font-semibold text-blue-600'>
-												{workout.exercises?.length || 0}
-											</div>
+
+							<CardContent className='space-y-4 pt-4'>
+								<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+									<div className='rounded-lg border bg-orange-50/80 p-2 dark:bg-orange-950/20'>
+										<div className='text-[11px] text-muted-foreground'>
+											Exercises
 										</div>
-										<div className='p-2 bg-purple-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Supersets
-											</div>
-											<div className='font-semibold text-purple-600'>
-												{workout.superSets?.length || 0}
-											</div>
+										<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+											{regularCount}
 										</div>
-										<div className='p-2 bg-orange-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>Total</div>
-											<div className='font-semibold text-orange-600'>
-												{totalItems}
-											</div>
+									</div>
+									<div className='rounded-lg border bg-violet-50/80 p-2 dark:bg-violet-950/20'>
+										<div className='text-[11px] text-muted-foreground'>
+											Supersets
+										</div>
+										<div className='text-sm font-semibold text-violet-700 dark:text-violet-300'>
+											{supersetCount}
+										</div>
+									</div>
+									<div className='rounded-lg border bg-cyan-50/80 p-2 dark:bg-cyan-950/20'>
+										<div className='text-[11px] text-muted-foreground'>
+											Total Items
+										</div>
+										<div className='text-sm font-semibold text-cyan-700 dark:text-cyan-300'>
+											{totalItems}
+										</div>
+									</div>
+									<div className='rounded-lg border bg-emerald-50/80 p-2 dark:bg-emerald-950/20'>
+										<div className='text-[11px] text-muted-foreground'>
+											Warmup
+										</div>
+										<div className='truncate text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+											{workout.warmupGroup?.name ?? 'None'}
+										</div>
+									</div>
+								</div>
+
+								<div className='space-y-2 rounded-xl border bg-muted/20 p-3 text-sm'>
+									<div className='flex items-center justify-between'>
+										<div className='font-medium text-muted-foreground'>
+											Workout Structure
+										</div>
+										<div className='text-xs text-muted-foreground'>
+											{totalItems} item{totalItems === 1 ? '' : 's'}
 										</div>
 									</div>
 
-									{/* Warmup */}
-									{workout.warmupGroup && (
-										<div className='flex gap-2 items-center p-2 bg-green-50 rounded-lg'>
-											<FireIcon className='text-green-600 size-4' />
-											<div className='flex-1'>
-												<div className='text-xs text-muted-foreground'>
-													Warmup
-												</div>
-												<div className='font-medium text-green-700'>
-													{workout.warmupGroup.name}
-												</div>
-											</div>
-											<div className='text-xs text-green-600'>
-												{workout.warmupGroup.warmups?.length || 0} exercises
-											</div>
-										</div>
-									)}
-
-									{/* Exercise ListIcon */}
-									{totalItems > 0 && (
-										<div className='space-y-2'>
-											<div className='text-sm font-medium text-muted-foreground'>
-												Workout Structure
-											</div>
-											<div className='space-y-1'>
-												{/* Combine and sort exercises and supersets by index */}
-												{[
-													...(workout.exercises?.map((e) => ({
-														...e,
-														type: 'exercise' as const,
-													})) || []),
-													...(workout.superSets?.map((s) => ({
-														...s,
-														type: 'superset' as const,
-													})) || []),
-												]
-													.sort((a, b) => a.index - b.index)
-													.slice(0, 5)
-													.map((item, idx) => (
-														<div
-															key={item.id}
-															className='flex gap-2 items-center py-1 text-sm'
-														>
-															<span className='w-6 text-muted-foreground'>
-																{idx + 1}.
-															</span>
-															{item.type === 'exercise' ? (
-																<>
-																	<BarbellIcon className='text-blue-500 size-3' />
-																	<span className='flex-1 truncate'>
-																		{item.exercise.name}
-																	</span>
-																</>
-															) : (
-																<>
-																	<TargetIcon className='text-purple-500 size-3' />
-																	<span className='flex-1 truncate'>
-																		{item.superSet.name}
-																	</span>
-																	<span className='text-xs text-muted-foreground'>
-																		(
-																		{item.superSet.superSetExercises?.length ||
-																			0}{' '}
-																		exercises)
-																	</span>
-																</>
-															)}
+									{orderedItems.length === 0 ? (
+										<p className='text-muted-foreground'>No exercises added yet.</p>
+									) : (
+										<ScrollArea className='max-h-52'>
+											<div className='space-y-2'>
+												{orderedItems.map((item, idx) => (
+													<div
+														key={item.id}
+														className='flex items-center gap-2 rounded-md border bg-background px-2 py-1.5'
+													>
+														<Badge variant='outline' className='px-1.5'>
+															{idx + 1}
+														</Badge>
+														{item.type === 'exercise' ? (
+															<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+														) : (
+															<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+														)}
+														<div className='min-w-0 flex-1'>
+															<p className='truncate font-medium'>{item.name}</p>
+															<p className='truncate text-xs text-muted-foreground'>
+																{item.type === 'superset'
+																	? `${item.memberCount ?? 0} exercises`
+																	: item.movementName || 'No movement'}
+															</p>
 														</div>
-													))}
-												{totalItems > 5 && (
-													<div className='py-1 text-sm text-muted-foreground'>
-														+{totalItems - 5} more items
 													</div>
-												)}
+												))}
 											</div>
-										</div>
+										</ScrollArea>
 									)}
 								</div>
+
+								{workout.warmupGroup && (
+									<div className='flex items-center gap-2 rounded-xl border bg-emerald-50/80 p-3 text-sm dark:bg-emerald-950/20'>
+										<FireIcon className='size-4 text-emerald-600 dark:text-emerald-300' />
+										<span>
+											Warmup group has {workout.warmupGroup.warmups?.length ?? 0}{' '}
+											item{(workout.warmupGroup.warmups?.length ?? 0) === 1 ? '' : 's'}
+										</span>
+									</div>
+								)}
 							</CardContent>
 						</Card>
 					)
@@ -452,12 +528,12 @@ function WorkoutsGridView({
 			</div>
 
 			{totalPages > 1 && (
-				<div className='flex justify-between items-center px-2'>
+				<div className='flex items-center justify-between px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
 						{Math.min(page * perPage, total)} of {total} workouts
 					</div>
-					<div className='flex gap-2 items-center'>
+					<div className='flex items-center gap-2'>
 						<span className='text-sm'>
 							Page {page} of {totalPages}
 						</span>

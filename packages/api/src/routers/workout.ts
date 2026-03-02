@@ -130,13 +130,26 @@ export const workoutRouter = {
 					creator: {
 						columns: {
 							name: true,
+							email: true,
+						},
+					},
+					organisation: {
+						columns: {
+							name: true,
+							slug: true,
 						},
 					},
 				},
 				orderBy: (workout, { desc }) => [desc(workout.createdAt)],
 			})
 
-			return workouts
+			return workouts.map((w) => ({
+				...w,
+				creatorName: w.creator?.name ?? null,
+				creatorEmail: w.creator?.email ?? null,
+				organisationName: w.organisation?.name ?? null,
+				organisationSlug: w.organisation?.slug ?? null,
+			}))
 		}),
 
 	get: protectedProcedure

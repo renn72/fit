@@ -209,6 +209,7 @@ export const adminSetupRouter = {
 							carbohydrate: baseIng?.carbohydrate ?? 20,
 							serveSize: baseIng?.serveSize ?? 100,
 							serveUnit: baseIng?.serveUnit ?? 'grams',
+							isUserCreated: false,
 							baseId: baseIng?.id ?? null,
 						})
 					}
@@ -280,6 +281,7 @@ export const adminSetupRouter = {
 					await tx.insert(ingredient).values({
 						...ing,
 						isBase: true,
+						isUserCreated: false,
 					})
 				}
 			})
@@ -368,7 +370,10 @@ export const adminSetupRouter = {
 			}
 
 			const orgIngredients = await db.query.ingredient.findMany({
-				where: { organisationId: input.organisationId },
+				where: {
+					organisationId: input.organisationId,
+					isUserCreated: false,
+				},
 			})
 
 			const baseIngs = await db.query.ingredient.findMany({
@@ -547,7 +552,7 @@ export const adminSetupRouter = {
 
 					await tx.insert(exercise).values({
 						name: exerciseNames[i] || `Exercise ${i + 1}`,
-						movementId: movement?.id || '',
+						movementId: movement?.id ?? null,
 						sets: Math.floor(Math.random() * 3) + 2,
 						reps: Math.floor(Math.random() * 8) + 3,
 						repUnit: repUnits[Math.floor(Math.random() * repUnits.length)],
@@ -559,6 +564,8 @@ export const adminSetupRouter = {
 						tempoPause: Math.floor(Math.random() * 2),
 						tempoUp: Math.floor(Math.random() * 2) + 1,
 						notes: `Generated exercise using ${movement?.name} movement`,
+						isSuperSet: false,
+						isSuperSetChild: false,
 						creatorId: orgUser.id,
 						organisationId: input.organisationId,
 					})
@@ -726,7 +733,11 @@ export const adminSetupRouter = {
 			}
 
 			const orgExercises = await db.query.exercise.findMany({
-				where: { organisationId: input.organisationId },
+				where: {
+					organisationId: input.organisationId,
+					isSuperSet: false,
+					isSuperSetChild: false,
+				},
 			})
 
 			const availableExercises = orgExercises
