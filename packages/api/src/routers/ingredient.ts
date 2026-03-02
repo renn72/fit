@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
 	IngredientCreateInput,
+	IngredientDeleteInput,
 	IngredientGetAllBaseInput,
 	IngredientGetAllInput,
 	IngredientGetAllOrgInput,
@@ -79,6 +80,7 @@ export const ingredientRouter = {
 				.insert(ingredient)
 				.values({
 					...input,
+					category: input.category ?? null,
 					calories: Math.round(input.calories * 10) / 10,
 					protein: Math.round(input.protein * 10) / 10,
 					fat: Math.round(input.fat * 10) / 10,
@@ -101,8 +103,25 @@ export const ingredientRouter = {
 		.input(IngredientGetAllOrgInput)
 		.handler(async ({ input }) => {
 			// Get org ingredients
-			const orgIngredients = await db.query.ingredient.findMany({
-				where: { organisationId: input.organisationId },
+			const orgIngredientsRaw = await db.query.ingredient.findMany({
+				where: {
+					organisationId: input.organisationId,
+					isUserCreated: false,
+				},
+				with: {
+					creator: {
+						columns: {
+							name: true,
+						},
+					},
+				},
+			})
+			const orgIngredients = orgIngredientsRaw.map((item) => {
+				const { creator, ...ingredientRow } = item
+				return {
+					...ingredientRow,
+					creatorName: creator?.name ?? 'Unknown',
+				}
 			})
 
 			const overwrittenBaseIds = orgIngredients
@@ -110,8 +129,25 @@ export const ingredientRouter = {
 				.filter((id): id is string => id !== null)
 
 			// Get base ingredients (isBase=true, not overwritten by org)
-			const baseIngs = await db.query.ingredient.findMany({
-				where: { isBase: true },
+			const baseIngredientsRaw = await db.query.ingredient.findMany({
+				where: {
+					isBase: true,
+					isUserCreated: false,
+				},
+				with: {
+					creator: {
+						columns: {
+							name: true,
+						},
+					},
+				},
+			})
+			const baseIngs = baseIngredientsRaw.map((item) => {
+				const { creator, ...ingredientRow } = item
+				return {
+					...ingredientRow,
+					creatorName: creator?.name ?? 'System',
+				}
 			})
 
 			const availableBaseIngredients = baseIngs.filter(
@@ -213,6 +249,7 @@ export const ingredientRouter = {
 					.update(ingredient)
 					.set({
 						name: input.name,
+						category: input.category ?? null,
 						calories: Math.round(input.calories * 10) / 10,
 						protein: Math.round(input.protein * 10) / 10,
 						fat: Math.round(input.fat * 10) / 10,
@@ -238,6 +275,7 @@ export const ingredientRouter = {
 					.insert(ingredient)
 					.values({
 						name: input.name,
+						category: input.category ?? null,
 						calories: Math.round(input.calories * 10) / 10,
 						protein: Math.round(input.protein * 10) / 10,
 						fat: Math.round(input.fat * 10) / 10,
@@ -255,5 +293,59 @@ export const ingredientRouter = {
 			throw new ORPCError('NOT_FOUND', {
 				message: 'Ingredient not found',
 			})
+		}),
+
+	delete: protectedProcedure
+		.route({
+			method: 'DELETE',
+			path: '/ingredient',
+			summary: 'Delete an ingredient',
+			tags: ['Ingredient'],
+		})
+		.input(IngredientDeleteInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			const isDictator = metaTags.includes('dictator')
+			const canUpdate = metaTags.includes('itemUpdater') || isDictator
+
+			if (!canUpdate) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to delete ingredients',
+				})
+			}
+
+			const existingIngredient = await db.query.ingredient.findFirst({
+				where: {
+					id: input.id,
+				},
+			})
+
+			if (!existingIngredient) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Ingredient not found',
+				})
+			}
+
+			const organisationId = context.session.user.organisationId
+			if (!isDictator) {
+				if (!organisationId) {
+					throw new ORPCError('BAD_REQUEST', {
+						message: 'User is not associated with an organisation',
+					})
+				}
+
+				if (
+					existingIngredient.organisationId !== organisationId ||
+					existingIngredient.isBase
+				) {
+					throw new ORPCError('FORBIDDEN', {
+						message: 'You can only delete your organisation ingredients',
+					})
+				}
+			}
+
+			await db.delete(ingredient).where(eq(ingredient.id, input.id))
+
+			return { success: true, id: input.id }
 		}),
 }

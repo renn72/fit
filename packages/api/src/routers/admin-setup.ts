@@ -547,7 +547,7 @@ export const adminSetupRouter = {
 
 					await tx.insert(exercise).values({
 						name: exerciseNames[i] || `Exercise ${i + 1}`,
-						movementId: movement.id,
+						movementId: movement?.id || '',
 						sets: Math.floor(Math.random() * 3) + 2,
 						reps: Math.floor(Math.random() * 8) + 3,
 						repUnit: repUnits[Math.floor(Math.random() * repUnits.length)],
@@ -558,7 +558,7 @@ export const adminSetupRouter = {
 						tempoDown: Math.floor(Math.random() * 3) + 1,
 						tempoPause: Math.floor(Math.random() * 2),
 						tempoUp: Math.floor(Math.random() * 2) + 1,
-						notes: `Generated exercise using ${movement.name} movement`,
+						notes: `Generated exercise using ${movement?.name} movement`,
 						creatorId: orgUser.id,
 						organisationId: input.organisationId,
 					})

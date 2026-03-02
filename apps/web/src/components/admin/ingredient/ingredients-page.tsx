@@ -2,20 +2,21 @@
 
 import * as React from 'react'
 
-import { IngredientCreateDialog } from '@/components/admin/ingredient/ingredient-create-dialog'
 import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import { FireIcon, ListIcon, SquaresFourIcon } from '@phosphor-icons/react'
@@ -24,6 +25,7 @@ import _ from 'lodash'
 interface Ingredient {
 	id: string
 	name: string
+	category: string | null
 	calories: number
 	protein: number
 	fat: number
@@ -33,9 +35,22 @@ interface Ingredient {
 	createdAt: Date
 	isBase: boolean
 	isOverwriteBase: boolean
+	creatorName: string
 }
 
 const columnHelper = createColumnHelper<Ingredient>()
+
+function splitCategories(category: string | null): string[] {
+	if (!category) return []
+	return category
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
+function formatMacro(value: number, suffix: string): string {
+	return `${value.toFixed(1)}${suffix}`
+}
 
 const columns = [
 	columnHelper.accessor('name', {
@@ -48,6 +63,38 @@ const columns = [
 		},
 		enableSorting: true,
 		enableHiding: false,
+	}),
+	columnHelper.accessor('category', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Category' />
+		),
+		cell: ({ row }) => {
+			const categories = splitCategories(
+				row.getValue('category') as string | null,
+			)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
+		meta: {
+			label: 'Category',
+			variant: 'text',
+		},
 	}),
 	columnHelper.accessor('calories', {
 		header: ({ column }) => (
@@ -119,6 +166,16 @@ const columns = [
 			variant: 'text',
 		},
 	}),
+	columnHelper.accessor('creatorName', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Created By' />
+		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
+		meta: {
+			label: 'Created By',
+			variant: 'text',
+		},
+	}),
 	columnHelper.accessor('createdAt', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created At' />
@@ -127,40 +184,6 @@ const columns = [
 		meta: {
 			label: 'Created At',
 			variant: 'date',
-		},
-	}),
-	columnHelper.accessor('isBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Is Base' />
-		),
-		cell: ({ row }) => (
-			<div className='w-10'>
-				<Checkbox
-					checked={row.getValue('isBase')}
-					disabled
-					aria-label='Is Base'
-				/>
-			</div>
-		),
-		meta: {
-			label: 'Is Base',
-			variant: 'boolean',
-		},
-	}),
-	columnHelper.accessor('isOverwriteBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Overwrite Base' />
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isOverwriteBase')}
-				disabled
-				aria-label='Overwrite Base'
-			/>
-		),
-		meta: {
-			label: 'Overwrite Base',
-			variant: 'boolean',
 		},
 	}),
 	columnHelper.display({
@@ -180,6 +203,7 @@ export function IngredientsPage() {
 }
 
 function IngredientsContent({ userOrgId }: { userOrgId: string }) {
+	const { orgSlug } = route.useParams()
 	const { data: ingredients } = useSuspenseQuery(
 		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
@@ -232,6 +256,7 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 	const handleViewChange = (newView: string) => {
 		navigate({
 			to: '/$orgSlug/ingredients',
+			params: { orgSlug },
 			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
 			replace: true,
 		})
@@ -241,7 +266,9 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
-				<IngredientCreateDialog />
+				<Link to='/$orgSlug/ingredients/create' params={{ orgSlug }}>
+					<Button className='cursor-pointer'>Create Ingredient</Button>
+				</Link>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
@@ -294,47 +321,95 @@ function IngredientsGridView({
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-				{data.map((ingredient) => (
-					<Card key={ingredient.id} className='flex flex-col'>
-						<CardHeader className='pb-3'>
-							<CardTitle className='text-lg'>{ingredient.name}</CardTitle>
-						</CardHeader>
-						<CardContent className='flex-1'>
-							<div className='space-y-3'>
-								<div className='flex gap-2 items-center'>
-									<FireIcon className='text-orange-500 size-4' />
-									<span className='text-sm font-medium'>
-										{ingredient.calories.toFixed(1)} kcal
-									</span>
-									<span className='text-sm text-muted-foreground'>
-										per {ingredient.serveSize} {ingredient.serveUnit}
-									</span>
-								</div>
-								<div className='grid grid-cols-3 gap-2 text-sm'>
-									<div className='p-2 text-center rounded bg-muted'>
-										<div className='font-medium'>
-											{ingredient.protein.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Protein</div>
+			<div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
+				{data.map((ingredient) => {
+					const categories = splitCategories(ingredient.category)
+					return (
+						<Card
+							key={ingredient.id}
+							className='overflow-hidden shadow-sm transition-shadow hover:shadow-md border-border/70 bg-card'
+						>
+							<CardHeader className='pb-4 space-y-3 bg-gradient-to-r border-b from-orange-50/70 to-emerald-50/70 dark:from-orange-950/20 dark:to-emerald-950/20'>
+								<div className='flex gap-3 justify-between items-start'>
+									<div className='min-w-0'>
+										<CardTitle className='text-lg leading-tight truncate'>
+											{ingredient.name}
+										</CardTitle>
+										<p className='text-xs text-muted-foreground'>
+											By {ingredient.creatorName || 'Unknown'} •{' '}
+											{new Date(ingredient.createdAt).toLocaleDateString()}
+										</p>
 									</div>
-									<div className='p-2 text-center rounded bg-muted'>
-										<div className='font-medium'>
-											{ingredient.fat.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Fat</div>
-									</div>
-									<div className='p-2 text-center rounded bg-muted'>
-										<div className='font-medium'>
-											{ingredient.carbohydrate.toFixed(1)}g
-										</div>
-										<div className='text-xs text-muted-foreground'>Carbs</div>
+									<div className='py-1 px-2 text-xs font-medium rounded-md border bg-background/80 shrink-0'>
+										{ingredient.serveSize} {ingredient.serveUnit}
 									</div>
 								</div>
-							</div>
-						</CardContent>
-					</Card>
-				))}
+
+								{categories.length > 0 && (
+									<div className='flex flex-wrap gap-1'>
+										{categories.map((category) => (
+											<Badge key={category} variant='secondary'>
+												{category}
+											</Badge>
+										))}
+									</div>
+								)}
+							</CardHeader>
+
+							<CardContent className='pt-4 space-y-4'>
+								<div>
+									<div className='mb-2 text-sm font-medium'>Nutrition</div>
+									<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+										<div className='p-2 rounded-lg border bg-orange-50/80 dark:bg-orange-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Calories
+											</div>
+											<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+												{formatMacro(ingredient.calories, ' kcal')}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-emerald-50/80 dark:bg-emerald-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Protein
+											</div>
+											<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+												{formatMacro(ingredient.protein, ' g')}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-blue-50/80 dark:bg-blue-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Carbs
+											</div>
+											<div className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+												{formatMacro(ingredient.carbohydrate, ' g')}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-pink-50/80 dark:bg-pink-950/20'>
+											<div className='text-[11px] text-muted-foreground'>
+												Fat
+											</div>
+											<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+												{formatMacro(ingredient.fat, ' g')}
+											</div>
+										</div>
+									</div>
+								</div>
+
+								<ScrollArea className='h-16 rounded-xl border bg-muted/20'>
+									<div className='p-3 text-sm'>
+										<div className='flex gap-2 items-center'>
+											<FireIcon className='text-orange-500 size-4' />
+											<span className='font-medium'>Serving reference:</span>
+											<span className='text-muted-foreground'>
+												per {ingredient.serveSize} {ingredient.serveUnit}
+											</span>
+										</div>
+									</div>
+								</ScrollArea>
+							</CardContent>
+						</Card>
+					)
+				})}
 			</div>
 
 			{totalPages > 1 && (

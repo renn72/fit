@@ -2,28 +2,26 @@
 
 import * as React from 'react'
 
-import { IngredientCreateDialog } from '@/components/admin/ingredient/ingredient-create-dialog'
 import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
-// Define the shape of our data
 interface Ingredient {
 	id: string
 	name: string
+	category: string | null
 	calories: number
 	protein: number
 	fat: number
@@ -33,9 +31,18 @@ interface Ingredient {
 	createdAt: Date
 	isBase: boolean
 	isOverwriteBase: boolean
+	creatorName: string
 }
 
 const columnHelper = createColumnHelper<Ingredient>()
+
+function splitCategories(category: string | null): string[] {
+	if (!category) return []
+	return category
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
 
 const columns = [
 	columnHelper.accessor('name', {
@@ -48,6 +55,38 @@ const columns = [
 		},
 		enableSorting: true,
 		enableHiding: false,
+	}),
+	columnHelper.accessor('category', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Category' />
+		),
+		cell: ({ row }) => {
+			const categories = splitCategories(
+				row.getValue('category') as string | null,
+			)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
+		meta: {
+			label: 'Category',
+			variant: 'text',
+		},
 	}),
 	columnHelper.accessor('calories', {
 		header: ({ column }) => (
@@ -119,6 +158,16 @@ const columns = [
 			variant: 'text',
 		},
 	}),
+	columnHelper.accessor('creatorName', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Created By' />
+		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
+		meta: {
+			label: 'Created By',
+			variant: 'text',
+		},
+	}),
 	columnHelper.accessor('createdAt', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Created At' />
@@ -127,40 +176,6 @@ const columns = [
 		meta: {
 			label: 'Created At',
 			variant: 'date',
-		},
-	}),
-	columnHelper.accessor('isBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Is Base' />
-		),
-		cell: ({ row }) => (
-			<div className='w-10'>
-				<Checkbox
-					checked={row.getValue('isBase')}
-					disabled
-					aria-label='Is Base'
-				/>
-			</div>
-		),
-		meta: {
-			label: 'Is Base',
-			variant: 'boolean',
-		},
-	}),
-	columnHelper.accessor('isOverwriteBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Overwrite Base' />
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isOverwriteBase')}
-				disabled
-				aria-label='Overwrite Base'
-			/>
-		),
-		meta: {
-			label: 'Overwrite Base',
-			variant: 'boolean',
 		},
 	}),
 	columnHelper.display({
@@ -180,30 +195,21 @@ export function IngredientsTable() {
 }
 
 const Table = ({ userOrgId }: { userOrgId: string }) => {
+	const { orgSlug } = route.useParams()
 	const { data: ingredients } = useSuspenseQuery(
 		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<Ingredient>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
-
+	const { page, perPage, sort } = route.useSearch()
 	const ingredientsData = (ingredients as Ingredient[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...ingredientsData]
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
 			processed.sort((a, b) => {
 				const aValue = a[id as keyof Ingredient]
 				const bValue = b[id as keyof Ingredient]
@@ -224,7 +230,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		const paginatedData = processed.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [ingredientsData, page, perPage, sorting])
+	}, [ingredientsData, page, perPage, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -232,7 +238,7 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
@@ -241,7 +247,9 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
-				<IngredientCreateDialog />
+				<Link to='/$orgSlug/ingredients/create' params={{ orgSlug }}>
+					<Button className='cursor-pointer'>Create Ingredient</Button>
+				</Link>
 			</div>
 			<DataTable table={table}>
 				<DataTableAdvancedToolbar table={table} className='border-b'>
