@@ -250,6 +250,28 @@ Building the protein+calorie balancer using matrix solving (via mathjs) demonstr
 - **Insight:** When users have two targets (protein AND calories) and multiple adjustable variables (ingredient amounts), the system can intelligently solve for optimal values. Select the best 2 ingredients to adjust (highest protein density + highest calorie density), then solve the system of equations.
 - **Fallback Strategy:** When mathematical solutions produce negative amounts or don't converge, gracefully fall back to simple proportional scaling of all ingredients.
 
+## New Insights (2026-03-01)
+
+### Form Unification Beats Feature Forking
+By replacing the dedicated menu-template create form with `UserMenuForm` in a `mode='template'`, we removed a full parallel UI stack.
+- **Insight:** When two workflows differ mostly in persistence semantics (template vs assigned menu), the right architecture is mode-driven composition, not duplicate screens. Shared drag/drop, nutrition math, and ingredient controls now evolve in one place.
+
+### Persistence Semantics Belong at the API Boundary
+Template creation now flows through `userMenu.batchCreate` with an explicit `isTemplate` flag.
+- **Insight:** The client should describe intent (`isTemplate`), and the server should enforce persistence laws (`startDate/endDate = null`, `isActive = false`, `isTemplate = true`). This keeps behavioral guarantees centralized and prevents UI drift.
+
+### Defaulting + Precision Are Data Integrity Rules
+We enforced `startDate` default-to-today and 0.1 precision for meal macro payloads and target inputs.
+- **Insight:** These are not cosmetic UI details. Date defaults and numeric precision are contract-level guarantees that preserve consistency between displayed values, edited values, and persisted values.
+
+### Derived Nutrition Should Be Visible at Every Planning Layer
+The menu-template grid now computes and displays calories/protein/carbs/fat at both menu and meal levels, with ingredient-ratio calculations and fallback compatibility.
+- **Insight:** Planning interfaces need immediate macro visibility at summary level, not only deep detail views. Hierarchical nutrition surfacing turns templates from static lists into decision-ready dashboards.
+
+### Scroll Boundaries Improve Dense Card UIs
+Wrapping meal/recipe lists in Shadcn `ScrollArea` stabilized card height while preserving detail density.
+- **Insight:** In data-dense admin grids, predictable vertical rhythm (fixed card bodies + internal scrolling) improves scan speed and prevents layout jitter across variable-content templates.
+
 ## My Vow
 
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts—not just functional, but beautiful in its architecture. 

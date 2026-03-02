@@ -271,3 +271,58 @@
 - **Compatibility + Cleanup:**
     - Marked legacy `menu-template` schema/relations as deprecated (kept for backward compatibility during transition).
     - Removed/adjusted stale fields and references tied to old template shape where they blocked new flow.
+
+# 2026-03-01
+
+- **User Menu Form Modularization:**
+    - Moved the large `user-menu-form.tsx` out of `user-menu-create` into a dedicated directory:
+      - `apps/web/src/components/admin/user-menu-form/`
+    - Split the monolith into focused files:
+      - `types.ts`
+      - `nutrition-utils.ts`
+      - `meal-header.tsx`
+      - `meal-content.tsx`
+      - `recipe-cards.tsx`
+      - `org-recipe-sidebar.tsx`
+      - `user-menu-form.tsx`
+      - `index.ts`
+    - Updated create/edit page imports to use the new shared module path.
+
+- **Template Generator Migration (User Menu Storage):**
+    - Added reusable generator logic in `user-menu` router:
+      - `generateRandomUserMenuTemplatesForOrg({ organisationId, total })`
+    - Added new dictator endpoint in `admin-setup`:
+      - `generateUserMenuTemplates`
+      - Path: `/admin-setup/generate-user-menu-templates`
+    - Replaced legacy `generateMenuTemplates` usage in dictator generation UI with `generateUserMenuTemplates`.
+    - Templates are generated directly in `user_menu`/`user_meal`/`user_recipe`/`user_ingredient` storage.
+
+- **User Menu Form Precision + Date Rules:**
+    - Enforced `startDate` default to today across create/reset/template selection flows.
+    - Added `0.1` precision enforcement for:
+      - Meal target inputs (`targetCalories`, `targetProtein`)
+      - Persisted meal macros in submit payload (`calories`, `protein`, `fat`, `carbohydrate`)
+    - Added `step='0.1'` to target calorie/protein numeric inputs.
+
+- **Bug Fix - Blank Menu Flow:**
+    - Fixed regression where selecting **Blank Menu** on `/$orgSlug/user-menu-create` did not transition into form mode.
+    - Blank selection now properly enters editor state and resets form/expand state.
+
+- **Template Creation Unification:**
+    - Removed `apps/web/src/components/admin/menu-template/menu-template-create-form.tsx`.
+    - Updated route `/$orgSlug/menu-templates_/create` to use `UserMenuForm` with `mode='template'`.
+    - Extended `UserMenuForm` with template mode behavior:
+      - Hides `Start Date` / `End Date` fields.
+      - Uses template-specific title/labels/navigation.
+      - Submits with `isTemplate: true`.
+    - Updated `UserMenuBatchCreateInput` and `user-menu.batchCreate` handler to support template creation:
+      - `isTemplate` flag accepted.
+      - Template rows persist with `startDate: null`, `endDate: null`, `isTemplate: true`, `isActive: false`.
+
+- **Menu Templates Grid View Upgrade:**
+    - Restyled `menu-templates-page` card grid with stronger visual hierarchy (header treatment, stat chips, macro blocks, cleaner meal cards).
+    - Added nutrition visibility at two levels:
+      - Menu-level totals: calories/protein/carbs/fat
+      - Meal-level totals: calories/protein/carbs/fat
+    - Macro values computed from template ingredient ratios with fallback to stored meal-level values for older templates.
+    - Wrapped meal/recipe lists in Shadcn `ScrollArea` for bounded, consistent scrolling.
