@@ -6,9 +6,9 @@ import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-r
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
@@ -196,21 +196,34 @@ export function IngredientsTable() {
 
 const Table = ({ userOrgId }: { userOrgId: string }) => {
 	const { orgSlug } = route.useParams()
+	const navigate = route.useNavigate()
 	const { data: ingredients } = useSuspenseQuery(
 		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const { page, perPage, sort } = route.useSearch()
+	const { q, page, perPage, sort } = route.useSearch()
 	const ingredientsData = (ingredients as Ingredient[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...ingredientsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((ingredient) => {
+						const name = ingredient.name.toLowerCase()
+						const category = (ingredient.category ?? '').toLowerCase()
+						return (
+							name.includes(normalizedQuery) ||
+							category.includes(normalizedQuery)
+						)
+					})
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Ingredient]
 				const bValue = b[id as keyof Ingredient]
 
@@ -223,14 +236,14 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [ingredientsData, page, perPage, sort])
+	}, [ingredientsData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -243,6 +256,15 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		},
 	})
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/ingredients',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
@@ -251,10 +273,15 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 					<Button className='cursor-pointer'>Create Ingredient</Button>
 				</Link>
 			</div>
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
+			</div>
 			<DataTable table={table}>
-				<DataTableAdvancedToolbar table={table} className='border-b'>
-					<DataTableFilterList table={table} />
-				</DataTableAdvancedToolbar>
+				<DataTableAdvancedToolbar table={table} className='border-b' />
 			</DataTable>
 		</div>
 	)

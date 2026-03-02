@@ -6,10 +6,10 @@ import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-r
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
@@ -211,16 +211,28 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 	)
 
 	const navigate = route.useNavigate()
-	const { view, page, perPage, sort } = route.useSearch()
+	const { view, q, page, perPage, sort } = route.useSearch()
 
 	const ingredientsData = (ingredients as Ingredient[]) ?? []
 
-	const { paginatedData, pageCount } = React.useMemo(() => {
+	const { paginatedData, pageCount, totalCount } = React.useMemo(() => {
 		const processed = [...ingredientsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((ingredient) => {
+						const name = ingredient.name.toLowerCase()
+						const category = (ingredient.category ?? '').toLowerCase()
+						return (
+							name.includes(normalizedQuery) ||
+							category.includes(normalizedQuery)
+						)
+					})
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Ingredient]
 				const bValue = b[id as keyof Ingredient]
 
@@ -233,14 +245,14 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
-		return { paginatedData, pageCount }
-	}, [ingredientsData, page, perPage, sort])
+		return { paginatedData, pageCount, totalCount: total }
+	}, [ingredientsData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -262,6 +274,15 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 		})
 	}
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/ingredients',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
@@ -269,6 +290,14 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 				<Link to='/$orgSlug/ingredients/create' params={{ orgSlug }}>
 					<Button className='cursor-pointer'>Create Ingredient</Button>
 				</Link>
+			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
@@ -285,9 +314,7 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 
 				<TabsContent value='table' className='mt-4'>
 					<DataTable table={table}>
-						<DataTableAdvancedToolbar table={table} className='border-b'>
-							<DataTableFilterList table={table} />
-						</DataTableAdvancedToolbar>
+						<DataTableAdvancedToolbar table={table} className='border-b' />
 					</DataTable>
 				</TabsContent>
 
@@ -296,7 +323,7 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={ingredientsData.length}
+						total={totalCount}
 					/>
 				</TabsContent>
 			</Tabs>
