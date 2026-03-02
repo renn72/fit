@@ -14,6 +14,7 @@ export const ingredient = s.sqliteTable(
 			.$defaultFn(() => uuid()),
 		publicFoodKey: s.text('public_food_key'),
 		name: s.text('name').notNull(),
+		category: s.text('category'), // comma delimited list
 		calories: s.real('calories').notNull(),
 		protein: s.real('protein').notNull(),
 		fat: s.real('fat').notNull(),
@@ -21,6 +22,10 @@ export const ingredient = s.sqliteTable(
 		serveSize: s.real('serve_size').notNull(),
 		serveUnit: s.text('serve_unit').notNull(),
 		isBase: s.integer('is_base', { mode: 'boolean' }).notNull().default(false),
+		isUserCreated: s
+			.integer('is_user_created', { mode: 'boolean' })
+			.notNull()
+			.default(false),
 		baseId: s.text('base_id').references((): any => ingredient.id, {
 			onDelete: 'set null',
 		}),
@@ -43,5 +48,6 @@ export const ingredient = s.sqliteTable(
 	(table) => [
 		s.index('ingredient_organisationId_idx').on(table.organisationId),
 		s.index('ingredient_isBase_idx').on(table.isBase),
+		s.index('ingredient_isUserCreated_idx').on(table.isUserCreated),
 	],
 )
