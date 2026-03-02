@@ -2,31 +2,28 @@
 
 import * as React from 'react'
 
-import { WarmupGroupCreateDialog } from '@/components/admin/warmup/warmup-group-create-dialog'
+import { WarmupRowActions } from '@/components/admin/warmup/warmup-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
 	ListIcon,
 	PlayCircleIcon,
 	SquaresFourIcon,
+	UsersThreeIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
 
@@ -49,30 +46,6 @@ interface WarmupGroup {
 const columnHelper = createColumnHelper<WarmupGroup>()
 
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -89,8 +62,12 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Description' />
 		),
 		cell: ({ row }) => {
-			const desc = row.getValue('description') as string | null
-			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
+			const description = row.getValue('description') as string | null
+			return description ? (
+				<div className='max-w-72 truncate'>{description}</div>
+			) : (
+				'-'
+			)
 		},
 		meta: {
 			label: 'Description',
@@ -110,6 +87,7 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Creator' />
 		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
 		meta: {
 			label: 'Creator',
 			variant: 'text',
@@ -125,6 +103,10 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <WarmupRowActions row={row} />,
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/warmups')
@@ -137,17 +119,8 @@ export function WarmupsPage() {
 	return <WarmupsContent userOrgId={userOrgId} />
 }
 
-WarmupsPage.useRouteContext = () => {
-	return {
-		session: {
-			user: {
-				organisationId: null as string | null,
-			},
-		},
-	}
-}
-
 function WarmupsContent({ userOrgId }: { userOrgId: string }) {
+	const { orgSlug } = route.useParams()
 	const { data: groups } = useSuspenseQuery(
 		orpc.warmup.getAllGroups.queryOptions({
 			input: { organisationId: userOrgId },
@@ -155,26 +128,40 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 	)
 
 	const navigate = route.useNavigate()
-	const { view, page, perPage, sort } = route.useSearch()
+	const { view, q, page, perPage, sort } = route.useSearch()
 
 	const groupsData: WarmupGroup[] = React.useMemo(() => {
-		return (groups ?? []).map((g) => ({
-			id: g.id,
-			name: g.name,
-			description: g.description,
-			warmupCount: g.warmups?.length ?? 0,
-			creatorName: g.creator?.name ?? null,
-			createdAt: g.createdAt,
-			warmups: g.warmups ?? [],
+		return (groups ?? []).map((group) => ({
+			id: group.id,
+			name: group.name,
+			description: group.description,
+			warmupCount: group.warmups?.length ?? 0,
+			creatorName: group.creator?.name ?? null,
+			createdAt: group.createdAt,
+			warmups: group.warmups ?? [],
 		}))
 	}, [groups])
 
-	const { paginatedData, pageCount } = React.useMemo(() => {
+	const { paginatedData, pageCount, totalCount } = React.useMemo(() => {
 		const processed = [...groupsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((group) => {
+						const nameMatch = group.name.toLowerCase().includes(normalizedQuery)
+						const descriptionMatch = (group.description ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const warmupMatch = group.warmups.some((warmup) =>
+							warmup.name.toLowerCase().includes(normalizedQuery),
+						)
+						return nameMatch || descriptionMatch || warmupMatch
+					})
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof WarmupGroup]
 				const bValue = b[id as keyof WarmupGroup]
 
@@ -187,14 +174,14 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
-		return { paginatedData, pageCount }
-	}, [groupsData, page, perPage, sort])
+		return { paginatedData, pageCount, totalCount: total }
+	}, [groupsData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -210,16 +197,36 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 	const handleViewChange = (newView: string) => {
 		navigate({
 			to: '/$orgSlug/warmups',
+			params: { orgSlug },
 			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
 			replace: true,
 		})
 	}
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/warmups',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
+		<div className='flex h-full w-full flex-col gap-4 p-4'>
+			<div className='flex items-center justify-between'>
 				<h1 className='text-2xl font-bold tracking-tight'>Warmups</h1>
-				<WarmupGroupCreateDialog />
+				<Link to='/$orgSlug/warmups/create' params={{ orgSlug }}>
+					<Button>Create Warmup Group</Button>
+				</Link>
+			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name, description, or exercise...'
+				/>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
@@ -236,18 +243,16 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 
 				<TabsContent value='table' className='mt-4'>
 					<DataTable table={table}>
-						<DataTableAdvancedToolbar table={table} className='border-b'>
-							<DataTableFilterList table={table} />
-						</DataTableAdvancedToolbar>
+						<DataTableAdvancedToolbar table={table} className='border-b' />
 					</DataTable>
 				</TabsContent>
 
 				<TabsContent value='grid' className='mt-4'>
-					<WarmupGridView
+					<WarmupsGridView
 						data={paginatedData}
 						page={page}
 						perPage={perPage}
-						total={groupsData.length}
+						total={totalCount}
 					/>
 				</TabsContent>
 			</Tabs>
@@ -255,52 +260,90 @@ function WarmupsContent({ userOrgId }: { userOrgId: string }) {
 	)
 }
 
-interface WarmupGridViewProps {
+interface WarmupsGridViewProps {
 	data: WarmupGroup[]
 	page: number
 	perPage: number
 	total: number
 }
 
-function WarmupGridView({ data, page, perPage, total }: WarmupGridViewProps) {
+function WarmupsGridView({ data, page, perPage, total }: WarmupsGridViewProps) {
 	const totalPages = Math.ceil(total / perPage)
 
 	return (
 		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+			<div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
 				{data.map((group) => (
-					<Card key={group.id} className='flex flex-col'>
-						<CardHeader className='pb-3'>
-							<CardTitle className='text-lg'>{group.name}</CardTitle>
-							{group.description && (
-								<CardDescription className='line-clamp-2'>
-									{group.description}
-								</CardDescription>
-							)}
-						</CardHeader>
-						<CardContent className='flex-1'>
-							<div className='space-y-2'>
-								<div className='text-sm text-muted-foreground'>
-									{group.warmupCount} exercise
-									{group.warmupCount !== 1 ? 's' : ''}
+					<Card
+						key={group.id}
+						className='overflow-hidden border-border/70 bg-card shadow-sm transition-shadow hover:shadow-md'
+					>
+						<CardHeader className='space-y-3 border-b bg-gradient-to-r from-fuchsia-50/70 to-cyan-50/70 pb-4 dark:from-fuchsia-950/20 dark:to-cyan-950/20'>
+							<div className='flex items-start justify-between gap-3'>
+								<div className='min-w-0'>
+									<CardTitle className='truncate text-lg leading-tight'>
+										{group.name}
+									</CardTitle>
+									<p className='text-xs text-muted-foreground'>
+										By {group.creatorName || 'Unknown'} •{' '}
+										{new Date(group.createdAt).toLocaleDateString()}
+									</p>
 								</div>
-								<div className='space-y-1'>
-									{group.warmups.slice(0, 3).map((warmup) => (
-										<div
-											key={warmup.id}
-											className='flex items-center gap-2 text-sm'
-										>
-											<PlayCircleIcon className='size-3 text-muted-foreground' />
-											<span className='truncate'>{warmup.name}</span>
-										</div>
-									))}
-									{group.warmups.length > 3 && (
-										<div className='text-sm text-muted-foreground pl-5'>
-											+{group.warmups.length - 3} more
-										</div>
+								<WarmupRowActions
+									group={{ id: group.id, name: group.name }}
+									buttonClassName='h-8 w-8'
+								/>
+							</div>
+
+							<div className='flex flex-wrap gap-1'>
+								<Badge variant='secondary'>
+									{group.warmupCount} exercise
+									{group.warmupCount === 1 ? '' : 's'}
+								</Badge>
+							</div>
+						</CardHeader>
+
+						<CardContent className='space-y-4 pt-4'>
+							{group.description ? (
+								<p className='line-clamp-2 text-sm text-muted-foreground'>
+									{group.description}
+								</p>
+							) : (
+								<p className='text-sm text-muted-foreground'>
+									No description provided.
+								</p>
+							)}
+
+							<ScrollArea className='h-36 rounded-xl border bg-muted/20'>
+								<div className='space-y-2 p-3'>
+									<div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+										<UsersThreeIcon className='size-4 text-cyan-600 dark:text-cyan-300' />
+										Warmup Exercises
+									</div>
+									{group.warmups.length === 0 ? (
+										<p className='text-sm text-muted-foreground'>
+											No exercises added.
+										</p>
+									) : (
+										group.warmups.map((warmup) => (
+											<div
+												key={warmup.id}
+												className='flex items-center gap-2 rounded-md border bg-background px-2 py-1.5 text-sm'
+											>
+												<PlayCircleIcon className='size-4 text-fuchsia-600 dark:text-fuchsia-300' />
+												<div className='min-w-0 flex-1'>
+													<p className='truncate font-medium'>{warmup.name}</p>
+													{warmup.description && (
+														<p className='truncate text-xs text-muted-foreground'>
+															{warmup.description}
+														</p>
+													)}
+												</div>
+											</div>
+										))
 									)}
 								</div>
-							</div>
+							</ScrollArea>
 						</CardContent>
 					</Card>
 				))}
@@ -310,7 +353,7 @@ function WarmupGridView({ data, page, perPage, total }: WarmupGridViewProps) {
 				<div className='flex items-center justify-between px-2'>
 					<div className='text-sm text-muted-foreground'>
 						Showing {(page - 1) * perPage + 1} to{' '}
-						{Math.min(page * perPage, total)} of {total} warmups
+						{Math.min(page * perPage, total)} of {total} warmup groups
 					</div>
 					<div className='flex items-center gap-2'>
 						<span className='text-sm'>

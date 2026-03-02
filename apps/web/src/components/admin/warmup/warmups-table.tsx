@@ -2,22 +2,20 @@
 
 import * as React from 'react'
 
-import { WarmupGroupCreateDialog } from '@/components/admin/warmup/warmup-group-create-dialog'
+import { WarmupRowActions } from '@/components/admin/warmup/warmup-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface WarmupGroup {
 	id: string
@@ -26,35 +24,15 @@ interface WarmupGroup {
 	warmupCount: number
 	creatorName: string | null
 	createdAt: Date
+	warmups: Array<{
+		id: string
+		name: string
+	}>
 }
 
 const columnHelper = createColumnHelper<WarmupGroup>()
 
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && undefined)
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -71,8 +49,12 @@ const columns = [
 			<DataTableColumnHeader column={column} label='Description' />
 		),
 		cell: ({ row }) => {
-			const desc = row.getValue('description') as string | null
-			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
+			const description = row.getValue('description') as string | null
+			return description ? (
+				<div className='max-w-72 truncate'>{description}</div>
+			) : (
+				'-'
+			)
 		},
 		meta: {
 			label: 'Description',
@@ -92,6 +74,7 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Creator' />
 		),
+		cell: ({ row }) => row.getValue('creatorName') || 'Unknown',
 		meta: {
 			label: 'Creator',
 			variant: 'text',
@@ -107,7 +90,12 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <WarmupRowActions row={row} />,
+	}),
 ]
+
 const route = getRouteApi('/$orgSlug/warmups')
 
 export function WarmupsTable() {
@@ -118,51 +106,51 @@ export function WarmupsTable() {
 	return <Table userOrgId={userOrgId} />
 }
 
-WarmupsTable.useRouteContext = () => {
-	return {
-		session: {
-			user: {
-				organisationId: null as string | null,
-			},
-		},
-	}
-}
-
-const Table = ({ userOrgId }: { userOrgId: string }) => {
+function Table({ userOrgId }: { userOrgId: string }) {
+	const { orgSlug } = route.useParams()
+	const navigate = route.useNavigate()
+	const { q, page, perPage, sort } = route.useSearch()
 	const { data: groups } = useSuspenseQuery(
 		orpc.warmup.getAllGroups.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<WarmupGroup>(
-			columns
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
-
 	const groupsData: WarmupGroup[] = React.useMemo(() => {
-		return (groups ?? []).map((g) => ({
-			id: g.id,
-			name: g.name,
-			description: g.description,
-			warmupCount: g.warmups?.length ?? 0,
-			creatorName: g.creator?.name ?? null,
-			createdAt: g.createdAt,
+		return (groups ?? []).map((group) => ({
+			id: group.id,
+			name: group.name,
+			description: group.description,
+			warmupCount: group.warmups?.length ?? 0,
+			creatorName: group.creator?.name ?? null,
+			createdAt: group.createdAt,
+			warmups: (group.warmups ?? []).map((warmup) => ({
+				id: warmup.id,
+				name: warmup.name,
+			})),
 		}))
 	}, [groups])
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...groupsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((group) => {
+						const nameMatch = group.name.toLowerCase().includes(normalizedQuery)
+						const descriptionMatch = (group.description ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const warmupMatch = group.warmups.some((warmup) =>
+							warmup.name.toLowerCase().includes(normalizedQuery),
+						)
+						return nameMatch || descriptionMatch || warmupMatch
+					})
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
-			processed.sort((a, b) => {
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof WarmupGroup]
 				const bValue = b[id as keyof WarmupGroup]
 
@@ -175,14 +163,14 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [groupsData, page, perPage, sorting])
+	}, [groupsData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -190,21 +178,39 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/warmups',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
+		<div className='flex h-full w-full flex-col gap-4 p-4'>
+			<div className='flex items-center justify-between'>
 				<h1 className='text-2xl font-bold tracking-tight'>Warmups</h1>
-				<WarmupGroupCreateDialog />
+				<Link to='/$orgSlug/warmups/create' params={{ orgSlug }}>
+					<Button>Create Warmup Group</Button>
+				</Link>
 			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name, description, or exercise...'
+				/>
+			</div>
+
 			<DataTable table={table}>
-				<DataTableAdvancedToolbar table={table} className='border-b'>
-					<DataTableFilterList table={table} />
-				</DataTableAdvancedToolbar>
+				<DataTableAdvancedToolbar table={table} className='border-b' />
 			</DataTable>
 		</div>
 	)

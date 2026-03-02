@@ -2,22 +2,20 @@
 
 import * as React from 'react'
 
-import { ExerciseCreateDialog } from '@/components/admin/exercise/exercise-create-dialog'
+import { ExerciseRowActions } from '@/components/admin/exercise/exercise-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
 interface Exercise {
 	id: string
@@ -25,42 +23,14 @@ interface Exercise {
 	movementName: string | null
 	sets: number | null
 	reps: number | null
-	repUnit: string | null
 	ormPercent: number | null
 	targetRpe: number | null
-	restTime: number | null
-	restUnit: string | null
 	createdAt: Date
 }
 
 const columnHelper = createColumnHelper<Exercise>()
 
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				//@ts-ignore
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -76,6 +46,7 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Movement' />
 		),
+		cell: ({ row }) => row.getValue('movementName') || '-',
 		meta: {
 			label: 'Movement',
 			variant: 'text',
@@ -99,15 +70,6 @@ const columns = [
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('repUnit', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rep Unit' />
-		),
-		meta: {
-			label: 'Rep Unit',
-			variant: 'text',
-		},
-	}),
 	columnHelper.accessor('ormPercent', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='% 1RM' />
@@ -125,23 +87,10 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Target RPE' />
 		),
+		cell: ({ row }) => row.getValue('targetRpe') || '-',
 		meta: {
 			label: 'Target RPE',
 			variant: 'number',
-		},
-	}),
-	columnHelper.accessor('restTime', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest' />
-		),
-		cell: ({ row }) => {
-			const time = row.getValue('restTime') as number | null
-			const unit = row.original.repUnit
-			return time ? `${time} ${unit || 's'}` : '-'
-		},
-		meta: {
-			label: 'Rest',
-			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('createdAt', {
@@ -154,45 +103,53 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <ExerciseRowActions row={row} />,
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/exercises')
 
 export function ExercisesTable() {
 	const { session } = route.useRouteContext()
-
 	const userOrgId = session.user.organisationId
+
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
 	return <Table userOrgId={userOrgId} />
 }
 
-const Table = ({ userOrgId }: { userOrgId: string }) => {
+function Table({ userOrgId }: { userOrgId: string }) {
+	const { orgSlug } = route.useParams()
+	const navigate = route.useNavigate()
+	const { q, page, perPage, sort } = route.useSearch()
 	const { data: exercises } = useSuspenseQuery(
 		orpc.exercise.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<Exercise>(
-			columns
-				// TODO any
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
-
 	const exercisesData = (exercises as Exercise[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...exercisesData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((exercise) => {
+						const nameMatch = exercise.name
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const movementMatch = (exercise.movementName ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						return nameMatch || movementMatch
+					})
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
-			processed.sort((a, b) => {
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Exercise]
 				const bValue = b[id as keyof Exercise]
 
@@ -205,14 +162,14 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [exercisesData, page, perPage, sorting])
+	}, [exercisesData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -220,21 +177,39 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/exercises',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
+		<div className='flex h-full w-full flex-col gap-4 p-4'>
+			<div className='flex items-center justify-between'>
 				<h1 className='text-2xl font-bold tracking-tight'>Exercises</h1>
-				<ExerciseCreateDialog />
+				<Link to='/$orgSlug/exercises/create' params={{ orgSlug }}>
+					<Button>Create Exercise</Button>
+				</Link>
 			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or movement...'
+				/>
+			</div>
+
 			<DataTable table={table}>
-				<DataTableAdvancedToolbar table={table} className='border-b'>
-					<DataTableFilterList table={table} />
-				</DataTableAdvancedToolbar>
+				<DataTableAdvancedToolbar table={table} className='border-b' />
 			</DataTable>
 		</div>
 	)

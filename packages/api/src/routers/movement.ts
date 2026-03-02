@@ -6,6 +6,7 @@ import { eq } from 'drizzle-orm'
 import { protectedProcedure } from '../index'
 import {
 	MovementCreateInput,
+	MovementDeleteInput,
 	MovementGetAllBaseInput,
 	MovementGetAllInput,
 	MovementGetAllOrgInput,
@@ -257,5 +258,51 @@ export const movementRouter = {
 			throw new ORPCError('NOT_FOUND', {
 				message: 'Movement not found',
 			})
+		}),
+
+	delete: protectedProcedure
+		.route({
+			method: 'DELETE',
+			path: '/movement/:id',
+			summary: 'Delete a movement',
+			tags: ['Movement'],
+		})
+		.input(MovementDeleteInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('itemUpdater') && !metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to delete movements',
+				})
+			}
+
+			const existingMovement = await db.query.movement.findFirst({
+				where: { id: input.id },
+			})
+
+			if (!existingMovement) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Movement not found',
+				})
+			}
+
+			if (existingMovement.isBase) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'Base movements cannot be deleted',
+				})
+			}
+
+			const organisationId = context.session.user.organisationId
+			if (
+				!organisationId ||
+				existingMovement.organisationId !== organisationId
+			) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You can only delete movements from your organisation',
+				})
+			}
+
+			await db.delete(movement).where(eq(movement.id, input.id))
+			return { success: true, id: input.id }
 		}),
 }

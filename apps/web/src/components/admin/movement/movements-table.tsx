@@ -2,68 +2,44 @@
 
 import * as React from 'react'
 
-import { MovementCreateDialog } from '@/components/admin/movement/movement-create-dialog'
 import { MovementRowActions } from '@/components/admin/movement/movement-row-actions'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
-import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { useDataTable } from '@/hooks/use-data-table'
-import { getSortingStateParser } from '@/lib/parsers'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-import { getRouteApi } from '@tanstack/react-router'
+import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import _ from 'lodash'
-import { parseAsInteger, useQueryState } from 'nuqs'
 
-// Define the shape of our data
 interface Movement {
 	id: string
 	name: string
 	level: string | null
-	category: string
-	force: string | null
-	mechanic: string | null
+	category: string | null
 	equipment: string | null
-	primaryMuscles: string
-	secondaryMuscles: string
+	primaryMuscles: string | null
 	createdAt: Date
 	isBase: boolean
-	isOverwriteBase: boolean
 }
 
 const columnHelper = createColumnHelper<Movement>()
 
+function splitCsv(value: string | null | undefined): string[] {
+	if (!value) return []
+	return value
+		.split(',')
+		.map((item) => item.trim())
+		.filter(Boolean)
+}
+
 const columns = [
-	columnHelper.display({
-		id: 'select',
-		header: ({ table }) => (
-			<Checkbox
-				//@ts-ignore
-				checked={
-					table.getIsAllPageRowsSelected() ||
-					(table.getIsSomePageRowsSelected() && 'indeterminate')
-				}
-				onCheckedChange={(value) => table.toggleAllPageRowsSelected(!!value)}
-				aria-label='Select all'
-				className='translate-y-0.5'
-			/>
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getIsSelected()}
-				onCheckedChange={(value) => row.toggleSelected(!!value)}
-				aria-label='Select row'
-				className='translate-y-0.5'
-			/>
-		),
-		enableSorting: false,
-		enableHiding: false,
-	}),
 	columnHelper.accessor('name', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Name' />
@@ -75,39 +51,46 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('level', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Level' />
-		),
-		meta: {
-			label: 'Level',
-			variant: 'text',
-		},
-	}),
 	columnHelper.accessor('category', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Category' />
 		),
+		cell: ({ row }) => {
+			const categories = splitCsv(row.getValue('category') as string | null)
+			if (categories.length === 0) {
+				return <span className='text-muted-foreground'>-</span>
+			}
+
+			return (
+				<div className='flex flex-wrap gap-1'>
+					{categories.slice(0, 2).map((category) => (
+						<Badge key={category} variant='secondary'>
+							{category}
+						</Badge>
+					))}
+					{categories.length > 2 && (
+						<span className='text-xs text-muted-foreground'>
+							+{categories.length - 2} more
+						</span>
+					)}
+				</div>
+			)
+		},
 		meta: {
 			label: 'Category',
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('force', {
+	columnHelper.accessor('level', {
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Force' />
+			<DataTableColumnHeader column={column} label='Level' />
 		),
-		meta: {
-			label: 'Force',
-			variant: 'text',
+		cell: ({ row }) => {
+			const levels = splitCsv(row.getValue('level') as string | null)
+			return levels.length > 0 ? levels.join(', ') : '-'
 		},
-	}),
-	columnHelper.accessor('mechanic', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Mechanic' />
-		),
 		meta: {
-			label: 'Mechanic',
+			label: 'Level',
 			variant: 'text',
 		},
 	}),
@@ -115,31 +98,23 @@ const columns = [
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Equipment' />
 		),
+		cell: ({ row }) => row.getValue('equipment') || '-',
 		meta: {
 			label: 'Equipment',
-			variant: 'text', // Could be select if we have a finite list
+			variant: 'text',
 		},
 	}),
 	columnHelper.accessor('primaryMuscles', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Primary Muscles' />
 		),
-		meta: {
-			label: 'Primary Muscles',
-			variant: 'text',
-		},
-	}),
-	columnHelper.accessor('secondaryMuscles', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Secondary Muscles' />
-		),
 		cell: ({ row }) => (
-			<div className='max-w-35 truncate'>
-				{row.getValue('secondaryMuscles')}
+			<div className='max-w-52 truncate'>
+				{row.getValue('primaryMuscles') || '-'}
 			</div>
 		),
 		meta: {
-			label: 'Secondary Muscles',
+			label: 'Primary Muscles',
 			variant: 'text',
 		},
 	}),
@@ -153,38 +128,6 @@ const columns = [
 			variant: 'date',
 		},
 	}),
-	columnHelper.accessor('isBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Is Base' />
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isBase')}
-				disabled
-				aria-label='Is Base'
-			/>
-		),
-		meta: {
-			label: 'Is Base',
-			variant: 'boolean',
-		},
-	}),
-	columnHelper.accessor('isOverwriteBase', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Overwrite Base' />
-		),
-		cell: ({ row }) => (
-			<Checkbox
-				checked={row.getValue('isOverwriteBase')}
-				disabled
-				aria-label='Overwrite Base'
-			/>
-		),
-		meta: {
-			label: 'Overwrite Base',
-			variant: 'boolean',
-		},
-	}),
 	columnHelper.display({
 		id: 'actions',
 		cell: ({ row }) => <MovementRowActions row={row} />,
@@ -195,39 +138,43 @@ const route = getRouteApi('/$orgSlug/movements')
 
 export function MovementsTable() {
 	const { session } = route.useRouteContext()
-
 	const userOrgId = session.user.organisationId
+
 	if (!_.isString(userOrgId)) return <div>Missing org</div>
 	return <Table userOrgId={userOrgId} />
 }
 
-const Table = ({ userOrgId }: { userOrgId: string }) => {
+function Table({ userOrgId }: { userOrgId: string }) {
+	const { orgSlug } = route.useParams()
+	const navigate = route.useNavigate()
+	const { q, page, perPage, sort } = route.useSearch()
 	const { data: movements } = useSuspenseQuery(
 		orpc.movement.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const [page] = useQueryState('page', parseAsInteger.withDefault(1))
-	const [perPage] = useQueryState('perPage', parseAsInteger.withDefault(10))
-	const [sorting] = useQueryState(
-		'sort',
-		getSortingStateParser<Movement>(
-			columns
-				// TODO any
-				.map((c) => (c as any).accessorKey)
-				.filter((key): key is string => !!key),
-		).withDefault([{ id: 'createdAt', desc: true }]),
-	)
-
 	const movementsData = (movements as Movement[]) ?? []
 
 	const { paginatedData, pageCount } = React.useMemo(() => {
 		const processed = [...movementsData]
+		const normalizedQuery = q.trim().toLowerCase()
+		const filtered =
+			normalizedQuery.length === 0
+				? processed
+				: processed.filter((movement) => {
+						const nameMatch = movement.name
+							.toLowerCase()
+							.includes(normalizedQuery)
+						const categoryMatch = (movement.category ?? '')
+							.toLowerCase()
+							.includes(normalizedQuery)
+						return nameMatch || categoryMatch
+					})
 
-		if (sorting && sorting.length > 0) {
-			const { id, desc } = sorting[0]
-			processed.sort((a, b) => {
+		if (sort && sort.length > 0) {
+			const { id, desc } = sort[0]
+			filtered.sort((a, b) => {
 				const aValue = a[id as keyof Movement]
 				const bValue = b[id as keyof Movement]
 
@@ -240,14 +187,14 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 			})
 		}
 
-		const total = processed.length
+		const total = filtered.length
 		const pageCount = Math.ceil(total / perPage)
 		const start = (page - 1) * perPage
 		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
+		const paginatedData = filtered.slice(start, end)
 
 		return { paginatedData, pageCount }
-	}, [movementsData, page, perPage, sorting])
+	}, [movementsData, page, perPage, q, sort])
 
 	const { table } = useDataTable({
 		data: paginatedData,
@@ -255,21 +202,39 @@ const Table = ({ userOrgId }: { userOrgId: string }) => {
 		pageCount,
 		getRowId: (originalRow) => originalRow.id,
 		initialState: {
-			sorting: [{ id: 'createdAt', desc: true }],
+			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
 
+	const handleSearchChange = (value: string) => {
+		navigate({
+			to: '/$orgSlug/movements',
+			params: { orgSlug },
+			search: (prev) => ({ ...prev, q: value, page: 1 }),
+			replace: true,
+		})
+	}
+
 	return (
-		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
+		<div className='flex h-full w-full flex-col gap-4 p-4'>
+			<div className='flex items-center justify-between'>
 				<h1 className='text-2xl font-bold tracking-tight'>Movements</h1>
-				<MovementCreateDialog />
+				<Link to='/$orgSlug/movements/create' params={{ orgSlug }}>
+					<Button>Create Movement</Button>
+				</Link>
 			</div>
+
+			<div className='w-full max-w-sm'>
+				<Input
+					value={q}
+					onChange={(event) => handleSearchChange(event.target.value)}
+					placeholder='Search by name or category...'
+				/>
+			</div>
+
 			<DataTable table={table}>
-				<DataTableAdvancedToolbar table={table} className='border-b'>
-					<DataTableFilterList table={table} />
-				</DataTableAdvancedToolbar>
+				<DataTableAdvancedToolbar table={table} className='border-b' />
 			</DataTable>
 		</div>
 	)

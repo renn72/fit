@@ -44,3 +44,7 @@ export const MovementUpdateInput = z.object({
 	category: z.string().optional().nullable(),
 	images: z.string().optional().nullable(),
 })
+
+export const MovementDeleteInput = z.object({
+	id: z.string().min(1),
+})
