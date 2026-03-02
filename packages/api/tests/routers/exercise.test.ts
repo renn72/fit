@@ -1,5 +1,6 @@
 import { call, ORPCError } from '@orpc/server'
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { db } from '@fit/db'
 import { exerciseRouter } from '../../src/routers/exercise'
 import { createExerciseFixture, createSuperSet } from '../fixtures/exercise'
 import { createMovementFixture } from '../fixtures/movement'
@@ -379,8 +380,15 @@ describe('Exercise Router', () => {
 			)
 
 			expect(result.superSetId).toBe(superSet.id)
-			expect(result.exerciseId).toBe(testExercise.id)
+			expect(result.exerciseId).not.toBe(testExercise.id)
 			expect(result.order).toBe(1)
+
+			const copiedMember = await db.query.exercise.findFirst({
+				where: { id: result.exerciseId },
+			})
+			expect(copiedMember).not.toBeNull()
+			expect(copiedMember?.isSuperSetChild).toBe(true)
+			expect(copiedMember?.name).toBe(testExercise.name)
 		})
 
 		it('should throw NOT_FOUND for non-existent superset', async () => {

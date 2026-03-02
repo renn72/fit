@@ -17,9 +17,22 @@ import {
 	SuperSetUpdateInput,
 } from '../schemas/exercise'
 
-function mapExerciseOutput(exerciseRow: any) {
+function mapMemberExerciseOutput(memberExerciseRow: any) {
+	if (!memberExerciseRow) return null
+
+	const { isSuperSetChild: _isSuperSetChild, ...rest } = memberExerciseRow
+
 	return {
-		...exerciseRow,
+		...rest,
+		movementName: memberExerciseRow.movement?.name ?? null,
+	}
+}
+
+function mapExerciseOutput(exerciseRow: any) {
+	const { isSuperSetChild: _isSuperSetChild, ...rest } = exerciseRow
+
+	return {
+		...rest,
 		movementName: exerciseRow.movement?.name ?? null,
 		creatorName: exerciseRow.creator?.name ?? null,
 		creatorEmail: exerciseRow.creator?.email ?? null,
@@ -28,12 +41,7 @@ function mapExerciseOutput(exerciseRow: any) {
 		superSetExercises: (exerciseRow.superSetExercises ?? []).map(
 			(link: any) => ({
 				...link,
-				exercise: link.exercise
-					? {
-							...link.exercise,
-							movementName: link.exercise.movement?.name ?? null,
-						}
-					: null,
+				exercise: mapMemberExerciseOutput(link.exercise),
 			}),
 		),
 	}
@@ -56,6 +64,7 @@ export const exerciseRouter = {
 			}
 
 			const exercises = await db.query.exercise.findMany({
+				where: { isSuperSetChild: false },
 				with: {
 					movement: {
 						columns: {
@@ -105,7 +114,10 @@ export const exerciseRouter = {
 		.input(ExerciseGetAllOrgInput)
 		.handler(async ({ input }) => {
 			const exercises = await db.query.exercise.findMany({
-				where: { organisationId: input.organisationId },
+				where: {
+					organisationId: input.organisationId,
+					isSuperSetChild: false,
+				},
 				with: {
 					movement: {
 						columns: {
@@ -142,7 +154,10 @@ export const exerciseRouter = {
 		.input(ExerciseGetInput)
 		.handler(async ({ input }) => {
 			const ex = await db.query.exercise.findFirst({
-				where: { id: input.id },
+				where: {
+					id: input.id,
+					isSuperSetChild: false,
+				},
 				with: {
 					movement: {
 						columns: {
@@ -195,6 +210,7 @@ export const exerciseRouter = {
 				.insert(exercise)
 				.values({
 					...input,
+					isSuperSetChild: false,
 					creatorId: context.session.user.id,
 					organisationId: context.session.user.organisationId,
 				})
@@ -280,6 +296,7 @@ export const exerciseRouter = {
 					.values({
 						name: input.name,
 						isSuperSet: true,
+						isSuperSetChild: false,
 						targetRpe: input.targetRpe ?? null,
 						restTime: input.restTime ?? null,
 						restUnit: input.restUnit ?? null,
@@ -304,11 +321,11 @@ export const exerciseRouter = {
 				}
 
 				for (const [index, member] of input.members.entries()) {
-					let memberExerciseId = member.exerciseId ?? null
+					let memberExerciseId: string | null = null
 
-					if (memberExerciseId) {
+					if (member.exerciseId) {
 						const existingExercise = await tx.query.exercise.findFirst({
-							where: { id: memberExerciseId },
+							where: { id: member.exerciseId },
 						})
 
 						if (!existingExercise) {
@@ -329,6 +346,31 @@ export const exerciseRouter = {
 								message: 'Supersets cannot include other supersets',
 							})
 						}
+
+						const [copiedMemberExercise] = await tx
+							.insert(exercise)
+							.values({
+								name: existingExercise.name,
+								movementId: existingExercise.movementId ?? null,
+								sets: existingExercise.sets ?? null,
+								reps: existingExercise.reps ?? null,
+								repUnit: existingExercise.repUnit ?? null,
+								ormPercent: existingExercise.ormPercent ?? null,
+								targetRpe: existingExercise.targetRpe ?? null,
+								restTime: existingExercise.restTime ?? null,
+								restUnit: existingExercise.restUnit ?? null,
+								tempoDown: existingExercise.tempoDown ?? null,
+								tempoPause: existingExercise.tempoPause ?? null,
+								tempoUp: existingExercise.tempoUp ?? null,
+								notes: existingExercise.notes ?? null,
+								isSuperSet: false,
+								isSuperSetChild: true,
+								creatorId: context.session.user.id,
+								organisationId,
+							})
+							.returning()
+
+						memberExerciseId = copiedMemberExercise?.id ?? null
 					} else if (member.newExercise) {
 						const [newMemberExercise] = await tx
 							.insert(exercise)
@@ -347,6 +389,7 @@ export const exerciseRouter = {
 								tempoUp: member.newExercise.tempoUp ?? null,
 								notes: member.newExercise.notes ?? null,
 								isSuperSet: false,
+								isSuperSetChild: true,
 								creatorId: context.session.user.id,
 								organisationId,
 							})
@@ -459,6 +502,7 @@ export const exerciseRouter = {
 					.set({
 						name: input.name,
 						isSuperSet: true,
+						isSuperSetChild: false,
 						targetRpe: input.targetRpe ?? null,
 						restTime: input.restTime ?? null,
 						restUnit: input.restUnit ?? null,
@@ -474,22 +518,45 @@ export const exerciseRouter = {
 					})
 					.where(eq(exercise.id, input.id))
 
+				const existingMemberLinks = await tx.query.superSetToExercise.findMany({
+					where: { superSetId: input.id },
+					with: {
+						exercise: {
+							columns: {
+								id: true,
+								isSuperSetChild: true,
+							},
+						},
+					},
+				})
+				const previousChildExerciseIds = existingMemberLinks
+					.map((link) => link.exercise)
+					.filter(
+						(
+							memberExercise,
+						): memberExercise is {
+							id: string
+							isSuperSetChild: boolean
+						} => Boolean(memberExercise?.id && memberExercise.isSuperSetChild),
+					)
+					.map((memberExercise) => memberExercise.id)
+
 				await tx
 					.delete(superSetToExercise)
 					.where(eq(superSetToExercise.superSetId, input.id))
 
 				for (const [index, member] of input.members.entries()) {
-					let memberExerciseId = member.exerciseId ?? null
+					let memberExerciseId: string | null = null
 
-					if (memberExerciseId) {
-						if (memberExerciseId === input.id) {
+					if (member.exerciseId) {
+						if (member.exerciseId === input.id) {
 							throw new ORPCError('BAD_REQUEST', {
 								message: 'A superset cannot include itself as a member',
 							})
 						}
 
 						const existingExercise = await tx.query.exercise.findFirst({
-							where: { id: memberExerciseId },
+							where: { id: member.exerciseId },
 						})
 
 						if (!existingExercise) {
@@ -510,6 +577,31 @@ export const exerciseRouter = {
 								message: 'Supersets cannot include other supersets',
 							})
 						}
+
+						const [copiedMemberExercise] = await tx
+							.insert(exercise)
+							.values({
+								name: existingExercise.name,
+								movementId: existingExercise.movementId ?? null,
+								sets: existingExercise.sets ?? null,
+								reps: existingExercise.reps ?? null,
+								repUnit: existingExercise.repUnit ?? null,
+								ormPercent: existingExercise.ormPercent ?? null,
+								targetRpe: existingExercise.targetRpe ?? null,
+								restTime: existingExercise.restTime ?? null,
+								restUnit: existingExercise.restUnit ?? null,
+								tempoDown: existingExercise.tempoDown ?? null,
+								tempoPause: existingExercise.tempoPause ?? null,
+								tempoUp: existingExercise.tempoUp ?? null,
+								notes: existingExercise.notes ?? null,
+								isSuperSet: false,
+								isSuperSetChild: true,
+								creatorId: context.session.user.id,
+								organisationId,
+							})
+							.returning()
+
+						memberExerciseId = copiedMemberExercise?.id ?? null
 					} else if (member.newExercise) {
 						const [newMemberExercise] = await tx
 							.insert(exercise)
@@ -528,6 +620,7 @@ export const exerciseRouter = {
 								tempoUp: member.newExercise.tempoUp ?? null,
 								notes: member.newExercise.notes ?? null,
 								isSuperSet: false,
+								isSuperSetChild: true,
 								creatorId: context.session.user.id,
 								organisationId,
 							})
@@ -547,6 +640,28 @@ export const exerciseRouter = {
 						exerciseId: memberExerciseId,
 						order: member.order ?? index,
 					})
+				}
+
+				for (const childId of previousChildExerciseIds) {
+					const hasParentSuperSet = await tx.query.superSetToExercise.findFirst(
+						{
+							where: { exerciseId: childId },
+							columns: {
+								id: true,
+							},
+						},
+					)
+
+					if (!hasParentSuperSet) {
+						await tx
+							.delete(exercise)
+							.where(
+								and(
+									eq(exercise.id, childId),
+									eq(exercise.isSuperSetChild, true),
+								),
+							)
+					}
 				}
 			})
 
@@ -600,7 +715,66 @@ export const exerciseRouter = {
 				})
 			}
 
-			await db.delete(exercise).where(eq(exercise.id, input.id))
+			await db.transaction(async (tx) => {
+				const exerciseToDelete = await tx.query.exercise.findFirst({
+					where: { id: input.id },
+				})
+
+				if (!exerciseToDelete) {
+					return
+				}
+
+				const childExerciseIds = exerciseToDelete.isSuperSet
+					? (
+							await tx.query.superSetToExercise.findMany({
+								where: { superSetId: input.id },
+								with: {
+									exercise: {
+										columns: {
+											id: true,
+											isSuperSetChild: true,
+										},
+									},
+								},
+							})
+						)
+							.map((link) => link.exercise)
+							.filter(
+								(
+									memberExercise,
+								): memberExercise is {
+									id: string
+									isSuperSetChild: boolean
+								} =>
+									Boolean(memberExercise?.id && memberExercise.isSuperSetChild),
+							)
+							.map((memberExercise) => memberExercise.id)
+					: []
+
+				await tx.delete(exercise).where(eq(exercise.id, input.id))
+
+				for (const childId of childExerciseIds) {
+					const hasParentSuperSet = await tx.query.superSetToExercise.findFirst(
+						{
+							where: { exerciseId: childId },
+							columns: {
+								id: true,
+							},
+						},
+					)
+
+					if (!hasParentSuperSet) {
+						await tx
+							.delete(exercise)
+							.where(
+								and(
+									eq(exercise.id, childId),
+									eq(exercise.isSuperSetChild, true),
+								),
+							)
+					}
+				}
+			})
 			return { success: true, id: input.id }
 		}),
 
@@ -621,6 +795,13 @@ export const exerciseRouter = {
 				})
 			}
 
+			const organisationId = context.session.user.organisationId
+			if (!organisationId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
 			// Verify the superSetId points to an exercise marked as isSuperSet
 			const superSet = await db.query.exercise.findFirst({
 				where: { id: input.superSetId },
@@ -638,6 +819,12 @@ export const exerciseRouter = {
 				})
 			}
 
+			if (superSet.organisationId !== organisationId) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You can only update supersets from your organisation',
+				})
+			}
+
 			// Verify the exercise exists
 			const exerciseToAdd = await db.query.exercise.findFirst({
 				where: { id: input.exerciseId },
@@ -649,12 +836,54 @@ export const exerciseRouter = {
 				})
 			}
 
+			if (exerciseToAdd.organisationId !== organisationId) {
+				throw new ORPCError('FORBIDDEN', {
+					message:
+						'You can only add exercises from your organisation to a superset',
+				})
+			}
+
+			if (exerciseToAdd.isSuperSet) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'Supersets cannot be added as member exercises',
+				})
+			}
+
+			const [copiedMemberExercise] = await db
+				.insert(exercise)
+				.values({
+					name: exerciseToAdd.name,
+					movementId: exerciseToAdd.movementId ?? null,
+					sets: exerciseToAdd.sets ?? null,
+					reps: exerciseToAdd.reps ?? null,
+					repUnit: exerciseToAdd.repUnit ?? null,
+					ormPercent: exerciseToAdd.ormPercent ?? null,
+					targetRpe: exerciseToAdd.targetRpe ?? null,
+					restTime: exerciseToAdd.restTime ?? null,
+					restUnit: exerciseToAdd.restUnit ?? null,
+					tempoDown: exerciseToAdd.tempoDown ?? null,
+					tempoPause: exerciseToAdd.tempoPause ?? null,
+					tempoUp: exerciseToAdd.tempoUp ?? null,
+					notes: exerciseToAdd.notes ?? null,
+					isSuperSet: false,
+					isSuperSetChild: true,
+					creatorId: context.session.user.id,
+					organisationId,
+				})
+				.returning()
+
+			if (!copiedMemberExercise) {
+				throw new ORPCError('INTERNAL_SERVER_ERROR', {
+					message: 'Failed to create superset child exercise',
+				})
+			}
+
 			// Add the exercise to the superset
 			const [link] = await db
 				.insert(superSetToExercise)
 				.values({
 					superSetId: input.superSetId,
-					exerciseId: input.exerciseId,
+					exerciseId: copiedMemberExercise.id,
 					order: input.order ?? 0,
 				})
 				.returning()
@@ -678,14 +907,48 @@ export const exerciseRouter = {
 				})
 			}
 
+			const existingLink = await db.query.superSetToExercise.findFirst({
+				where: {
+					superSetId: input.superSetId,
+					exerciseId: input.exerciseId,
+				},
+				with: {
+					exercise: {
+						columns: {
+							id: true,
+							isSuperSetChild: true,
+						},
+					},
+				},
+			})
+
+			if (!existingLink) {
+				return { success: true }
+			}
+
 			await db
 				.delete(superSetToExercise)
-				.where(
-					and(
-						eq(superSetToExercise.superSetId, input.superSetId),
-						eq(superSetToExercise.exerciseId, input.exerciseId),
-					),
-				)
+				.where(eq(superSetToExercise.id, existingLink.id))
+
+			if (existingLink.exercise?.isSuperSetChild) {
+				const hasParentSuperSet = await db.query.superSetToExercise.findFirst({
+					where: { exerciseId: existingLink.exercise.id },
+					columns: {
+						id: true,
+					},
+				})
+
+				if (!hasParentSuperSet) {
+					await db
+						.delete(exercise)
+						.where(
+							and(
+								eq(exercise.id, existingLink.exercise.id),
+								eq(exercise.isSuperSetChild, true),
+							),
+						)
+				}
+			}
 
 			return { success: true }
 		}),
@@ -717,10 +980,7 @@ export const exerciseRouter = {
 
 			return links.map((link) => ({
 				...link,
-				exercise: {
-					...link.exercise,
-					movementName: link.exercise?.movement?.name ?? null,
-				},
+				exercise: mapMemberExerciseOutput(link.exercise),
 			}))
 		}),
 }

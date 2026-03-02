@@ -929,7 +929,7 @@ export function ExerciseForm({
 												</Badge>
 												{member.type === 'existing' && (
 													<Badge variant='outline'>
-														{isCustomized ? 'Customized' : 'Linked'}
+														{isCustomized ? 'Customized Copy' : 'Copied'}
 													</Badge>
 												)}
 											</div>
@@ -966,8 +966,8 @@ export function ExerciseForm({
 										{member.type === 'existing' && (
 											<p className='text-xs text-muted-foreground'>
 												{isCustomized
-													? 'This member is customized for this superset.'
-													: 'This member stays linked to the original exercise until edited.'}
+													? 'This member will be saved as a customized superset child exercise.'
+													: 'This member will be copied into the superset as a child exercise.'}
 											</p>
 										)}
 

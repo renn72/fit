@@ -1,0 +1,1 @@
+CREATE INDEX `exercise_isSuperSetChild_idx` ON `exercise` (`is_superset_child`);

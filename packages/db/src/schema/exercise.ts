@@ -29,7 +29,7 @@ export const exercise = s.sqliteTable(
 		tempoUp: s.integer('tempo_up'),
 		notes: s.text('notes'),
 		isSuperSetChild: s
-			.integer('is_superset', { mode: 'boolean' })
+			.integer('is_superset_child', { mode: 'boolean' })
 			.default(false)
 			.notNull(),
 		isSuperSet: s
@@ -56,6 +56,7 @@ export const exercise = s.sqliteTable(
 		s.index('exercise_movementId_idx').on(table.movementId),
 		s.index('exercise_organisationId_idx').on(table.organisationId),
 		s.index('exercise_isSuperSet_idx').on(table.isSuperSet),
+		s.index('exercise_isSuperSetChild_idx').on(table.isSuperSetChild),
 	],
 )
 

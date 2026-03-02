@@ -1,0 +1,1 @@
+ALTER TABLE `exercise` ADD `is_superset_child` integer DEFAULT false NOT NULL;
