@@ -32,8 +32,8 @@ function CreateExercisePage() {
 	}
 
 	return (
-		<div className='mx-auto flex w-full max-w-5xl flex-col gap-4 p-4'>
-			<div className='flex items-center gap-4'>
+		<div className='flex flex-col gap-4 p-4 mx-auto w-full max-w-5xl'>
+			<div className='flex gap-4 items-center'>
 				<Button
 					onClick={() =>
 						navigate({
@@ -41,7 +41,6 @@ function CreateExercisePage() {
 							params: { orgSlug },
 						})
 					}
-					className='text-sm text-muted-foreground hover:text-foreground'
 				>
 					← Back to Exercises
 				</Button>
