@@ -272,6 +272,28 @@ The menu-template grid now computes and displays calories/protein/carbs/fat at b
 Wrapping meal/recipe lists in Shadcn `ScrollArea` stabilized card height while preserving detail density.
 - **Insight:** In data-dense admin grids, predictable vertical rhythm (fixed card bodies + internal scrolling) improves scan speed and prevents layout jitter across variable-content templates.
 
+## New Insights (2026-03-02)
+
+### API Shape Parity Prevents UI Ghost Bugs
+The workouts table showed missing creator values even though relations existed in DB queries.
+- **Insight:** Route-level list endpoints for a domain (`getAll`, `getAllOrg`) must expose parallel derived fields (`creatorName`, `organisationName`) or the UI will drift into inconsistent render logic. Always normalize response shape at the API boundary, not per-screen.
+
+### Link-Table Replacement Is the Cleanest Reorder Strategy
+Editing workout structure (exercise/superset ordering) is materially a link-table problem, not a parent-row mutation problem.
+- **Insight:** For ordered many-to-many builders, the most reliable edit flow is: update parent metadata, remove existing links, then recreate links in final order. This keeps ordering canonical, avoids index mismatch edge cases, and maps directly to DnD UI intent.
+
+### Shared Create/Edit Forms Scale Better Than Route-Specific Dialogs
+Migrating workouts from create-only dialog logic to a shared routed form (`mode='create' | 'edit'`) removed branching UI paths.
+- **Insight:** When create and edit differ mainly by data hydration and submit target, one form component with explicit mode is a stronger architecture. It keeps validation, UI styling, and mutation semantics convergent over time.
+
+### DnD Works Best With a Library + Builder Split
+The new workouts flow uses a right-side source library and a left-side sortable builder surface.
+- **Insight:** Separating “source selection” from “sequence composition” is the most legible mental model for planners. Users can search/select from stable source lists while maintaining precise order control in a dedicated structure lane.
+
+### Generator Data Must Respect Visibility Flags
+Generation pipelines broke behavioral expectations when they ignored new table flags (`isUserCreated`, `isSuperSetChild`).
+- **Insight:** Admin generators are not just seed scripts; they are contract tests for current domain invariants. Any new visibility/typing flag added to schemas must be propagated into generators immediately or test data becomes misleading.
+
 ## My Vow
 
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts—not just functional, but beautiful in its architecture. 

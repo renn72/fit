@@ -326,3 +326,51 @@
       - Meal-level totals: calories/protein/carbs/fat
     - Macro values computed from template ingredient ratios with fallback to stored meal-level values for older templates.
     - Wrapped meal/recipe lists in Shadcn `ScrollArea` for bounded, consistent scrolling.
+
+# 2026-03-02
+
+- **Generation Compatibility Hardening (`dictator/generation` support paths):**
+    - Updated generation/import flows in `packages/api/src/routers/admin-setup.ts` to align with current DB rules:
+      - Generated/imported ingredients now set `isUserCreated: false`.
+      - Recipe generation now excludes user-created ingredients (`isUserCreated: false`).
+      - Exercise generation now explicitly sets `isSuperSet: false` and `isSuperSetChild: false`.
+      - Workout generation now excludes supersets and superset-child exercises.
+    - This prevents generated test data from leaking into user-created pools and keeps generation outputs compatible with current table filters.
+
+- **Workout API Contract + Payload Alignment:**
+    - Updated `workout` schemas to include `warmupGroupId` on create/update:
+      - `packages/api/src/schemas/workout.ts`
+    - Updated `workout.getAllOrg` to map creator/org derived fields (including `creatorName`) the same way as global list endpoints:
+      - `packages/api/src/routers/workout.ts`
+    - Resolved missing “Created By” values in workout table/grid by ensuring API shape and frontend expectations match.
+
+- **Workouts List Refactor (Table + Grid):**
+    - Refactored `apps/web/src/components/admin/workout/workouts-page.tsx`:
+      - Added top-level search box (`q`) for name/category.
+      - Added row actions column for edit/delete.
+      - Added card-level actions for edit/delete in grid view.
+      - Restyled grid cards to match current admin visual language used in ingredients/menus.
+      - Improved creator display fallback and category rendering with badges.
+    - Added reusable actions component:
+      - `apps/web/src/components/admin/workout/workout-row-actions.tsx`
+    - Updated workouts route search schema to include `q`:
+      - `apps/web/src/routes/$orgSlug/workouts.tsx`
+
+- **Workout Form Overhaul (Create/Edit + Drag/Drop):**
+    - Rebuilt `apps/web/src/components/admin/workout/workout-create-form.tsx` into a shared create/edit form:
+      - New props: `mode`, `organisationId`, optional `workout`.
+      - Correct org-scoped queries for exercises and warmup groups.
+      - Reliable mutation flow for create/update and workout item link syncing.
+    - Added drag-and-drop workout builder with right-side exercise/superset library:
+      - Drag from library into workout structure.
+      - Reorder workout items via sortable list.
+      - Add/remove via buttons remains available.
+    - Added dedicated edit route using same form:
+      - `apps/web/src/routes/$orgSlug/workouts_.edit.$workoutId.tsx`
+    - Updated create route to pass required form props:
+      - `apps/web/src/routes/$orgSlug/workouts_.create.tsx`
+    - Route tree regenerated to include workouts edit path:
+      - `apps/web/src/routeTree.gen.ts`
+
+- **Verification:**
+    - Ran `pnpm -F web build` after refactor; build passed (client + SSR bundles generated).
