@@ -1,4 +1,5 @@
 import { adminSetupRouter } from './admin-setup'
+import { aiRouter } from './ai'
 import { blockTemplateRouter } from './block-template'
 import { exerciseRouter } from './exercise'
 import { ingredientRouter } from './ingredient'
@@ -52,6 +53,7 @@ export const appRouter = {
 	blockTemplate: blockTemplateRouter,
 	menuTemplate: menuTemplateRouter,
 	subscription: subscriptionRouter,
+	ai: aiRouter,
 }
 export type AppRouter = typeof appRouter
 export type AppRouterClient = RouterClient<typeof appRouter>

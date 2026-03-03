@@ -1,5 +1,6 @@
 // Set up test environment variables before any imports
 process.env.RESEND_API_KEY = 'test-resend-key'
+process.env.ZEN_API_KEY = 'test-zen-key'
 process.env.DATABASE_URL = 'file::memory:'
 process.env.DATABASE_SERVER_LOG_URL = 'file::memory:'
 process.env.BETTER_AUTH_SECRET =

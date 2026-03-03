@@ -22,11 +22,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
 	closestCorners,
 	DndContext,
+	type DragEndEvent,
 	DragOverlay,
+	type DragStartEvent,
 	KeyboardSensor,
 	PointerSensor,
-	type DragEndEvent,
-	type DragStartEvent,
 	useDraggable,
 	useDroppable,
 	useSensor,
@@ -156,7 +156,8 @@ function mapWorkoutToBuilderItems(
 			sourceId: link.exercise.id,
 			name: link.exercise.name,
 			type: 'exercise' as const,
-			movementName: link.exercise.movementName ?? link.exercise.movement?.name ?? null,
+			movementName:
+				link.exercise.movementName ?? link.exercise.movement?.name ?? null,
 			memberCount: undefined,
 			index: link.index,
 		})),
@@ -211,8 +212,9 @@ export function WorkoutCreateForm({
 	)
 
 	const [libraryQuery, setLibraryQuery] = React.useState('')
-	const [activeDragData, setActiveDragData] =
-		React.useState<DragData | null>(null)
+	const [activeDragData, setActiveDragData] = React.useState<DragData | null>(
+		null,
+	)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -394,7 +396,11 @@ export function WorkoutCreateForm({
 			memberCount: item.memberCount,
 		}
 
-		if (insertIndex === undefined || insertIndex < 0 || insertIndex > currentItems.length) {
+		if (
+			insertIndex === undefined ||
+			insertIndex < 0 ||
+			insertIndex > currentItems.length
+		) {
 			form.setFieldValue('items', [...currentItems, nextItem])
 			return
 		}
@@ -473,7 +479,11 @@ export function WorkoutCreateForm({
 		if (!activeDragData) return null
 
 		if (activeDragData.kind === 'library') {
-			return <WorkoutItemPreview item={mapLibraryToBuilderItem(activeDragData.item)} />
+			return (
+				<WorkoutItemPreview
+					item={mapLibraryToBuilderItem(activeDragData.item)}
+				/>
+			)
 		}
 
 		return <WorkoutItemPreview item={activeDragData.item} />
@@ -497,14 +507,18 @@ export function WorkoutCreateForm({
 				<div className='space-y-6'>
 					<Card className='border-border/70'>
 						<CardHeader>
-							<CardTitle>{isEditMode ? 'Edit Workout' : 'Create Workout'}</CardTitle>
+							<CardTitle>
+								{isEditMode ? 'Edit Workout' : 'Create Workout'}
+							</CardTitle>
 						</CardHeader>
 						<CardContent>
 							<FieldGroup>
 								<form.Field name='name'>
 									{(field) => (
 										<Field data-invalid={field.state.meta.errors.length > 0}>
-											<FieldLabel htmlFor={field.name}>Workout Name *</FieldLabel>
+											<FieldLabel htmlFor={field.name}>
+												Workout Name *
+											</FieldLabel>
 											<Input
 												id={field.name}
 												name={field.name}
@@ -527,7 +541,9 @@ export function WorkoutCreateForm({
 												name={field.name}
 												value={field.state.value ?? ''}
 												onBlur={field.handleBlur}
-												onChange={(e) => field.handleChange(e.target.value || null)}
+												onChange={(e) =>
+													field.handleChange(e.target.value || null)
+												}
 												placeholder='Optional coaching notes or workout intent.'
 												className='min-h-20'
 											/>
@@ -545,7 +561,9 @@ export function WorkoutCreateForm({
 													name={field.name}
 													value={field.state.value ?? ''}
 													onBlur={field.handleBlur}
-													onChange={(e) => field.handleChange(e.target.value || null)}
+													onChange={(e) =>
+														field.handleChange(e.target.value || null)
+													}
 													placeholder='e.g., Strength, Hypertrophy'
 												/>
 											</Field>
@@ -555,14 +573,18 @@ export function WorkoutCreateForm({
 									<form.Field name='warmupGroupId'>
 										{(field) => (
 											<Field>
-												<FieldLabel htmlFor={field.name}>Warmup Group</FieldLabel>
+												<FieldLabel htmlFor={field.name}>
+													Warmup Group
+												</FieldLabel>
 												<select
 													id={field.name}
 													name={field.name}
 													value={field.state.value ?? ''}
 													onBlur={field.handleBlur}
-													onChange={(e) => field.handleChange(e.target.value || null)}
-													className='flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm'
+													onChange={(e) =>
+														field.handleChange(e.target.value || null)
+													}
+													className='flex py-1 px-3 w-full h-9 text-sm rounded-md border border-input bg-background'
 												>
 													<option value=''>No warmup group</option>
 													{warmupGroups.map((group) => (
@@ -580,7 +602,7 @@ export function WorkoutCreateForm({
 					</Card>
 
 					<Card className='border-border/70'>
-						<CardHeader className='space-y-2 border-b bg-gradient-to-r from-orange-50/70 to-cyan-50/70 pb-4 dark:from-orange-950/20 dark:to-cyan-950/20'>
+						<CardHeader className='pb-4 space-y-2 bg-gradient-to-r border-b from-orange-50/70 to-cyan-50/70 dark:from-orange-950/20 dark:to-cyan-950/20'>
 							<CardTitle>Workout Builder</CardTitle>
 							<p className='text-sm text-muted-foreground'>
 								Drag exercises or supersets from the right panel into this list.
@@ -601,8 +623,9 @@ export function WorkoutCreateForm({
 												strategy={verticalListSortingStrategy}
 											>
 												{builderItems.length === 0 ? (
-													<div className='py-8 text-center text-sm text-muted-foreground'>
-														Drop exercises/supersets here or use the add buttons.
+													<div className='py-8 text-sm text-center text-muted-foreground'>
+														Drop exercises/supersets here or use the add
+														buttons.
 													</div>
 												) : (
 													<div className='space-y-2'>
@@ -630,7 +653,7 @@ export function WorkoutCreateForm({
 						</CardContent>
 					</Card>
 
-					<div className='flex justify-end border-t pt-2'>
+					<div className='flex justify-end pt-2 border-t'>
 						<form.Subscribe
 							selector={(state) => [state.canSubmit, state.isSubmitting]}
 						>
@@ -649,7 +672,7 @@ export function WorkoutCreateForm({
 					</div>
 				</div>
 
-				<Card className='h-fit border-border/70 xl:sticky xl:top-4'>
+				<Card className='xl:sticky xl:top-4 h-fit border-border/70'>
 					<CardHeader className='pb-3'>
 						<CardTitle>Exercise Library</CardTitle>
 					</CardHeader>
@@ -664,10 +687,10 @@ export function WorkoutCreateForm({
 							<div className='text-sm font-medium text-muted-foreground'>
 								Exercises
 							</div>
-							<ScrollArea className='h-60 rounded-md border p-2'>
+							<ScrollArea className='p-2 h-60 rounded-md border'>
 								<div className='space-y-2'>
 									{filteredExercises.length === 0 ? (
-										<p className='px-2 py-6 text-center text-sm text-muted-foreground'>
+										<p className='py-6 px-2 text-sm text-center text-muted-foreground'>
 											No exercises found.
 										</p>
 									) : (
@@ -687,10 +710,10 @@ export function WorkoutCreateForm({
 							<div className='text-sm font-medium text-muted-foreground'>
 								Supersets
 							</div>
-							<ScrollArea className='h-52 rounded-md border p-2'>
+							<ScrollArea className='p-2 h-52 rounded-md border'>
 								<div className='space-y-2'>
 									{filteredSupersets.length === 0 ? (
-										<p className='px-2 py-6 text-center text-sm text-muted-foreground'>
+										<p className='py-6 px-2 text-sm text-center text-muted-foreground'>
 											No supersets found.
 										</p>
 									) : (
@@ -727,19 +750,19 @@ function mapLibraryToBuilderItem(item: LibraryItem): WorkoutBuilderItem {
 
 function WorkoutItemPreview({ item }: { item: WorkoutBuilderItem }) {
 	return (
-		<div className='w-[320px] rounded-lg border bg-background p-3 shadow-lg'>
-			<div className='flex items-center gap-2'>
+		<div className='p-3 rounded-lg border shadow-lg w-[320px] bg-background'>
+			<div className='flex gap-2 items-center'>
 				<Badge variant='outline' className='px-1.5'>
 					{item.type === 'exercise' ? 'EX' : 'SS'}
 				</Badge>
 				{item.type === 'exercise' ? (
-					<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+					<BarbellIcon className='text-orange-600 dark:text-orange-300 size-4' />
 				) : (
-					<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+					<StackPlusIcon className='text-violet-600 dark:text-violet-300 size-4' />
 				)}
-				<div className='min-w-0 flex-1'>
-					<p className='truncate font-medium'>{item.name}</p>
-					<p className='truncate text-xs text-muted-foreground'>
+				<div className='flex-1 min-w-0'>
+					<p className='font-medium truncate'>{item.name}</p>
+					<p className='text-xs truncate text-muted-foreground'>
 						{item.type === 'superset'
 							? `${item.memberCount ?? 0} exercises`
 							: item.movementName || 'No movement'}
@@ -757,13 +780,14 @@ function LibraryDraggableItem({
 	item: LibraryItem
 	onAdd: (item: LibraryItem) => void
 }) {
-	const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-		id: `library-${item.type}-${item.id}`,
-		data: {
-			kind: 'library',
-			item,
-		} satisfies DragData,
-	})
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: `library-${item.type}-${item.id}`,
+			data: {
+				kind: 'library',
+				item,
+			} satisfies DragData,
+		})
 
 	const style = {
 		transform: CSS.Translate.toString(transform),
@@ -787,14 +811,14 @@ function LibraryDraggableItem({
 			</button>
 
 			{item.type === 'exercise' ? (
-				<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+				<BarbellIcon className='text-orange-600 dark:text-orange-300 size-4' />
 			) : (
-				<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+				<StackPlusIcon className='text-violet-600 dark:text-violet-300 size-4' />
 			)}
 
-			<div className='min-w-0 flex-1'>
-				<p className='truncate text-sm font-medium'>{item.name}</p>
-				<p className='truncate text-xs text-muted-foreground'>
+			<div className='flex-1 min-w-0'>
+				<p className='text-sm font-medium truncate'>{item.name}</p>
+				<p className='text-xs truncate text-muted-foreground'>
 					{item.type === 'superset'
 						? `${item.memberCount ?? 0} exercises`
 						: item.movementName || 'No movement'}
@@ -806,7 +830,7 @@ function LibraryDraggableItem({
 				variant='ghost'
 				size='icon'
 				onClick={() => onAdd(item)}
-				className='h-7 w-7'
+				className='w-7 h-7'
 			>
 				<PlusIcon className='size-4' />
 			</Button>
@@ -823,14 +847,20 @@ function SortableWorkoutItem({
 	index: number
 	onRemove: (itemId: string) => void
 }) {
-	const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-		useSortable({
-			id: item.id,
-			data: {
-				kind: 'builder',
-				item,
-			} satisfies DragData,
-		})
+	const {
+		attributes,
+		listeners,
+		setNodeRef,
+		transform,
+		transition,
+		isDragging,
+	} = useSortable({
+		id: item.id,
+		data: {
+			kind: 'builder',
+			item,
+		} satisfies DragData,
+	})
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -859,14 +889,14 @@ function SortableWorkoutItem({
 			</Badge>
 
 			{item.type === 'exercise' ? (
-				<BarbellIcon className='size-4 text-orange-600 dark:text-orange-300' />
+				<BarbellIcon className='text-orange-600 dark:text-orange-300 size-4' />
 			) : (
-				<StackPlusIcon className='size-4 text-violet-600 dark:text-violet-300' />
+				<StackPlusIcon className='text-violet-600 dark:text-violet-300 size-4' />
 			)}
 
-			<div className='min-w-0 flex-1'>
-				<p className='truncate text-sm font-medium'>{item.name}</p>
-				<p className='truncate text-xs text-muted-foreground'>
+			<div className='flex-1 min-w-0'>
+				<p className='text-sm font-medium truncate'>{item.name}</p>
+				<p className='text-xs truncate text-muted-foreground'>
 					{item.type === 'superset'
 						? `${item.memberCount ?? 0} exercises`
 						: item.movementName || 'No movement'}
@@ -878,7 +908,7 @@ function SortableWorkoutItem({
 				variant='ghost'
 				size='icon'
 				onClick={() => onRemove(item.id)}
-				className='h-7 w-7 text-destructive'
+				className='w-7 h-7 text-destructive'
 			>
 				<TrashIcon className='size-4' />
 			</Button>

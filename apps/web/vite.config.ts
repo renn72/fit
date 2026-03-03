@@ -8,9 +8,6 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineConfig({
 	plugins: [tsconfigPaths(), tailwindcss(), tanstackStart(), viteReact()],
 	server: {
-		proxy: {
-			'/api': 'https://opencode.ai',
-		},
 		port: 3001,
 	},
 })

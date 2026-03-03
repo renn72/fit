@@ -2,8 +2,6 @@
 
 import * as React from 'react'
 
-import { env } from '@fit/env/web'
-
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -12,6 +10,12 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
+import {
+	Field,
+	FieldError,
+	FieldGroup,
+	FieldLabel,
+} from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import {
@@ -29,6 +33,7 @@ import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
 
+import { useForm } from '@tanstack/react-form'
 import {
 	useMutation,
 	useQuery,
@@ -37,7 +42,6 @@ import {
 } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
-import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
 	DndContext,
 	type DragEndEvent,
@@ -64,8 +68,8 @@ import {
 	SidebarIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
-import { generateText } from 'ai'
 import { toast } from 'sonner'
+import { z } from 'zod'
 
 const CATEGORY_SUGGESTIONS = ['breakfast', 'lunch', 'dinner', 'snack']
 const TAG_SUGGESTIONS = ['high-protein', 'keto']
@@ -91,7 +95,7 @@ interface IngredientOption {
 	serveUnit: string
 }
 
-interface RecipeFormState {
+interface RecipeFormValues {
 	name: string
 	description: string
 	image: string
@@ -108,6 +112,32 @@ export interface RecipeFormProps {
 }
 
 const EDITED_FIELD_CLASS = 'ring-2 ring-primary/50'
+
+const recipeFormSchema = z.object({
+	name: z.string().min(1, 'Recipe name is required'),
+	description: z.string(),
+	image: z.string(),
+	categoryTags: z.array(z.string()),
+	metaTags: z.array(z.string()),
+	ingredients: z.array(
+		z.object({
+			id: z.string().min(1),
+			ingredientId: z.string().min(1),
+			amount: z.number().positive(),
+			unit: z.string().min(1),
+			altIngredientId: z.string(),
+		}),
+	),
+})
+
+const EMPTY_RECIPE_FORM_VALUES: RecipeFormValues = {
+	name: '',
+	description: '',
+	image: '',
+	categoryTags: [],
+	metaTags: [],
+	ingredients: [],
+}
 
 function parseCsvToTags(value: string | null | undefined): string[] {
 	if (!value) return []
@@ -175,7 +205,7 @@ export function RecipeForm({
 		}),
 	)
 
-	const initialFormState = React.useMemo<RecipeFormState | null>(() => {
+	const initialFormValues = React.useMemo<RecipeFormValues | null>(() => {
 		if (!isEditMode || !existingRecipe) return null
 		return {
 			name: existingRecipe.name,
@@ -192,22 +222,6 @@ export function RecipeForm({
 			})),
 		}
 	}, [existingRecipe, isEditMode])
-
-	const [ingredientSearch, setIngredientSearch] = React.useState('')
-	const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
-	const [formState, setFormState] = React.useState<RecipeFormState>({
-		name: '',
-		description: '',
-		image: '',
-		categoryTags: [],
-		metaTags: [],
-		ingredients: [],
-	})
-
-	React.useEffect(() => {
-		if (!initialFormState) return
-		setFormState(initialFormState)
-	}, [initialFormState])
 
 	const createRecipe = useMutation(
 		orpc.recipe.create.mutationOptions({
@@ -242,6 +256,80 @@ export function RecipeForm({
 		}),
 	)
 
+	const form = useForm({
+		defaultValues: EMPTY_RECIPE_FORM_VALUES,
+		validators: {
+			onSubmit: recipeFormSchema,
+		},
+		onSubmit: async ({ value }) => {
+			const validIngredients = value.ingredients.filter(
+				(item) => item.ingredientId && item.unit && item.amount > 0,
+			)
+
+			if (validIngredients.length === 0) {
+				toast.error('Add at least one valid ingredient')
+				return
+			}
+
+			const payload = {
+				name: value.name.trim(),
+				description: value.description.trim() || null,
+				category: joinTagsToCsv(value.categoryTags) || null,
+				image: value.image.trim() || null,
+				metaTags: joinTagsToCsv(value.metaTags) || '',
+				ingredients: validIngredients.map((item) => ({
+					ingredientId: item.ingredientId,
+					isBaseIngredient:
+						ingredientMap.get(item.ingredientId)?.isBase ?? false,
+					altIngredientId: item.altIngredientId || null,
+					amount: roundOneDecimal(item.amount),
+					unit: item.unit.trim(),
+				})),
+			}
+
+			if (isEditMode) {
+				if (!recipeId) return
+				await updateRecipe.mutateAsync({
+					id: recipeId,
+					...payload,
+				})
+				return
+			}
+
+			await createRecipe.mutateAsync(payload)
+		},
+	})
+
+	React.useEffect(() => {
+		if (!initialFormValues) return
+		form.setFieldValue('name', initialFormValues.name)
+		form.setFieldValue('description', initialFormValues.description)
+		form.setFieldValue('image', initialFormValues.image)
+		form.setFieldValue('categoryTags', initialFormValues.categoryTags)
+		form.setFieldValue('metaTags', initialFormValues.metaTags)
+		form.setFieldValue('ingredients', initialFormValues.ingredients)
+	}, [form, initialFormValues])
+
+	const [ingredientSearch, setIngredientSearch] = React.useState('')
+	const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
+
+	const updateRecipeWithAi = useMutation(
+		orpc.ai.updateRecipeForm.mutationOptions({
+			onSuccess: (data) => {
+				form.setFieldValue('name', data.form.name)
+				form.setFieldValue('description', data.form.description)
+				form.setFieldValue('image', data.form.image)
+				form.setFieldValue('categoryTags', data.form.categoryTags)
+				form.setFieldValue('metaTags', data.form.metaTags)
+				form.setFieldValue('ingredients', data.form.ingredients)
+				toast.success('Recipe updated from AI request')
+			},
+			onError: (error) => {
+				toast.error(error.message)
+			},
+		}),
+	)
+
 	const ingredientOptions = React.useMemo(
 		() => toIngredientComboboxOptions(ingredients),
 		[ingredients],
@@ -260,68 +348,14 @@ export function RecipeForm({
 		})
 	}, [ingredients, ingredientSearch])
 
-	const recipeTotals = React.useMemo(() => {
-		return formState.ingredients.reduce(
-			(acc, item) => {
-				const ingredient = ingredientMap.get(item.ingredientId)
-				if (!ingredient || ingredient.serveSize <= 0) return acc
-
-				const ratio = item.amount / ingredient.serveSize
-				acc.calories += ingredient.calories * ratio
-				acc.protein += ingredient.protein * ratio
-				acc.carbohydrate += ingredient.carbohydrate * ratio
-				acc.fat += ingredient.fat * ratio
-				return acc
-			},
-			{ calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
-		)
-	}, [formState.ingredients, ingredientMap])
-
 	const initialIngredientsById = React.useMemo(() => {
 		return new Map(
-			(initialFormState?.ingredients ?? []).map((ingredient) => [
+			(initialFormValues?.ingredients ?? []).map((ingredient) => [
 				ingredient.id,
 				ingredient,
 			]),
 		)
-	}, [initialFormState?.ingredients])
-
-	const isTopLevelFieldEdited = React.useCallback(
-		(field: 'name' | 'description' | 'image' | 'categoryTags' | 'metaTags') => {
-			if (!isEditMode || !initialFormState) return false
-
-			switch (field) {
-				case 'name':
-					return (
-						normalizeText(formState.name) !==
-						normalizeText(initialFormState.name)
-					)
-				case 'description':
-					return (
-						normalizeText(formState.description) !==
-						normalizeText(initialFormState.description)
-					)
-				case 'image':
-					return (
-						normalizeText(formState.image) !==
-						normalizeText(initialFormState.image)
-					)
-				case 'categoryTags':
-					return (
-						JSON.stringify(normalizeTags(formState.categoryTags)) !==
-						JSON.stringify(normalizeTags(initialFormState.categoryTags))
-					)
-				case 'metaTags':
-					return (
-						JSON.stringify(normalizeTags(formState.metaTags)) !==
-						JSON.stringify(normalizeTags(initialFormState.metaTags))
-					)
-				default:
-					return false
-			}
-		},
-		[formState, initialFormState, isEditMode],
-	)
+	}, [initialFormValues?.ingredients])
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -345,44 +379,49 @@ export function RecipeForm({
 				altIngredientId: '',
 			}
 
-			setFormState((prev) => {
-				if (
-					insertIndex === undefined ||
-					insertIndex >= prev.ingredients.length
-				) {
-					return {
-						...prev,
-						ingredients: [...prev.ingredients, newIngredient],
-					}
-				}
+			const currentIngredients = form.getFieldValue('ingredients')
+			if (
+				insertIndex === undefined ||
+				insertIndex < 0 ||
+				insertIndex >= currentIngredients.length
+			) {
+				form.setFieldValue('ingredients', [
+					...currentIngredients,
+					newIngredient,
+				])
+				return
+			}
 
-				const next = [...prev.ingredients]
-				next.splice(insertIndex, 0, newIngredient)
-				return { ...prev, ingredients: next }
-			})
+			const next = [...currentIngredients]
+			next.splice(insertIndex, 0, newIngredient)
+			form.setFieldValue('ingredients', next)
 		},
-		[ingredientMap],
+		[form, ingredientMap],
 	)
 
-	const updateIngredientField = (
-		id: string,
-		field: keyof RecipeFormIngredient,
-		value: string | number,
-	) => {
-		setFormState((prev) => ({
-			...prev,
-			ingredients: prev.ingredients.map((item) =>
-				item.id === id ? { ...item, [field]: value } : item,
-			),
-		}))
-	}
+	const updateIngredientField = React.useCallback(
+		(id: string, field: keyof RecipeFormIngredient, value: string | number) => {
+			const currentIngredients = form.getFieldValue('ingredients')
+			form.setFieldValue(
+				'ingredients',
+				currentIngredients.map((item) =>
+					item.id === id ? { ...item, [field]: value } : item,
+				),
+			)
+		},
+		[form],
+	)
 
-	const removeIngredient = (id: string) => {
-		setFormState((prev) => ({
-			...prev,
-			ingredients: prev.ingredients.filter((item) => item.id !== id),
-		}))
-	}
+	const removeIngredient = React.useCallback(
+		(id: string) => {
+			const currentIngredients = form.getFieldValue('ingredients')
+			form.setFieldValue(
+				'ingredients',
+				currentIngredients.filter((item) => item.id !== id),
+			)
+		},
+		[form],
+	)
 
 	const handleDragStart = (event: DragStartEvent) => {
 		setActiveDragId(String(event.active.id))
@@ -395,94 +434,63 @@ export function RecipeForm({
 
 		if (!overId) return
 
+		const currentIngredients = form.getFieldValue('ingredients')
+
 		if (activeId.startsWith('library-ingredient-')) {
 			const ingredientId = activeId.replace('library-ingredient-', '')
 			if (!ingredientMap.has(ingredientId)) return
 
 			const insertIndex =
 				overId === 'recipe-ingredients-droppable'
-					? formState.ingredients.length
-					: formState.ingredients.findIndex((item) => item.id === overId)
+					? currentIngredients.length
+					: currentIngredients.findIndex((item) => item.id === overId)
 
 			addIngredientById(
 				ingredientId,
-				insertIndex === -1 ? undefined : insertIndex,
+				insertIndex === -1 ? currentIngredients.length : insertIndex,
 			)
 			return
 		}
 
-		const activeIndex = formState.ingredients.findIndex(
+		const activeIndex = currentIngredients.findIndex(
 			(item) => item.id === activeId,
 		)
-		const overIndex = formState.ingredients.findIndex(
-			(item) => item.id === overId,
-		)
+		const overIndex = currentIngredients.findIndex((item) => item.id === overId)
 
 		if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) {
 			return
 		}
 
-		setFormState((prev) => ({
-			...prev,
-			ingredients: arrayMove(prev.ingredients, activeIndex, overIndex),
-		}))
-	}
-
-	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault()
-
-		if (!formState.name.trim()) {
-			toast.error('Recipe name is required')
-			return
-		}
-
-		const validIngredients = formState.ingredients.filter(
-			(item) => item.ingredientId && item.unit && item.amount > 0,
+		form.setFieldValue(
+			'ingredients',
+			arrayMove(currentIngredients, activeIndex, overIndex),
 		)
+	}
 
-		if (validIngredients.length === 0) {
-			toast.error('Add at least one valid ingredient')
-			return
-		}
+	const handleAiRequest = React.useCallback(
+		async (request: string) => {
+			const trimmedRequest = request.trim()
+			if (!trimmedRequest) {
+				toast.error('Enter a request for AI')
+				return
+			}
 
-		const payload = {
-			name: formState.name.trim(),
-			description: formState.description.trim() || null,
-			category: joinTagsToCsv(formState.categoryTags) || null,
-			image: formState.image.trim() || null,
-			metaTags: joinTagsToCsv(formState.metaTags) || '',
-			ingredients: validIngredients.map((item) => ({
-				ingredientId: item.ingredientId,
-				isBaseIngredient: ingredientMap.get(item.ingredientId)?.isBase ?? false,
-				altIngredientId: item.altIngredientId || null,
-				amount: roundOneDecimal(item.amount),
-				unit: item.unit.trim(),
-			})),
-		}
-
-		if (isEditMode) {
-			if (!recipeId) return
-			await updateRecipe.mutateAsync({
-				id: recipeId,
-				...payload,
+			await updateRecipeWithAi.mutateAsync({
+				organisationId,
+				request: trimmedRequest,
+				model: 'minimax-m2.5-free',
+				currentForm: {
+					name: form.getFieldValue('name'),
+					description: form.getFieldValue('description'),
+					image: form.getFieldValue('image'),
+					categoryTags: form.getFieldValue('categoryTags'),
+					metaTags: form.getFieldValue('metaTags'),
+					ingredients: form.getFieldValue('ingredients'),
+				},
 			})
-			return
-		}
-
-		await createRecipe.mutateAsync(payload)
-	}
-
-	const testHandler = async () => {
-		const { text } = await generateText({
-			model: createOpenAICompatible({
-				baseURL: 'https://opencode.ai/zen/v1/chat/completions',
-				name: 'example',
-				apiKey: env.VITE_ZEN_API_KEY,
-			}).chatModel('minimax-m2.5-free'),
-			prompt: 'Write a vegetarian lasagna recipe for 4 people.',
-		})
-		console.log({ text })
-	}
+		},
+		[form, organisationId, updateRecipeWithAi],
+	)
 
 	return (
 		<SidebarProvider defaultOpen={false}>
@@ -494,12 +502,13 @@ export function RecipeForm({
 				>
 					<div className='flex gap-0 items-start w-full'>
 						<form
-							onSubmit={handleSubmit}
+							onSubmit={(event) => {
+								event.preventDefault()
+								event.stopPropagation()
+								form.handleSubmit()
+							}}
 							className='flex flex-col flex-1 gap-6 p-8 min-w-0'
 						>
-							<Button className='w-24' onMouseDown={testHandler}>
-								Press Me
-							</Button>
 							<div className='flex justify-between items-center'>
 								<h1 className='text-2xl font-bold'>
 									{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
@@ -518,109 +527,174 @@ export function RecipeForm({
 
 							<Card>
 								<CardHeader>
+									<CardTitle>Ask AI</CardTitle>
+									<CardDescription>
+										Send a request and AI will update this recipe form.
+									</CardDescription>
+								</CardHeader>
+								<CardContent className='space-y-3'>
+									<AiRequestInput
+										isPending={updateRecipeWithAi.isPending}
+										onSend={handleAiRequest}
+									/>
+								</CardContent>
+							</Card>
+
+							<Card>
+								<CardHeader>
 									<CardTitle>Recipe Details</CardTitle>
 									<CardDescription>
 										Configure core details, categories, and tags.
 									</CardDescription>
 								</CardHeader>
-								<CardContent className='space-y-6'>
-									<div className='space-y-2'>
-										<Label htmlFor='recipe-name'>Name *</Label>
-										<Input
-											id='recipe-name'
-											value={formState.name}
-											onChange={(event) =>
-												setFormState((prev) => ({
-													...prev,
-													name: event.target.value,
-												}))
-											}
-											placeholder='e.g., High Protein Chicken Bowl'
-											className={
-												isTopLevelFieldEdited('name') ? EDITED_FIELD_CLASS : ''
-											}
-											required
-										/>
-									</div>
+								<CardContent>
+									<FieldGroup>
+										<form.Field name='name'>
+											{(field) => {
+												const isInvalid =
+													field.state.meta.isTouched &&
+													field.state.meta.errors.length > 0
+												const isEdited =
+													isEditMode &&
+													!!initialFormValues &&
+													normalizeText(field.state.value) !==
+														normalizeText(initialFormValues.name)
 
-									<div className='space-y-2'>
-										<Label htmlFor='recipe-description'>Description</Label>
-										<Textarea
-											id='recipe-description'
-											value={formState.description}
-											onChange={(event) =>
-												setFormState((prev) => ({
-													...prev,
-													description: event.target.value,
-												}))
-											}
-											placeholder='Describe the recipe and preparation notes...'
-											className={`min-h-24 ${
-												isTopLevelFieldEdited('description')
-													? EDITED_FIELD_CLASS
-													: ''
-											}`}
-										/>
-									</div>
+												return (
+													<Field data-invalid={isInvalid}>
+														<FieldLabel htmlFor={field.name}>Name *</FieldLabel>
+														<Input
+															id={field.name}
+															name={field.name}
+															value={field.state.value}
+															onBlur={field.handleBlur}
+															onChange={(event) =>
+																field.handleChange(event.target.value)
+															}
+															placeholder='e.g., High Protein Chicken Bowl'
+															className={isEdited ? EDITED_FIELD_CLASS : ''}
+															required
+														/>
+														<FieldError errors={field.state.meta.errors} />
+													</Field>
+												)
+											}}
+										</form.Field>
 
-									<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-										<div className='space-y-2'>
-											<Label>Category</Label>
-											<TagsInput
-												value={formState.categoryTags}
-												onValueChange={(value) =>
-													setFormState((prev) => ({
-														...prev,
-														categoryTags: value,
-													}))
-												}
-												suggestions={CATEGORY_SUGGESTIONS}
-												placeholder='Select or type categories...'
-												className={
-													isTopLevelFieldEdited('categoryTags')
-														? EDITED_FIELD_CLASS
-														: ''
-												}
-											/>
+										<form.Field name='description'>
+											{(field) => {
+												const isEdited =
+													isEditMode &&
+													!!initialFormValues &&
+													normalizeText(field.state.value) !==
+														normalizeText(initialFormValues.description)
+
+												return (
+													<Field>
+														<FieldLabel htmlFor={field.name}>
+															Description
+														</FieldLabel>
+														<Textarea
+															id={field.name}
+															name={field.name}
+															value={field.state.value}
+															onBlur={field.handleBlur}
+															onChange={(event) =>
+																field.handleChange(event.target.value)
+															}
+															placeholder='Describe the recipe and preparation notes...'
+															className={`min-h-24 ${
+																isEdited ? EDITED_FIELD_CLASS : ''
+															}`}
+														/>
+													</Field>
+												)
+											}}
+										</form.Field>
+
+										<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+											<form.Field name='categoryTags'>
+												{(field) => {
+													const isEdited =
+														isEditMode &&
+														!!initialFormValues &&
+														JSON.stringify(normalizeTags(field.state.value)) !==
+															JSON.stringify(
+																normalizeTags(initialFormValues.categoryTags),
+															)
+
+													return (
+														<Field>
+															<FieldLabel htmlFor={field.name}>
+																Category
+															</FieldLabel>
+															<TagsInput
+																value={field.state.value}
+																onValueChange={field.handleChange}
+																suggestions={CATEGORY_SUGGESTIONS}
+																placeholder='Select or type categories...'
+																className={isEdited ? EDITED_FIELD_CLASS : ''}
+															/>
+														</Field>
+													)
+												}}
+											</form.Field>
+
+											<form.Field name='metaTags'>
+												{(field) => {
+													const isEdited =
+														isEditMode &&
+														!!initialFormValues &&
+														JSON.stringify(normalizeTags(field.state.value)) !==
+															JSON.stringify(
+																normalizeTags(initialFormValues.metaTags),
+															)
+
+													return (
+														<Field>
+															<FieldLabel htmlFor={field.name}>Tags</FieldLabel>
+															<TagsInput
+																value={field.state.value}
+																onValueChange={field.handleChange}
+																suggestions={TAG_SUGGESTIONS}
+																placeholder='Select or type tags...'
+																className={isEdited ? EDITED_FIELD_CLASS : ''}
+															/>
+														</Field>
+													)
+												}}
+											</form.Field>
 										</div>
-										<div className='space-y-2'>
-											<Label>Tags</Label>
-											<TagsInput
-												value={formState.metaTags}
-												onValueChange={(value) =>
-													setFormState((prev) => ({
-														...prev,
-														metaTags: value,
-													}))
-												}
-												suggestions={TAG_SUGGESTIONS}
-												placeholder='Select or type tags...'
-												className={
-													isTopLevelFieldEdited('metaTags')
-														? EDITED_FIELD_CLASS
-														: ''
-												}
-											/>
-										</div>
-									</div>
 
-									<div className='space-y-2'>
-										<Label htmlFor='recipe-image'>Image URL</Label>
-										<Input
-											id='recipe-image'
-											value={formState.image}
-											onChange={(event) =>
-												setFormState((prev) => ({
-													...prev,
-													image: event.target.value,
-												}))
-											}
-											placeholder='https://example.com/recipe.jpg'
-											className={
-												isTopLevelFieldEdited('image') ? EDITED_FIELD_CLASS : ''
-											}
-										/>
-									</div>
+										<form.Field name='image'>
+											{(field) => {
+												const isEdited =
+													isEditMode &&
+													!!initialFormValues &&
+													normalizeText(field.state.value) !==
+														normalizeText(initialFormValues.image)
+
+												return (
+													<Field>
+														<FieldLabel htmlFor={field.name}>
+															Image URL
+														</FieldLabel>
+														<Input
+															id={field.name}
+															name={field.name}
+															value={field.state.value}
+															onBlur={field.handleBlur}
+															onChange={(event) =>
+																field.handleChange(event.target.value)
+															}
+															placeholder='https://example.com/recipe.jpg'
+															className={isEdited ? EDITED_FIELD_CLASS : ''}
+														/>
+													</Field>
+												)
+											}}
+										</form.Field>
+									</FieldGroup>
 								</CardContent>
 							</Card>
 
@@ -649,58 +723,86 @@ export function RecipeForm({
 									</div>
 								</CardHeader>
 								<CardContent className='space-y-4'>
-									<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
-										<MacroTile
-											label='Calories'
-											value={`${Math.round(recipeTotals.calories)} kcal`}
-											className='bg-orange-50/80 dark:bg-orange-950/20'
-										/>
-										<MacroTile
-											label='Protein'
-											value={`${roundOneDecimal(recipeTotals.protein)} g`}
-											className='bg-emerald-50/80 dark:bg-emerald-950/20'
-										/>
-										<MacroTile
-											label='Carbs'
-											value={`${roundOneDecimal(recipeTotals.carbohydrate)} g`}
-											className='bg-blue-50/80 dark:bg-blue-950/20'
-										/>
-										<MacroTile
-											label='Fat'
-											value={`${roundOneDecimal(recipeTotals.fat)} g`}
-											className='bg-pink-50/80 dark:bg-pink-950/20'
-										/>
-									</div>
+									<form.Field name='ingredients'>
+										{(field) => {
+											const totals = field.state.value.reduce(
+												(acc, item) => {
+													const ingredient = ingredientMap.get(
+														item.ingredientId,
+													)
+													if (!ingredient || ingredient.serveSize <= 0)
+														return acc
 
-									<IngredientsDroppable>
-										{formState.ingredients.length === 0 ? (
-											<div className='p-6 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
-												No ingredients yet. Drag ingredients from the sidebar or
-												add a row.
-											</div>
-										) : (
-											<SortableContext
-												items={formState.ingredients.map((item) => item.id)}
-												strategy={verticalListSortingStrategy}
-											>
-												<div className='space-y-3'>
-													{formState.ingredients.map((item) => (
-														<SortableIngredientRow
-															key={item.id}
-															item={item}
-															isEditMode={isEditMode}
-															initialItem={initialIngredientsById.get(item.id)}
-															allIngredients={ingredients}
-															ingredientOptions={ingredientOptions}
-															ingredientMap={ingredientMap}
-															onUpdateField={updateIngredientField}
-															onRemove={removeIngredient}
+													const ratio = item.amount / ingredient.serveSize
+													acc.calories += ingredient.calories * ratio
+													acc.protein += ingredient.protein * ratio
+													acc.carbohydrate += ingredient.carbohydrate * ratio
+													acc.fat += ingredient.fat * ratio
+													return acc
+												},
+												{ calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
+											)
+
+											return (
+												<>
+													<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+														<MacroTile
+															label='Calories'
+															value={`${Math.round(totals.calories)} kcal`}
+															className='bg-orange-50/80 dark:bg-orange-950/20'
 														/>
-													))}
-												</div>
-											</SortableContext>
-										)}
-									</IngredientsDroppable>
+														<MacroTile
+															label='Protein'
+															value={`${roundOneDecimal(totals.protein)} g`}
+															className='bg-emerald-50/80 dark:bg-emerald-950/20'
+														/>
+														<MacroTile
+															label='Carbs'
+															value={`${roundOneDecimal(totals.carbohydrate)} g`}
+															className='bg-blue-50/80 dark:bg-blue-950/20'
+														/>
+														<MacroTile
+															label='Fat'
+															value={`${roundOneDecimal(totals.fat)} g`}
+															className='bg-pink-50/80 dark:bg-pink-950/20'
+														/>
+													</div>
+
+													<IngredientsDroppable>
+														{field.state.value.length === 0 ? (
+															<div className='p-6 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
+																No ingredients yet. Drag ingredients from the
+																sidebar or add a row.
+															</div>
+														) : (
+															<SortableContext
+																items={field.state.value.map((item) => item.id)}
+																strategy={verticalListSortingStrategy}
+															>
+																<div className='space-y-3'>
+																	{field.state.value.map((item) => (
+																		<SortableIngredientRow
+																			key={item.id}
+																			item={item}
+																			isEditMode={isEditMode}
+																			initialItem={initialIngredientsById.get(
+																				item.id,
+																			)}
+																			allIngredients={ingredients}
+																			ingredientOptions={ingredientOptions}
+																			ingredientMap={ingredientMap}
+																			onUpdateField={updateIngredientField}
+																			onRemove={removeIngredient}
+																		/>
+																	))}
+																</div>
+															</SortableContext>
+														)}
+													</IngredientsDroppable>
+												</>
+											)
+										}}
+									</form.Field>
 								</CardContent>
 							</Card>
 
@@ -720,7 +822,11 @@ export function RecipeForm({
 								</Button>
 								<Button
 									type='submit'
-									disabled={createRecipe.isPending || updateRecipe.isPending}
+									disabled={
+										createRecipe.isPending ||
+										updateRecipe.isPending ||
+										updateRecipeWithAi.isPending
+									}
 								>
 									{isEditMode
 										? updateRecipe.isPending
@@ -760,6 +866,57 @@ export function RecipeForm({
 		</SidebarProvider>
 	)
 }
+
+const AiRequestInput = React.memo(function AiRequestInput({
+	isPending,
+	onSend,
+}: {
+	isPending: boolean
+	onSend: (request: string) => Promise<void>
+}) {
+	const [request, setRequest] = React.useState('')
+
+	const canSend = request.trim().length > 0 && !isPending
+
+	const sendRequest = React.useCallback(async () => {
+		const trimmedRequest = request.trim()
+		if (!trimmedRequest || isPending) return
+
+		try {
+			await onSend(trimmedRequest)
+			setRequest('')
+		} catch {
+			// Parent mutation already handles user-facing errors.
+		}
+	}, [isPending, onSend, request])
+
+	return (
+		<div className='flex gap-2 items-end'>
+			<div className='flex-1 space-y-2'>
+				<Label htmlFor='recipe-ai-request'>Request</Label>
+				<Input
+					id='recipe-ai-request'
+					value={request}
+					onChange={(event) => setRequest(event.target.value)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter') {
+							event.preventDefault()
+							void sendRequest()
+						}
+					}}
+					placeholder='e.g., make this 700 kcal, high-protein, and remove dairy'
+				/>
+			</div>
+			<Button
+				type='button'
+				onClick={() => void sendRequest()}
+				disabled={!canSend}
+			>
+				{isPending ? 'Sending...' : 'Send'}
+			</Button>
+		</div>
+	)
+})
 
 function MacroTile({
 	label,

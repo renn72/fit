@@ -6,6 +6,7 @@ import { z } from 'zod'
 export const env = createEnv({
 	server: {
 		RESEND_API_KEY: z.string().min(1),
+		ZEN_API_KEY: z.string().min(1),
 		DATABASE_URL: z.string().min(1),
 		DATABASE_SERVER_LOG_URL: z.string().min(1),
 		BETTER_AUTH_SECRET: z.string().min(32),
