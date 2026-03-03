@@ -28,6 +28,7 @@ import {
 	SidebarRail,
 	SidebarTrigger,
 } from '@/components/ui/sidebar'
+import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
@@ -478,7 +479,7 @@ export function RecipeForm({
 			await updateRecipeWithAi.mutateAsync({
 				organisationId,
 				request: trimmedRequest,
-				model: 'minimax-m2.5-free',
+				model: 'kimi-k2.5',
 				currentForm: {
 					name: form.getFieldValue('name'),
 					description: form.getFieldValue('description'),
@@ -501,343 +502,365 @@ export function RecipeForm({
 					onDragEnd={handleDragEnd}
 				>
 					<div className='flex gap-0 items-start w-full'>
-						<form
-							onSubmit={(event) => {
-								event.preventDefault()
-								event.stopPropagation()
-								form.handleSubmit()
-							}}
-							className='flex flex-col flex-1 gap-6 p-8 min-w-0'
-						>
-							<div className='flex justify-between items-center'>
-								<h1 className='text-2xl font-bold'>
-									{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
-								</h1>
-								<SidebarTrigger size='default'>
-									<Button
-										render={<div />}
-										nativeButton={false}
-										className='cursor-pointer'
-									>
-										Ingredients
-										<SidebarIcon />
-									</Button>
-								</SidebarTrigger>
-							</div>
+						<div className='relative flex-1 min-w-0'>
+							<form
+								onSubmit={(event) => {
+									event.preventDefault()
+									event.stopPropagation()
+									form.handleSubmit()
+								}}
+								className='flex flex-col gap-6 p-8'
+							>
+								<div className='flex justify-between items-center'>
+									<h1 className='text-2xl font-bold'>
+										{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
+									</h1>
+									<SidebarTrigger size='default'>
+										<Button
+											render={<div />}
+											nativeButton={false}
+											className='cursor-pointer'
+										>
+											Ingredients
+											<SidebarIcon />
+										</Button>
+									</SidebarTrigger>
+								</div>
 
-							<Card>
-								<CardHeader>
-									<CardTitle>Ask AI</CardTitle>
-									<CardDescription>
-										Send a request and AI will update this recipe form.
-									</CardDescription>
-								</CardHeader>
-								<CardContent className='space-y-3'>
-									<AiRequestInput
-										isPending={updateRecipeWithAi.isPending}
-										onSend={handleAiRequest}
-									/>
-								</CardContent>
-							</Card>
+								<Card>
+									<CardHeader>
+										<CardTitle>Ask AI</CardTitle>
+										<CardDescription>
+											Send a request and AI will update this recipe form.
+										</CardDescription>
+									</CardHeader>
+									<CardContent className='space-y-3'>
+										<AiRequestInput
+											isPending={updateRecipeWithAi.isPending}
+											onSend={handleAiRequest}
+										/>
+									</CardContent>
+								</Card>
 
-							<Card>
-								<CardHeader>
-									<CardTitle>Recipe Details</CardTitle>
-									<CardDescription>
-										Configure core details, categories, and tags.
-									</CardDescription>
-								</CardHeader>
-								<CardContent>
-									<FieldGroup>
-										<form.Field name='name'>
-											{(field) => {
-												const isInvalid =
-													field.state.meta.isTouched &&
-													field.state.meta.errors.length > 0
-												const isEdited =
-													isEditMode &&
-													!!initialFormValues &&
-													normalizeText(field.state.value) !==
-														normalizeText(initialFormValues.name)
+								<Card>
+									<CardHeader>
+										<CardTitle>Recipe Details</CardTitle>
+										<CardDescription>
+											Configure core details, categories, and tags.
+										</CardDescription>
+									</CardHeader>
+									<CardContent>
+										<FieldGroup>
+											<form.Field name='name'>
+												{(field) => {
+													const isInvalid =
+														field.state.meta.isTouched &&
+														field.state.meta.errors.length > 0
+													const isEdited =
+														isEditMode &&
+														!!initialFormValues &&
+														normalizeText(field.state.value) !==
+															normalizeText(initialFormValues.name)
 
-												return (
-													<Field data-invalid={isInvalid}>
-														<FieldLabel htmlFor={field.name}>Name *</FieldLabel>
-														<Input
-															id={field.name}
-															name={field.name}
-															value={field.state.value}
-															onBlur={field.handleBlur}
-															onChange={(event) =>
-																field.handleChange(event.target.value)
-															}
-															placeholder='e.g., High Protein Chicken Bowl'
-															className={isEdited ? EDITED_FIELD_CLASS : ''}
-															required
-														/>
-														<FieldError errors={field.state.meta.errors} />
-													</Field>
-												)
-											}}
-										</form.Field>
+													return (
+														<Field data-invalid={isInvalid}>
+															<FieldLabel htmlFor={field.name}>
+																Name *
+															</FieldLabel>
+															<Input
+																id={field.name}
+																name={field.name}
+																value={field.state.value}
+																onBlur={field.handleBlur}
+																onChange={(event) =>
+																	field.handleChange(event.target.value)
+																}
+																placeholder='e.g., High Protein Chicken Bowl'
+																className={isEdited ? EDITED_FIELD_CLASS : ''}
+																required
+															/>
+															<FieldError errors={field.state.meta.errors} />
+														</Field>
+													)
+												}}
+											</form.Field>
 
-										<form.Field name='description'>
-											{(field) => {
-												const isEdited =
-													isEditMode &&
-													!!initialFormValues &&
-													normalizeText(field.state.value) !==
-														normalizeText(initialFormValues.description)
-
-												return (
-													<Field>
-														<FieldLabel htmlFor={field.name}>
-															Description
-														</FieldLabel>
-														<Textarea
-															id={field.name}
-															name={field.name}
-															value={field.state.value}
-															onBlur={field.handleBlur}
-															onChange={(event) =>
-																field.handleChange(event.target.value)
-															}
-															placeholder='Describe the recipe and preparation notes...'
-															className={`min-h-24 ${
-																isEdited ? EDITED_FIELD_CLASS : ''
-															}`}
-														/>
-													</Field>
-												)
-											}}
-										</form.Field>
-
-										<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-											<form.Field name='categoryTags'>
+											<form.Field name='description'>
 												{(field) => {
 													const isEdited =
 														isEditMode &&
 														!!initialFormValues &&
-														JSON.stringify(normalizeTags(field.state.value)) !==
-															JSON.stringify(
-																normalizeTags(initialFormValues.categoryTags),
-															)
+														normalizeText(field.state.value) !==
+															normalizeText(initialFormValues.description)
 
 													return (
 														<Field>
 															<FieldLabel htmlFor={field.name}>
-																Category
+																Description
 															</FieldLabel>
-															<TagsInput
+															<Textarea
+																id={field.name}
+																name={field.name}
 																value={field.state.value}
-																onValueChange={field.handleChange}
-																suggestions={CATEGORY_SUGGESTIONS}
-																placeholder='Select or type categories...'
-																className={isEdited ? EDITED_FIELD_CLASS : ''}
+																onBlur={field.handleBlur}
+																onChange={(event) =>
+																	field.handleChange(event.target.value)
+																}
+																placeholder='Describe the recipe and preparation notes...'
+																className={`min-h-24 ${
+																	isEdited ? EDITED_FIELD_CLASS : ''
+																}`}
 															/>
 														</Field>
 													)
 												}}
 											</form.Field>
 
-											<form.Field name='metaTags'>
+											<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
+												<form.Field name='categoryTags'>
+													{(field) => {
+														const isEdited =
+															isEditMode &&
+															!!initialFormValues &&
+															JSON.stringify(
+																normalizeTags(field.state.value),
+															) !==
+																JSON.stringify(
+																	normalizeTags(initialFormValues.categoryTags),
+																)
+
+														return (
+															<Field>
+																<FieldLabel htmlFor={field.name}>
+																	Category
+																</FieldLabel>
+																<TagsInput
+																	value={field.state.value}
+																	onValueChange={field.handleChange}
+																	suggestions={CATEGORY_SUGGESTIONS}
+																	placeholder='Select or type categories...'
+																	className={isEdited ? EDITED_FIELD_CLASS : ''}
+																/>
+															</Field>
+														)
+													}}
+												</form.Field>
+
+												<form.Field name='metaTags'>
+													{(field) => {
+														const isEdited =
+															isEditMode &&
+															!!initialFormValues &&
+															JSON.stringify(
+																normalizeTags(field.state.value),
+															) !==
+																JSON.stringify(
+																	normalizeTags(initialFormValues.metaTags),
+																)
+
+														return (
+															<Field>
+																<FieldLabel htmlFor={field.name}>
+																	Tags
+																</FieldLabel>
+																<TagsInput
+																	value={field.state.value}
+																	onValueChange={field.handleChange}
+																	suggestions={TAG_SUGGESTIONS}
+																	placeholder='Select or type tags...'
+																	className={isEdited ? EDITED_FIELD_CLASS : ''}
+																/>
+															</Field>
+														)
+													}}
+												</form.Field>
+											</div>
+
+											<form.Field name='image'>
 												{(field) => {
 													const isEdited =
 														isEditMode &&
 														!!initialFormValues &&
-														JSON.stringify(normalizeTags(field.state.value)) !==
-															JSON.stringify(
-																normalizeTags(initialFormValues.metaTags),
-															)
+														normalizeText(field.state.value) !==
+															normalizeText(initialFormValues.image)
 
 													return (
 														<Field>
-															<FieldLabel htmlFor={field.name}>Tags</FieldLabel>
-															<TagsInput
+															<FieldLabel htmlFor={field.name}>
+																Image URL
+															</FieldLabel>
+															<Input
+																id={field.name}
+																name={field.name}
 																value={field.state.value}
-																onValueChange={field.handleChange}
-																suggestions={TAG_SUGGESTIONS}
-																placeholder='Select or type tags...'
+																onBlur={field.handleBlur}
+																onChange={(event) =>
+																	field.handleChange(event.target.value)
+																}
+																placeholder='https://example.com/recipe.jpg'
 																className={isEdited ? EDITED_FIELD_CLASS : ''}
 															/>
 														</Field>
 													)
 												}}
 											</form.Field>
-										</div>
+										</FieldGroup>
+									</CardContent>
+								</Card>
 
-										<form.Field name='image'>
+								<Card>
+									<CardHeader>
+										<div className='flex justify-between items-center'>
+											<div>
+												<CardTitle>Ingredients</CardTitle>
+												<CardDescription>
+													Drag from sidebar, reorder by drag-handle, and tune
+													amounts.
+												</CardDescription>
+											</div>
+											<Button
+												type='button'
+												variant='outline'
+												onClick={() => {
+													const first = ingredients[0]
+													if (!first) return
+													addIngredientById(first.id)
+												}}
+											>
+												<PlusIcon className='mr-2 size-4' />
+												Add Row
+											</Button>
+										</div>
+									</CardHeader>
+									<CardContent className='space-y-4'>
+										<form.Field name='ingredients'>
 											{(field) => {
-												const isEdited =
-													isEditMode &&
-													!!initialFormValues &&
-													normalizeText(field.state.value) !==
-														normalizeText(initialFormValues.image)
+												const totals = field.state.value.reduce(
+													(acc, item) => {
+														const ingredient = ingredientMap.get(
+															item.ingredientId,
+														)
+														if (!ingredient || ingredient.serveSize <= 0)
+															return acc
+
+														const ratio = item.amount / ingredient.serveSize
+														acc.calories += ingredient.calories * ratio
+														acc.protein += ingredient.protein * ratio
+														acc.carbohydrate += ingredient.carbohydrate * ratio
+														acc.fat += ingredient.fat * ratio
+														return acc
+													},
+													{ calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
+												)
 
 												return (
-													<Field>
-														<FieldLabel htmlFor={field.name}>
-															Image URL
-														</FieldLabel>
-														<Input
-															id={field.name}
-															name={field.name}
-															value={field.state.value}
-															onBlur={field.handleBlur}
-															onChange={(event) =>
-																field.handleChange(event.target.value)
-															}
-															placeholder='https://example.com/recipe.jpg'
-															className={isEdited ? EDITED_FIELD_CLASS : ''}
-														/>
-													</Field>
+													<>
+														<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+															<MacroTile
+																label='Calories'
+																value={`${Math.round(totals.calories)} kcal`}
+																className='bg-orange-50/80 dark:bg-orange-950/20'
+															/>
+															<MacroTile
+																label='Protein'
+																value={`${roundOneDecimal(totals.protein)} g`}
+																className='bg-emerald-50/80 dark:bg-emerald-950/20'
+															/>
+															<MacroTile
+																label='Carbs'
+																value={`${roundOneDecimal(totals.carbohydrate)} g`}
+																className='bg-blue-50/80 dark:bg-blue-950/20'
+															/>
+															<MacroTile
+																label='Fat'
+																value={`${roundOneDecimal(totals.fat)} g`}
+																className='bg-pink-50/80 dark:bg-pink-950/20'
+															/>
+														</div>
+
+														<IngredientsDroppable>
+															{field.state.value.length === 0 ? (
+																<div className='p-6 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
+																	No ingredients yet. Drag ingredients from the
+																	sidebar or add a row.
+																</div>
+															) : (
+																<SortableContext
+																	items={field.state.value.map(
+																		(item) => item.id,
+																	)}
+																	strategy={verticalListSortingStrategy}
+																>
+																	<div className='space-y-3'>
+																		{field.state.value.map((item) => (
+																			<SortableIngredientRow
+																				key={item.id}
+																				item={item}
+																				isEditMode={isEditMode}
+																				initialItem={initialIngredientsById.get(
+																					item.id,
+																				)}
+																				allIngredients={ingredients}
+																				ingredientOptions={ingredientOptions}
+																				ingredientMap={ingredientMap}
+																				onUpdateField={updateIngredientField}
+																				onRemove={removeIngredient}
+																			/>
+																		))}
+																	</div>
+																</SortableContext>
+															)}
+														</IngredientsDroppable>
+													</>
 												)
 											}}
 										</form.Field>
-									</FieldGroup>
-								</CardContent>
-							</Card>
+									</CardContent>
+								</Card>
 
-							<Card>
-								<CardHeader>
-									<div className='flex justify-between items-center'>
-										<div>
-											<CardTitle>Ingredients</CardTitle>
-											<CardDescription>
-												Drag from sidebar, reorder by drag-handle, and tune
-												amounts.
-											</CardDescription>
-										</div>
-										<Button
-											type='button'
-											variant='outline'
-											onClick={() => {
-												const first = ingredients[0]
-												if (!first) return
-												addIngredientById(first.id)
-											}}
-										>
-											<PlusIcon className='mr-2 size-4' />
-											Add Row
-										</Button>
-									</div>
-								</CardHeader>
-								<CardContent className='space-y-4'>
-									<form.Field name='ingredients'>
-										{(field) => {
-											const totals = field.state.value.reduce(
-												(acc, item) => {
-													const ingredient = ingredientMap.get(
-														item.ingredientId,
-													)
-													if (!ingredient || ingredient.serveSize <= 0)
-														return acc
-
-													const ratio = item.amount / ingredient.serveSize
-													acc.calories += ingredient.calories * ratio
-													acc.protein += ingredient.protein * ratio
-													acc.carbohydrate += ingredient.carbohydrate * ratio
-													acc.fat += ingredient.fat * ratio
-													return acc
-												},
-												{ calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
-											)
-
-											return (
-												<>
-													<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
-														<MacroTile
-															label='Calories'
-															value={`${Math.round(totals.calories)} kcal`}
-															className='bg-orange-50/80 dark:bg-orange-950/20'
-														/>
-														<MacroTile
-															label='Protein'
-															value={`${roundOneDecimal(totals.protein)} g`}
-															className='bg-emerald-50/80 dark:bg-emerald-950/20'
-														/>
-														<MacroTile
-															label='Carbs'
-															value={`${roundOneDecimal(totals.carbohydrate)} g`}
-															className='bg-blue-50/80 dark:bg-blue-950/20'
-														/>
-														<MacroTile
-															label='Fat'
-															value={`${roundOneDecimal(totals.fat)} g`}
-															className='bg-pink-50/80 dark:bg-pink-950/20'
-														/>
-													</div>
-
-													<IngredientsDroppable>
-														{field.state.value.length === 0 ? (
-															<div className='p-6 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
-																No ingredients yet. Drag ingredients from the
-																sidebar or add a row.
-															</div>
-														) : (
-															<SortableContext
-																items={field.state.value.map((item) => item.id)}
-																strategy={verticalListSortingStrategy}
-															>
-																<div className='space-y-3'>
-																	{field.state.value.map((item) => (
-																		<SortableIngredientRow
-																			key={item.id}
-																			item={item}
-																			isEditMode={isEditMode}
-																			initialItem={initialIngredientsById.get(
-																				item.id,
-																			)}
-																			allIngredients={ingredients}
-																			ingredientOptions={ingredientOptions}
-																			ingredientMap={ingredientMap}
-																			onUpdateField={updateIngredientField}
-																			onRemove={removeIngredient}
-																		/>
-																	))}
-																</div>
-															</SortableContext>
-														)}
-													</IngredientsDroppable>
-												</>
-											)
+								<div className='flex gap-4 justify-end'>
+									<Button
+										type='button'
+										variant='outline'
+										onClick={() => {
+											if (!orgSlug) return
+											navigate({
+												to: '/$orgSlug/recipes',
+												params: { orgSlug },
+											})
 										}}
-									</form.Field>
-								</CardContent>
-							</Card>
-
-							<div className='flex gap-4 justify-end'>
-								<Button
-									type='button'
-									variant='outline'
-									onClick={() => {
-										if (!orgSlug) return
-										navigate({
-											to: '/$orgSlug/recipes',
-											params: { orgSlug },
-										})
-									}}
-								>
-									Cancel
-								</Button>
-								<Button
-									type='submit'
-									disabled={
-										createRecipe.isPending ||
-										updateRecipe.isPending ||
-										updateRecipeWithAi.isPending
-									}
-								>
-									{isEditMode
-										? updateRecipe.isPending
-											? 'Saving...'
-											: 'Save Changes'
-										: createRecipe.isPending
-											? 'Creating...'
-											: 'Create Recipe'}
-								</Button>
-							</div>
-						</form>
+									>
+										Cancel
+									</Button>
+									<Button
+										type='submit'
+										disabled={
+											createRecipe.isPending ||
+											updateRecipe.isPending ||
+											updateRecipeWithAi.isPending
+										}
+									>
+										{isEditMode
+											? updateRecipe.isPending
+												? 'Saving...'
+												: 'Save Changes'
+											: createRecipe.isPending
+												? 'Creating...'
+												: 'Create Recipe'}
+									</Button>
+								</div>
+							</form>
+							{updateRecipeWithAi.isPending ? (
+								<div className='flex absolute inset-0 z-20 justify-center items-center bg-background/70 backdrop-blur-[1px]'>
+									<div className='flex gap-2 items-center py-2 px-3 rounded-md border shadow-sm bg-card'>
+										<Spinner className='size-4' />
+										<span className='text-sm font-medium'>
+											Applying AI updates...
+										</span>
+									</div>
+								</div>
+							) : null}
+						</div>
 
 						<IngredientSidebar
 							ingredients={filteredIngredients}
