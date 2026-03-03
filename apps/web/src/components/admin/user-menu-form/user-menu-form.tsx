@@ -13,6 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
+import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/utils/orpc'
 import {
@@ -1798,317 +1799,342 @@ export function UserMenuForm({
 							onDragOver={handleDragOver}
 						>
 							<div className='flex gap-0 items-start w-full'>
-								<form
-									onSubmit={(event) => {
-										event.preventDefault()
-										event.stopPropagation()
-										form.handleSubmit()
-									}}
-									className='flex flex-col flex-1 gap-6 p-8 min-w-0'
-								>
-									<div className='flex justify-between items-center'>
-										<h1 className='text-2xl font-bold'>{formHeading}</h1>
-										<SidebarTrigger size='default'>
-											<Button render={<div />} className='cursor-pointer'>
-												Recipes
-												<SidebarIcon />
+								<div className='relative flex flex-col flex-1 min-w-0'>
+									<form
+										onSubmit={(event) => {
+											event.preventDefault()
+											event.stopPropagation()
+											form.handleSubmit()
+										}}
+										className='flex flex-col gap-6 p-8 min-w-0'
+									>
+										<div className='flex justify-between items-center'>
+											<h1 className='text-2xl font-bold'>{formHeading}</h1>
+											<SidebarTrigger size='default'>
+												<Button render={<div />} className='cursor-pointer'>
+													Recipes
+													<SidebarIcon />
+												</Button>
+											</SidebarTrigger>
+										</div>
+										{!isEditMode && !isTemplateMode && (
+											<Button
+												type='button'
+												variant='ghost'
+												onClick={() => {
+													setSelectedTemplate(null)
+													resetToEmptyForm()
+												}}
+												className='w-fit'
+											>
+												← Back to templates
 											</Button>
-										</SidebarTrigger>
-									</div>
-									{!isEditMode && !isTemplateMode && (
-										<Button
-											type='button'
-											variant='ghost'
-											onClick={() => {
-												setSelectedTemplate(null)
-												resetToEmptyForm()
-											}}
-											className='w-fit'
-										>
-											← Back to templates
-										</Button>
-									)}
+										)}
 
-									<Card>
-										<CardHeader>
-											<CardTitle>Ask AI</CardTitle>
-											<CardDescription>
-												Send a request and AI will update this menu form.
-											</CardDescription>
-										</CardHeader>
-										<CardContent className='space-y-3'>
-											<AiMenuRequestInput
-												isPending={updateUserMenuWithAi.isPending}
-												mode={aiMode}
-												onModeChange={setAiMode}
-												onSend={handleAiRequest}
-											/>
-										</CardContent>
-									</Card>
+										<Card>
+											<CardHeader>
+												<CardTitle>Ask AI</CardTitle>
+												<CardDescription>
+													Send a request and AI will update this menu form.
+												</CardDescription>
+											</CardHeader>
+											<CardContent className='space-y-3'>
+												<AiMenuRequestInput
+													isPending={updateUserMenuWithAi.isPending}
+													mode={aiMode}
+													onModeChange={setAiMode}
+													onSend={handleAiRequest}
+												/>
+											</CardContent>
+										</Card>
 
-									<Card>
-										<CardHeader>
-											<CardTitle>Menu Details</CardTitle>
-											<CardDescription>
-												{isTemplateMode
-													? 'Configure the reusable menu template'
-													: 'Configure the menu for the selected user'}
-											</CardDescription>
-										</CardHeader>
-										<CardContent className='space-y-6'>
-											<div className='space-y-4'>
-												<form.Field name='name'>
-													{(field) => (
-														<div className='space-y-2'>
-															<Label htmlFor={field.name}>Menu Name *</Label>
-															<Input
-																id={field.name}
-																name={field.name}
-																value={field.state.value}
-																onBlur={field.handleBlur}
-																onChange={(event) =>
-																	field.handleChange(event.target.value)
-																}
-																placeholder='e.g., Weight Loss Week 1'
-																className={
-																	isNameEdited ? EDITED_FIELD_CLASS : ''
-																}
-																required
-															/>
+										<Card>
+											<CardHeader>
+												<CardTitle>Menu Details</CardTitle>
+												<CardDescription>
+													{isTemplateMode
+														? 'Configure the reusable menu template'
+														: 'Configure the menu for the selected user'}
+												</CardDescription>
+											</CardHeader>
+											<CardContent className='space-y-6'>
+												<div className='space-y-4'>
+													<form.Field name='name'>
+														{(field) => (
+															<div className='space-y-2'>
+																<Label htmlFor={field.name}>Menu Name *</Label>
+																<Input
+																	id={field.name}
+																	name={field.name}
+																	value={field.state.value}
+																	onBlur={field.handleBlur}
+																	onChange={(event) =>
+																		field.handleChange(event.target.value)
+																	}
+																	placeholder='e.g., Weight Loss Week 1'
+																	className={
+																		isNameEdited ? EDITED_FIELD_CLASS : ''
+																	}
+																	required
+																/>
+															</div>
+														)}
+													</form.Field>
+
+													<form.Field name='description'>
+														{(field) => (
+															<div className='space-y-2'>
+																<Label htmlFor={field.name}>Description</Label>
+																<Textarea
+																	id={field.name}
+																	name={field.name}
+																	value={field.state.value ?? ''}
+																	onBlur={field.handleBlur}
+																	onChange={(event) =>
+																		field.handleChange(
+																			event.target.value || null,
+																		)
+																	}
+																	placeholder='Optional description for this menu...'
+																	className={`min-h-20 ${
+																		isDescriptionEdited
+																			? EDITED_FIELD_CLASS
+																			: ''
+																	}`}
+																/>
+															</div>
+														)}
+													</form.Field>
+
+													{!isTemplateMode && (
+														<div className='grid grid-cols-2 gap-4'>
+															<form.Field name='startDate'>
+																{(field) => (
+																	<div className='space-y-2'>
+																		<Label htmlFor={field.name}>
+																			Start Date
+																		</Label>
+																		<Input
+																			id={field.name}
+																			name={field.name}
+																			type='date'
+																			value={field.state.value ?? ''}
+																			onBlur={field.handleBlur}
+																			onChange={(event) =>
+																				field.handleChange(
+																					event.target.value ||
+																						getTodayDateString(),
+																				)
+																			}
+																			className={
+																				isStartDateEdited
+																					? EDITED_FIELD_CLASS
+																					: ''
+																			}
+																		/>
+																	</div>
+																)}
+															</form.Field>
+
+															<form.Field name='endDate'>
+																{(field) => (
+																	<div className='space-y-2'>
+																		<Label htmlFor={field.name}>End Date</Label>
+																		<Input
+																			id={field.name}
+																			name={field.name}
+																			type='date'
+																			value={field.state.value ?? ''}
+																			onBlur={field.handleBlur}
+																			onChange={(event) =>
+																				field.handleChange(
+																					event.target.value || null,
+																				)
+																			}
+																			className={
+																				isEndDateEdited
+																					? EDITED_FIELD_CLASS
+																					: ''
+																			}
+																		/>
+																	</div>
+																)}
+															</form.Field>
 														</div>
 													)}
-												</form.Field>
-
-												<form.Field name='description'>
-													{(field) => (
-														<div className='space-y-2'>
-															<Label htmlFor={field.name}>Description</Label>
-															<Textarea
-																id={field.name}
-																name={field.name}
-																value={field.state.value ?? ''}
-																onBlur={field.handleBlur}
-																onChange={(event) =>
-																	field.handleChange(event.target.value || null)
-																}
-																placeholder='Optional description for this menu...'
-																className={`min-h-20 ${
-																	isDescriptionEdited ? EDITED_FIELD_CLASS : ''
-																}`}
-															/>
-														</div>
-													)}
-												</form.Field>
-
-												{!isTemplateMode && (
-													<div className='grid grid-cols-2 gap-4'>
-														<form.Field name='startDate'>
-															{(field) => (
-																<div className='space-y-2'>
-																	<Label htmlFor={field.name}>Start Date</Label>
-																	<Input
-																		id={field.name}
-																		name={field.name}
-																		type='date'
-																		value={field.state.value ?? ''}
-																		onBlur={field.handleBlur}
-																		onChange={(event) =>
-																			field.handleChange(
-																				event.target.value ||
-																					getTodayDateString(),
-																			)
-																		}
-																		className={
-																			isStartDateEdited
-																				? EDITED_FIELD_CLASS
-																				: ''
-																		}
-																	/>
-																</div>
-															)}
-														</form.Field>
-
-														<form.Field name='endDate'>
-															{(field) => (
-																<div className='space-y-2'>
-																	<Label htmlFor={field.name}>End Date</Label>
-																	<Input
-																		id={field.name}
-																		name={field.name}
-																		type='date'
-																		value={field.state.value ?? ''}
-																		onBlur={field.handleBlur}
-																		onChange={(event) =>
-																			field.handleChange(
-																				event.target.value || null,
-																			)
-																		}
-																		className={
-																			isEndDateEdited ? EDITED_FIELD_CLASS : ''
-																		}
-																	/>
-																</div>
-															)}
-														</form.Field>
-													</div>
-												)}
-											</div>
-
-											<div className='pt-4 space-y-4 border-t'>
-												<div className='flex justify-between items-center'>
-													<div>
-														<h2 className='text-lg font-semibold'>Meals</h2>
-														<p className='text-sm text-muted-foreground'>
-															Add, remove, or customize meals and their contents
-														</p>
-													</div>
-													<Button
-														type='button'
-														variant='outline'
-														onClick={addMeal}
-													>
-														<PlusIcon className='mr-2 size-4' />
-														Add Meal
-													</Button>
 												</div>
 
-												<div className='space-y-4'>
-													{formData.meals.length === 0 ? (
-														<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
-															No meals added yet. Click &quot;Add Meal&quot; to
-															create your first meal.
+												<div className='pt-4 space-y-4 border-t'>
+													<div className='flex justify-between items-center'>
+														<div>
+															<h2 className='text-lg font-semibold'>Meals</h2>
+															<p className='text-sm text-muted-foreground'>
+																Add, remove, or customize meals and their
+																contents
+															</p>
 														</div>
-													) : (
-														formData.meals.map((meal, mealIdx) => {
-															const totals = calculateMealTotals(meal)
-															const isExpanded = expandedMeals.has(mealIdx)
-															const baselineMeal = initialMealsById.get(meal.id)
-															const isMealEdited =
-																shouldHighlightEdits &&
-																(!baselineMeal ||
-																	!areMealsEqual(meal, baselineMeal))
-															const editedRecipeIds = getEditedRecipeIds(meal)
-															return (
-																<div
-																	key={meal.id}
-																	className={`rounded-lg border ${
-																		isMealEdited ? EDITED_FIELD_CLASS : ''
-																	}`}
-																>
-																	<MealHeader
-																		meal={meal}
-																		mealIdx={mealIdx}
-																		totals={totals}
-																		isExpanded={isExpanded}
-																		isFirst={mealIdx === 0}
-																		isLast={
-																			mealIdx === formData.meals.length - 1
-																		}
-																		onToggle={() => toggleMealExpanded(mealIdx)}
-																		onRemove={() => removeMeal(mealIdx)}
-																		onDuplicate={() => duplicateMeal(mealIdx)}
-																		onMoveUp={() =>
-																			moveMeal(mealIdx, mealIdx - 1)
-																		}
-																		onMoveDown={() =>
-																			moveMeal(mealIdx, mealIdx + 1)
-																		}
-																	/>
+														<Button
+															type='button'
+															variant='outline'
+															onClick={addMeal}
+														>
+															<PlusIcon className='mr-2 size-4' />
+															Add Meal
+														</Button>
+													</div>
 
-																	{isExpanded && (
-																		<MealContent
+													<div className='space-y-4'>
+														{formData.meals.length === 0 ? (
+															<div className='p-4 text-sm text-center rounded-md border text-muted-foreground'>
+																No meals added yet. Click &quot;Add Meal&quot;
+																to create your first meal.
+															</div>
+														) : (
+															formData.meals.map((meal, mealIdx) => {
+																const totals = calculateMealTotals(meal)
+																const isExpanded = expandedMeals.has(mealIdx)
+																const baselineMeal = initialMealsById.get(
+																	meal.id,
+																)
+																const isMealEdited =
+																	shouldHighlightEdits &&
+																	(!baselineMeal ||
+																		!areMealsEqual(meal, baselineMeal))
+																const editedRecipeIds = getEditedRecipeIds(meal)
+																return (
+																	<div
+																		key={meal.id}
+																		className={`rounded-lg border ${
+																			isMealEdited ? EDITED_FIELD_CLASS : ''
+																		}`}
+																	>
+																		<MealHeader
 																			meal={meal}
 																			mealIdx={mealIdx}
-																			baselineMeal={baselineMeal}
-																			highlightEdits={shouldHighlightEdits}
-																			editedRecipeIds={editedRecipeIds}
-																			recipeOptions={recipeOptions}
-																			ingredientOptions={ingredientOptions}
-																			expandedRecipes={expandedRecipes}
-																			onUpdateName={updateMealName}
-																			onUpdateTargets={updateMealTargets}
-																			onAddRecipe={addRecipeToMeal}
-																			onRemoveRecipe={removeRecipeFromMeal}
-																			onToggleRecipe={toggleRecipeExpanded}
-																			onUpdateIngredient={
-																				updateIngredientServeSize
+																			totals={totals}
+																			isExpanded={isExpanded}
+																			isFirst={mealIdx === 0}
+																			isLast={
+																				mealIdx === formData.meals.length - 1
 																			}
-																			onAdjustIngredient={
-																				adjustIngredientServeSize
+																			onToggle={() =>
+																				toggleMealExpanded(mealIdx)
 																			}
-																			onAddIngredient={addIngredientToRecipe}
-																			onRemoveIngredient={
-																				removeIngredientFromRecipe
+																			onRemove={() => removeMeal(mealIdx)}
+																			onDuplicate={() => duplicateMeal(mealIdx)}
+																			onMoveUp={() =>
+																				moveMeal(mealIdx, mealIdx - 1)
 																			}
-																			onBalanceCalories={balanceCalories}
-																			onBalanceRecipe={balanceRecipeNutrition}
-																			onDuplicateRecipe={duplicateRecipe}
+																			onMoveDown={() =>
+																				moveMeal(mealIdx, mealIdx + 1)
+																			}
 																		/>
-																	)}
-																</div>
-															)
-														})
-													)}
-												</div>
-											</div>
-										</CardContent>
-									</Card>
 
-									<div className='flex gap-4 justify-end pt-4'>
-										<Button
-											type='button'
-											variant='outline'
-											onClick={() => {
-												if (isEditMode) {
-													if (isTemplateMode) {
+																		{isExpanded && (
+																			<MealContent
+																				meal={meal}
+																				mealIdx={mealIdx}
+																				baselineMeal={baselineMeal}
+																				highlightEdits={shouldHighlightEdits}
+																				editedRecipeIds={editedRecipeIds}
+																				recipeOptions={recipeOptions}
+																				ingredientOptions={ingredientOptions}
+																				expandedRecipes={expandedRecipes}
+																				onUpdateName={updateMealName}
+																				onUpdateTargets={updateMealTargets}
+																				onAddRecipe={addRecipeToMeal}
+																				onRemoveRecipe={removeRecipeFromMeal}
+																				onToggleRecipe={toggleRecipeExpanded}
+																				onUpdateIngredient={
+																					updateIngredientServeSize
+																				}
+																				onAdjustIngredient={
+																					adjustIngredientServeSize
+																				}
+																				onAddIngredient={addIngredientToRecipe}
+																				onRemoveIngredient={
+																					removeIngredientFromRecipe
+																				}
+																				onBalanceCalories={balanceCalories}
+																				onBalanceRecipe={balanceRecipeNutrition}
+																				onDuplicateRecipe={duplicateRecipe}
+																			/>
+																		)}
+																	</div>
+																)
+															})
+														)}
+													</div>
+												</div>
+											</CardContent>
+										</Card>
+
+										<div className='flex gap-4 justify-end pt-4'>
+											<Button
+												type='button'
+												variant='outline'
+												onClick={() => {
+													if (isEditMode) {
+														if (isTemplateMode) {
+															navigate({
+																to: '/$orgSlug/menu-templates',
+																params: { orgSlug },
+															})
+															return
+														}
+
+														navigate({
+															to: '/$orgSlug/user-menus',
+															params: { orgSlug },
+															search: user ? { user } : {},
+														})
+													} else if (isTemplateMode) {
 														navigate({
 															to: '/$orgSlug/menu-templates',
 															params: { orgSlug },
 														})
-														return
+													} else {
+														setSelectedTemplate(null)
+														resetToEmptyForm()
 													}
-
-													navigate({
-														to: '/$orgSlug/user-menus',
-														params: { orgSlug },
-														search: user ? { user } : {},
-													})
-												} else if (isTemplateMode) {
-													navigate({
-														to: '/$orgSlug/menu-templates',
-														params: { orgSlug },
-													})
-												} else {
-													setSelectedTemplate(null)
-													resetToEmptyForm()
+												}}
+											>
+												Cancel
+											</Button>
+											<Button
+												type='submit'
+												disabled={
+													updateUserMenuWithAi.isPending ||
+													(isEditMode
+														? batchUpdateMenuMutation.isPending
+														: batchCreateMenuMutation.isPending)
 												}
-											}}
-										>
-											Cancel
-										</Button>
-										<Button
-											type='submit'
-											disabled={
-												updateUserMenuWithAi.isPending ||
-												(isEditMode
+											>
+												{isEditMode
 													? batchUpdateMenuMutation.isPending
-													: batchCreateMenuMutation.isPending)
-											}
-										>
-											{isEditMode
-												? batchUpdateMenuMutation.isPending
-													? 'Saving...'
-													: 'Save Changes'
-												: batchCreateMenuMutation.isPending
-													? isTemplateMode
-														? 'Creating Template...'
-														: 'Creating...'
-													: isTemplateMode
-														? 'Create Template'
-														: 'Create Menu'}
-										</Button>
-									</div>
-								</form>
+														? 'Saving...'
+														: 'Save Changes'
+													: batchCreateMenuMutation.isPending
+														? isTemplateMode
+															? 'Creating Template...'
+															: 'Creating...'
+														: isTemplateMode
+															? 'Create Template'
+															: 'Create Menu'}
+											</Button>
+										</div>
+									</form>
+									{updateUserMenuWithAi.isPending ? (
+										<div className='flex absolute inset-0 z-20 justify-center items-center bg-background/70 backdrop-blur-[1px]'>
+											<div className='flex gap-2 items-center py-2 px-3 rounded-md border shadow-sm bg-card'>
+												<Spinner className='size-4' />
+												<span className='text-sm font-medium'>
+													Applying AI updates...
+												</span>
+											</div>
+										</div>
+									) : null}
+								</div>
 
 								<OrgRecipeSidebar
 									recipes={filteredRecipes}
