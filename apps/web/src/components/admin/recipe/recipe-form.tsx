@@ -2,6 +2,8 @@
 
 import * as React from 'react'
 
+import { env } from '@fit/env/web'
+
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -35,6 +37,7 @@ import {
 } from '@tanstack/react-query'
 import { useNavigate, useParams } from '@tanstack/react-router'
 
+import { createOpenAICompatible } from '@ai-sdk/openai-compatible'
 import {
 	DndContext,
 	type DragEndEvent,
@@ -61,6 +64,7 @@ import {
 	SidebarIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
+import { generateText } from 'ai'
 import { toast } from 'sonner'
 
 const CATEGORY_SUGGESTIONS = ['breakfast', 'lunch', 'dinner', 'snack']
@@ -468,6 +472,18 @@ export function RecipeForm({
 		await createRecipe.mutateAsync(payload)
 	}
 
+	const testHandler = async () => {
+		const { text } = await generateText({
+			model: createOpenAICompatible({
+				baseURL: 'https://opencode.ai/zen/v1/chat/completions',
+				name: 'example',
+				apiKey: env.VITE_ZEN_API_KEY,
+			}).chatModel('minimax-m2.5-free'),
+			prompt: 'Write a vegetarian lasagna recipe for 4 people.',
+		})
+		console.log({ text })
+	}
+
 	return (
 		<SidebarProvider defaultOpen={false}>
 			<div className='w-full'>
@@ -481,6 +497,9 @@ export function RecipeForm({
 							onSubmit={handleSubmit}
 							className='flex flex-col flex-1 gap-6 p-8 min-w-0'
 						>
+							<Button className='w-24' onMouseDown={testHandler}>
+								Press Me
+							</Button>
 							<div className='flex justify-between items-center'>
 								<h1 className='text-2xl font-bold'>
 									{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
