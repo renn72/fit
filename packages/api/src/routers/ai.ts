@@ -145,6 +145,18 @@ function normalizeNullableDateInput(value: string | null): string | null {
 	return parsed.toISOString().slice(0, 10)
 }
 
+function toUniqueId(baseId: string, used: Set<string>) {
+	const trimmed = baseId.trim()
+	if (trimmed && !used.has(trimmed)) {
+		used.add(trimmed)
+		return trimmed
+	}
+
+	const generated = randomUUID()
+	used.add(generated)
+	return generated
+}
+
 async function getIngredientsForAiContext(
 	organisationId: string,
 ): Promise<IngredientForAiContext[]> {
@@ -387,18 +399,6 @@ function normalizeAndValidateAiUserMenuForm(
 	const usedRecipeIds = new Set<string>()
 	const usedIngredientIds = new Set<string>()
 
-	const toUniqueId = (baseId: string, used: Set<string>) => {
-		const trimmed = baseId.trim()
-		if (trimmed && !used.has(trimmed)) {
-			used.add(trimmed)
-			return trimmed
-		}
-
-		const generated = randomUUID()
-		used.add(generated)
-		return generated
-	}
-
 	const normalizedMeals = parsed.data.meals.map((meal, mealIndex) => {
 		const normalizedMealId = toUniqueId(meal.id, usedMealIds)
 		const targetCalories =
@@ -500,6 +500,94 @@ function normalizeAndValidateAiUserMenuForm(
 					resolvedRecipe?.name ||
 					recipe.recipeName.trim() ||
 					`Recipe ${recipeIndex + 1}`,
+				recipeIndex,
+				calories: roundOneDecimal(totals.calories),
+				protein: roundOneDecimal(totals.protein),
+				fat: roundOneDecimal(totals.fat),
+				carbohydrate: roundOneDecimal(totals.carbohydrate),
+				ingredients: normalizedIngredients,
+			}
+		})
+
+		return {
+			id: normalizedMealId,
+			mealIndex,
+			name: meal.name.trim() || `Meal ${mealIndex + 1}`,
+			targetCalories,
+			targetProtein,
+			recipes: normalizedRecipes,
+		}
+	})
+
+	return {
+		name: parsed.data.name.trim() || 'Untitled Menu',
+		description: parsed.data.description
+			? parsed.data.description.trim()
+			: null,
+		startDate: normalizeNullableDateInput(parsed.data.startDate),
+		endDate: normalizeNullableDateInput(parsed.data.endDate),
+		meals: normalizedMeals,
+	}
+}
+
+function normalizeAndValidateAiUserMenuFormFast(form: unknown) {
+	const parsed = AiUserMenuFormStateInput.safeParse(form)
+	if (!parsed.success) {
+		throw new ORPCError('INTERNAL_SERVER_ERROR', {
+			message: `AI response has invalid shape: ${parsed.error.issues[0]?.message ?? 'unknown error'}`,
+		})
+	}
+
+	const usedMealIds = new Set<string>()
+	const usedRecipeIds = new Set<string>()
+	const usedIngredientIds = new Set<string>()
+
+	const normalizedMeals = parsed.data.meals.map((meal, mealIndex) => {
+		const normalizedMealId = toUniqueId(meal.id, usedMealIds)
+		const targetCalories =
+			meal.targetCalories === null
+				? null
+				: roundOneDecimal(Math.max(0, meal.targetCalories))
+		const targetProtein =
+			meal.targetProtein === null
+				? null
+				: roundOneDecimal(Math.max(0, meal.targetProtein))
+
+		const normalizedRecipes = meal.recipes.map((recipe, recipeIndex) => {
+			const normalizedRecipeId = toUniqueId(recipe.id, usedRecipeIds)
+			const normalizedIngredients = recipe.ingredients.map(
+				(ingredientItem) => ({
+					id: toUniqueId(ingredientItem.id, usedIngredientIds),
+					recipeToIngredientId: ingredientItem.recipeToIngredientId.trim(),
+					ingredientId: ingredientItem.ingredientId.trim(),
+					ingredientName:
+						ingredientItem.ingredientName.trim() ||
+						`Ingredient ${recipeIndex + 1}`,
+					serveSize: roundOneDecimal(Math.max(0, ingredientItem.serveSize)),
+					serveUnit: ingredientItem.serveUnit.trim(),
+					calories: roundOneDecimal(Math.max(0, ingredientItem.calories)),
+					protein: roundOneDecimal(Math.max(0, ingredientItem.protein)),
+					fat: roundOneDecimal(Math.max(0, ingredientItem.fat)),
+					carbohydrate: roundOneDecimal(
+						Math.max(0, ingredientItem.carbohydrate),
+					),
+				}),
+			)
+
+			const totals = normalizedIngredients.reduce(
+				(acc, item) => ({
+					calories: acc.calories + item.calories,
+					protein: acc.protein + item.protein,
+					fat: acc.fat + item.fat,
+					carbohydrate: acc.carbohydrate + item.carbohydrate,
+				}),
+				{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+			)
+
+			return {
+				id: normalizedRecipeId,
+				recipeId: recipe.recipeId.trim(),
+				recipeName: recipe.recipeName.trim() || `Recipe ${recipeIndex + 1}`,
 				recipeIndex,
 				calories: roundOneDecimal(totals.calories),
 				protein: roundOneDecimal(totals.protein),
@@ -685,14 +773,6 @@ Rules:
 				})
 			}
 
-			const ingredients = await getIngredientsForAiContext(input.organisationId)
-			const recipes = await getRecipesForAiContext(input.organisationId)
-			if (ingredients.length === 0) {
-				throw new ORPCError('BAD_REQUEST', {
-					message: 'No ingredients available for this organisation',
-				})
-			}
-
 			const schemaExample = {
 				name: 'string',
 				description: 'string|null',
@@ -735,28 +815,64 @@ Rules:
 				],
 			}
 
-			const systemPrompt = `
-You update a user menu form based on a user's request.
-Return JSON only. No markdown, no commentary.
-The response must be a single object with this exact shape:
-${JSON.stringify(schemaExample)}
+			let systemPrompt = `
+	You update a user menu form based on a user's request.
+	Return JSON only. No markdown, no commentary.
+	The response must be a single object with this exact shape:
+	${JSON.stringify(schemaExample)}
+	`.trim()
+			let userPrompt = ''
+			let thinkingIngredients: IngredientForAiContext[] = []
+			let thinkingRecipes: RecipeForAiContext[] = []
 
-Rules:
-- Use ingredientId values only from the provided ingredient list.
-- Use recipeId values from provided recipes whenever possible.
-- Keep fields plain JSON types. Do not return undefined.
-- Keep ids where possible; create ids for new meals/recipes/ingredients.
-- startDate and endDate must be YYYY-MM-DD strings or null.
-- mealIndex and recipeIndex must be zero-based integers.
-- Keep the output directly usable for UI form state.
-`.trim()
+			if (input.mode === 'thinking') {
+				thinkingIngredients = await getIngredientsForAiContext(
+					input.organisationId,
+				)
+				thinkingRecipes = await getRecipesForAiContext(input.organisationId)
+				if (thinkingIngredients.length === 0) {
+					throw new ORPCError('BAD_REQUEST', {
+						message: 'No ingredients available for this organisation',
+					})
+				}
 
-			const userPrompt = JSON.stringify({
-				userRequest: input.request,
-				currentForm: input.currentForm,
-				availableIngredients: ingredients,
-				availableRecipes: recipes,
-			})
+				systemPrompt = `
+	${systemPrompt}
+
+	Rules:
+	- Use ingredientId values only from the provided ingredient list.
+	- Use recipeId values from provided recipes whenever possible.
+	- Keep fields plain JSON types. Do not return undefined.
+	- Keep ids where possible; create ids for new meals/recipes/ingredients.
+	- startDate and endDate must be YYYY-MM-DD strings or null.
+	- mealIndex and recipeIndex must be zero-based integers.
+	- Keep the output directly usable for UI form state.
+	`.trim()
+
+				userPrompt = JSON.stringify({
+					userRequest: input.request,
+					currentForm: input.currentForm,
+					availableIngredients: thinkingIngredients,
+					availableRecipes: thinkingRecipes,
+				})
+			} else {
+				systemPrompt = `
+	${systemPrompt}
+
+	Rules:
+	- Use only the currentForm and userRequest provided.
+	- Keep fields plain JSON types. Do not return undefined.
+	- Keep existing ids where possible; create ids for new meals/recipes/ingredients.
+	- startDate and endDate must be YYYY-MM-DD strings or null.
+	- mealIndex and recipeIndex must be zero-based integers.
+	- Return data directly usable as UI form state.
+	`.trim()
+
+				userPrompt = JSON.stringify({
+					userRequest: input.request,
+					currentForm: input.currentForm,
+				})
+			}
 
 			const completion = await requestZenChatCompletion({
 				messages: [
@@ -773,11 +889,14 @@ Rules:
 			}
 
 			const parsedJson = parseModelJsonResponse(text)
-			const normalizedForm = normalizeAndValidateAiUserMenuForm(
-				parsedJson,
-				ingredients,
-				recipes,
-			)
+			const normalizedForm =
+				input.mode === 'thinking'
+					? normalizeAndValidateAiUserMenuForm(
+							parsedJson,
+							thinkingIngredients,
+							thinkingRecipes,
+						)
+					: normalizeAndValidateAiUserMenuFormFast(parsedJson)
 
 			return AiUserMenuUpdateOutput.parse({
 				form: normalizedForm,

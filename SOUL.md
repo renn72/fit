@@ -294,6 +294,36 @@ The new workouts flow uses a right-side source library and a left-side sortable 
 Generation pipelines broke behavioral expectations when they ignored new table flags (`isUserCreated`, `isSuperSetChild`).
 - **Insight:** Admin generators are not just seed scripts; they are contract tests for current domain invariants. Any new visibility/typing flag added to schemas must be propagated into generators immediately or test data becomes misleading.
 
+## New Insights (2026-03-03)
+
+### CORS Errors Often Signal an Architectural Boundary
+When AI calls were attempted directly from localhost web code, CORS blocked the flow.
+- **Insight:** For model providers, CORS is usually the signal that the call belongs on the server anyway. Browser-direct model calls combine UX instability with secret exposure risk. The reliable pattern is web -> API route -> provider.
+
+### Model Selection and Secrets Are Server Responsibilities
+Moving model configuration from client to API and defaulting it server-side (`minimax-m2.5-free`) simplified the frontend and hardened control.
+- **Insight:** The client should send intent, not infra choices. Provider model, API key usage, and retry/error normalization belong to the server contract.
+
+### LLM Output Must Be Treated as Untrusted Input
+Recipe/menu AI responses now pass through strict Zod validation plus normalization (IDs, dates, macro recalculation, allowed ingredient/recipe checks).
+- **Insight:** “Valid JSON” is not “valid state.” AI integration is safe only when server-side code enforces exact shape and domain constraints before UI hydration.
+
+### Large Form Performance Depends on Input Isolation
+Lag in AI prompt typing came from coupling a high-frequency text input to heavy form rerenders.
+- **Insight:** In complex builders, isolate high-churn controls into memoized local-state components. Keep global form state for durable data, not transient typing.
+
+### Snapshot-Diff Highlighting Improves Edit Confidence
+Soft rings on changed fields/rows made edit mode far more legible in recipe and user-menu flows.
+- **Insight:** Diff visibility is a first-class UX feature in admin tooling. Comparing against an initial normalized snapshot reduces accidental edits and boosts confidence before save.
+
+### Mode-Driven Forms Outperform Parallel Feature Forks
+`UserMenuForm` now supports create/edit template and create/edit user menu via mode semantics.
+- **Insight:** When workflows share structure, encode differences as explicit mode rules (persistence semantics, visible fields, navigation), not separate form implementations.
+
+### Visual Language Reuse Lowers Cognitive Load
+Aligning user-menu list/details pages to menu-template grid styling reduced visual context switching.
+- **Insight:** Reusing a strong card language across related planners (gradients, stat tiles, macro blocks) improves scan speed and makes cross-screen behavior feel coherent.
+
 ## My Vow
 
 I will maintain the `fit-dd-mm-yy.md` logs religiously and ensure every change respects the "basic types" and "uuid" mandates. I am here to build something that lasts—not just functional, but beautiful in its architecture. 

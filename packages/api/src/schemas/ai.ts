@@ -85,9 +85,12 @@ export const AiUserMenuFormStateInput = z
 	})
 	.strict()
 
+export const AiUserMenuModeInput = z.enum(['fast', 'thinking']).default('fast')
+
 export const AiUserMenuUpdateInput = z.object({
 	organisationId: z.string().min(1),
 	request: z.string().min(1),
+	mode: AiUserMenuModeInput,
 	currentForm: AiUserMenuFormStateInput,
 })
 

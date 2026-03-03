@@ -21,16 +21,15 @@ import {
 	selectIngredientsForBalancing,
 } from '@/utils/recipe-balancer'
 
+import { useForm, useStore } from '@tanstack/react-form'
 import {
 	useMutation,
 	useQuery,
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
-import { useForm, useStore } from '@tanstack/react-form'
 import { useNavigate } from '@tanstack/react-router'
 
-import _ from 'lodash'
 import { MealContent } from './meal-content'
 import { MealHeader } from './meal-header'
 import { calculateMealTotals } from './nutrition-utils'
@@ -58,6 +57,7 @@ import {
 } from '@dnd-kit/core'
 import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { PlusIcon, SidebarIcon } from '@phosphor-icons/react'
+import _ from 'lodash'
 import { toast } from 'sonner'
 
 function getDateInputValue(date: Date): string {
@@ -65,12 +65,18 @@ function getDateInputValue(date: Date): string {
 	return localDate.toISOString().split('T')[0]!
 }
 
+type AiMenuMode = 'fast' | 'thinking'
+
 const AiMenuRequestInput = React.memo(function AiMenuRequestInput({
 	isPending,
+	mode,
+	onModeChange,
 	onSend,
 }: {
 	isPending: boolean
-	onSend: (request: string) => Promise<void>
+	mode: AiMenuMode
+	onModeChange: (mode: AiMenuMode) => void
+	onSend: (request: string, mode: AiMenuMode) => Promise<void>
 }) {
 	const [request, setRequest] = React.useState('')
 	const canSend = request.trim().length > 0 && !isPending
@@ -80,33 +86,69 @@ const AiMenuRequestInput = React.memo(function AiMenuRequestInput({
 		if (!trimmedRequest || isPending) return
 
 		try {
-			await onSend(trimmedRequest)
+			await onSend(trimmedRequest, mode)
 			setRequest('')
 		} catch {
 			// Parent mutation handles user-facing errors.
 		}
-	}, [isPending, onSend, request])
+	}, [isPending, mode, onSend, request])
 
 	return (
-		<div className='flex gap-2 items-end'>
-			<div className='flex-1 space-y-2'>
-				<Label htmlFor='user-menu-ai-request'>Request</Label>
-				<Input
-					id='user-menu-ai-request'
-					value={request}
-					onChange={(event) => setRequest(event.target.value)}
-					onKeyDown={(event) => {
-						if (event.key === 'Enter') {
-							event.preventDefault()
-							void sendRequest()
-						}
-					}}
-					placeholder='e.g., make this a 7-day high-protein plan with ~2200 kcal per day'
-				/>
+		<div className='space-y-3'>
+			<div className='flex flex-wrap gap-2 justify-between items-center'>
+				<Label className='text-xs text-muted-foreground'>Mode</Label>
+				<div className='inline-flex gap-1 p-1 rounded-md border bg-muted/30'>
+					<Button
+						type='button'
+						size='sm'
+						className='px-3 h-7'
+						variant={mode === 'fast' ? 'default' : 'ghost'}
+						onClick={() => onModeChange('fast')}
+						disabled={isPending}
+					>
+						Fast
+					</Button>
+					<Button
+						type='button'
+						size='sm'
+						className='px-3 h-7'
+						variant={mode === 'thinking' ? 'default' : 'ghost'}
+						onClick={() => onModeChange('thinking')}
+						disabled={isPending}
+					>
+						Thinking
+					</Button>
+				</div>
 			</div>
-			<Button type='button' onClick={() => void sendRequest()} disabled={!canSend}>
-				{isPending ? 'Sending...' : 'Send'}
-			</Button>
+			<p className='text-xs text-muted-foreground'>
+				{mode === 'fast'
+					? 'Fast sends only your request + current form.'
+					: 'Thinking sends your request + current form + org recipe and ingredient context.'}
+			</p>
+			<div className='flex gap-2 items-end'>
+				<div className='flex-1 space-y-2'>
+					<Label htmlFor='user-menu-ai-request'>Request</Label>
+					<Input
+						id='user-menu-ai-request'
+						value={request}
+						onChange={(event) => setRequest(event.target.value)}
+						onKeyDown={(event) => {
+							if (event.key === 'Enter') {
+								event.preventDefault()
+								void sendRequest()
+							}
+						}}
+						placeholder='e.g., make this a 7-day high-protein plan with ~2200 kcal per day'
+					/>
+				</div>
+				<Button
+					type='button'
+					onClick={() => void sendRequest()}
+					disabled={!canSend}
+				>
+					{isPending ? 'Sending...' : 'Send'}
+				</Button>
+			</div>
 		</div>
 	)
 })
@@ -155,15 +197,22 @@ function normalizeMealForCompare(meal: Meal) {
 		mealIndex: meal.mealIndex,
 		name: normalizeText(meal.name),
 		targetCalories:
-			meal.targetCalories === null ? null : roundToOneDecimal(meal.targetCalories),
+			meal.targetCalories === null
+				? null
+				: roundToOneDecimal(meal.targetCalories),
 		targetProtein:
-			meal.targetProtein === null ? null : roundToOneDecimal(meal.targetProtein),
+			meal.targetProtein === null
+				? null
+				: roundToOneDecimal(meal.targetProtein),
 		recipes: meal.recipes.map(normalizeMealRecipeForCompare),
 	}
 }
 
 function areMealsEqual(left: Meal, right: Meal): boolean {
-	return _.isEqual(normalizeMealForCompare(left), normalizeMealForCompare(right))
+	return _.isEqual(
+		normalizeMealForCompare(left),
+		normalizeMealForCompare(right),
+	)
 }
 
 function areRecipesEqual(left: MealRecipe, right: MealRecipe): boolean {
@@ -211,6 +260,7 @@ export function UserMenuForm({
 	)
 	const [activeId, setActiveId] = React.useState<string | null>(null)
 	const [recipeSearch, setRecipeSearch] = React.useState('')
+	const [aiMode, setAiMode] = React.useState<AiMenuMode>('fast')
 
 	// Sensors for dnd-kit
 	const sensors = useSensors(
@@ -246,7 +296,10 @@ export function UserMenuForm({
 					(sum, recipe) => sum + recipe.protein,
 					0,
 				)
-				const totalFat = meal.recipes.reduce((sum, recipe) => sum + recipe.fat, 0)
+				const totalFat = meal.recipes.reduce(
+					(sum, recipe) => sum + recipe.fat,
+					0,
+				)
 				const totalCarbs = meal.recipes.reduce(
 					(sum, recipe) => sum + recipe.carbohydrate,
 					0,
@@ -313,26 +366,31 @@ export function UserMenuForm({
 	})
 
 	const formData = useStore(form.store, (state) => state.values as MenuFormData)
+	const formDataRef = React.useRef(formData)
+	React.useEffect(() => {
+		formDataRef.current = formData
+	}, [formData])
 	const [initialFormSnapshot, setInitialFormSnapshot] =
 		React.useState<MenuFormData | null>(null)
 
-	function setFormData(next: MenuFormData): void
-	function setFormData(updater: (prev: MenuFormData) => MenuFormData): void
-	function setFormData(
-		nextOrUpdater: MenuFormData | ((prev: MenuFormData) => MenuFormData),
-	): void {
-		const prev = form.state.values as MenuFormData
-		const next =
-			typeof nextOrUpdater === 'function'
-				? nextOrUpdater(prev)
-				: nextOrUpdater
+	const setFormData = React.useCallback(
+		(
+			nextOrUpdater: MenuFormData | ((prev: MenuFormData) => MenuFormData),
+		): void => {
+			const prev = form.state.values as MenuFormData
+			const next =
+				typeof nextOrUpdater === 'function'
+					? nextOrUpdater(prev)
+					: nextOrUpdater
 
-		form.setFieldValue('name', next.name)
-		form.setFieldValue('description', next.description)
-		form.setFieldValue('startDate', next.startDate)
-		form.setFieldValue('endDate', next.endDate)
-		form.setFieldValue('meals', next.meals)
-	}
+			form.setFieldValue('name', next.name)
+			form.setFieldValue('description', next.description)
+			form.setFieldValue('startDate', next.startDate)
+			form.setFieldValue('endDate', next.endDate)
+			form.setFieldValue('meals', next.meals)
+		},
+		[form],
+	)
 
 	function resetToEmptyForm(): void {
 		const nextFormData = getEmptyMenuFormData()
@@ -459,7 +517,7 @@ export function UserMenuForm({
 			// 	),
 			// )
 		}
-	}, [isEditMode, existingMenu])
+	}, [isEditMode, existingMenu, setFormData])
 
 	const { data: menuTemplates } = useSuspenseQuery(
 		orpc.userMenu.getTemplatesOrg.queryOptions({
@@ -570,7 +628,7 @@ export function UserMenuForm({
 	)
 
 	const handleAiRequest = React.useCallback(
-		async (request: string) => {
+		async (request: string, mode: AiMenuMode) => {
 			const trimmedRequest = request.trim()
 			if (!trimmedRequest) {
 				toast.error('Enter a request for AI')
@@ -580,10 +638,11 @@ export function UserMenuForm({
 			await updateUserMenuWithAi.mutateAsync({
 				organisationId: userOrgId,
 				request: trimmedRequest,
-				currentForm: formData,
+				mode,
+				currentForm: formDataRef.current,
 			})
 		},
-		[formData, updateUserMenuWithAi, userOrgId],
+		[updateUserMenuWithAi, userOrgId],
 	)
 
 	const recipeOptions = React.useMemo(() => {
@@ -1606,11 +1665,13 @@ export function UserMenuForm({
 	const isStartDateEdited =
 		shouldHighlightEdits &&
 		!!initialFormSnapshot &&
-		normalizeText(formData.startDate) !== normalizeText(initialFormSnapshot.startDate)
+		normalizeText(formData.startDate) !==
+			normalizeText(initialFormSnapshot.startDate)
 	const isEndDateEdited =
 		shouldHighlightEdits &&
 		!!initialFormSnapshot &&
-		normalizeText(formData.endDate) !== normalizeText(initialFormSnapshot.endDate)
+		normalizeText(formData.endDate) !==
+			normalizeText(initialFormSnapshot.endDate)
 
 	const initialMealsById = React.useMemo(() => {
 		return new Map(
@@ -1677,15 +1738,15 @@ export function UserMenuForm({
 								</CardHeader>
 								<CardContent>
 									<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-											<Card
-												className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
-												onClick={() => {
-													setSelectedTemplate({ id: null, isBlank: true })
-													setExpandedMeals(new Set())
-													setExpandedRecipes(new Set())
-													resetToEmptyForm()
-												}}
-											>
+										<Card
+											className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
+											onClick={() => {
+												setSelectedTemplate({ id: null, isBlank: true })
+												setExpandedMeals(new Set())
+												setExpandedRecipes(new Set())
+												resetToEmptyForm()
+											}}
+										>
 											<CardHeader>
 												<CardTitle className='text-lg'>Blank Menu</CardTitle>
 												<CardDescription>Start from scratch</CardDescription>
@@ -1737,16 +1798,16 @@ export function UserMenuForm({
 							onDragOver={handleDragOver}
 						>
 							<div className='flex gap-0 items-start w-full'>
-									<form
+								<form
 									onSubmit={(event) => {
 										event.preventDefault()
 										event.stopPropagation()
 										form.handleSubmit()
 									}}
-										className='flex flex-col flex-1 gap-6 p-8 min-w-0'
-									>
-										<div className='flex justify-between items-center'>
-											<h1 className='text-2xl font-bold'>{formHeading}</h1>
+									className='flex flex-col flex-1 gap-6 p-8 min-w-0'
+								>
+									<div className='flex justify-between items-center'>
+										<h1 className='text-2xl font-bold'>{formHeading}</h1>
 										<SidebarTrigger size='default'>
 											<Button render={<div />} className='cursor-pointer'>
 												Recipes
@@ -1754,36 +1815,38 @@ export function UserMenuForm({
 											</Button>
 										</SidebarTrigger>
 									</div>
-										{!isEditMode && !isTemplateMode && (
-											<Button
-												type='button'
-												variant='ghost'
-												onClick={() => {
-													setSelectedTemplate(null)
-													resetToEmptyForm()
-												}}
-												className='w-fit'
-											>
+									{!isEditMode && !isTemplateMode && (
+										<Button
+											type='button'
+											variant='ghost'
+											onClick={() => {
+												setSelectedTemplate(null)
+												resetToEmptyForm()
+											}}
+											className='w-fit'
+										>
 											← Back to templates
-											</Button>
-										)}
+										</Button>
+									)}
 
-										<Card>
-											<CardHeader>
-												<CardTitle>Ask AI</CardTitle>
-												<CardDescription>
-													Send a request and AI will update this menu form.
-												</CardDescription>
-											</CardHeader>
-											<CardContent className='space-y-3'>
-												<AiMenuRequestInput
-													isPending={updateUserMenuWithAi.isPending}
-													onSend={handleAiRequest}
-												/>
-											</CardContent>
-										</Card>
+									<Card>
+										<CardHeader>
+											<CardTitle>Ask AI</CardTitle>
+											<CardDescription>
+												Send a request and AI will update this menu form.
+											</CardDescription>
+										</CardHeader>
+										<CardContent className='space-y-3'>
+											<AiMenuRequestInput
+												isPending={updateUserMenuWithAi.isPending}
+												mode={aiMode}
+												onModeChange={setAiMode}
+												onSend={handleAiRequest}
+											/>
+										</CardContent>
+									</Card>
 
-										<Card>
+									<Card>
 										<CardHeader>
 											<CardTitle>Menu Details</CardTitle>
 											<CardDescription>
@@ -1807,7 +1870,9 @@ export function UserMenuForm({
 																	field.handleChange(event.target.value)
 																}
 																placeholder='e.g., Weight Loss Week 1'
-																className={isNameEdited ? EDITED_FIELD_CLASS : ''}
+																className={
+																	isNameEdited ? EDITED_FIELD_CLASS : ''
+																}
 																required
 															/>
 														</div>
@@ -1849,11 +1914,14 @@ export function UserMenuForm({
 																		onBlur={field.handleBlur}
 																		onChange={(event) =>
 																			field.handleChange(
-																				event.target.value || getTodayDateString(),
+																				event.target.value ||
+																					getTodayDateString(),
 																			)
 																		}
 																		className={
-																			isStartDateEdited ? EDITED_FIELD_CLASS : ''
+																			isStartDateEdited
+																				? EDITED_FIELD_CLASS
+																				: ''
 																		}
 																	/>
 																</div>
@@ -1875,7 +1943,9 @@ export function UserMenuForm({
 																				event.target.value || null,
 																			)
 																		}
-																		className={isEndDateEdited ? EDITED_FIELD_CLASS : ''}
+																		className={
+																			isEndDateEdited ? EDITED_FIELD_CLASS : ''
+																		}
 																	/>
 																</div>
 															)}
@@ -1984,60 +2054,60 @@ export function UserMenuForm({
 										</CardContent>
 									</Card>
 
-										<div className='flex gap-4 justify-end pt-4'>
-											<Button
-												type='button'
-												variant='outline'
-												onClick={() => {
-													if (isEditMode) {
-														if (isTemplateMode) {
-															navigate({
-																to: '/$orgSlug/menu-templates',
-																params: { orgSlug },
-															})
-															return
-														}
-
-														navigate({
-															to: '/$orgSlug/user-menus',
-															params: { orgSlug },
-															search: user ? { user } : {},
-														})
-													} else if (isTemplateMode) {
+									<div className='flex gap-4 justify-end pt-4'>
+										<Button
+											type='button'
+											variant='outline'
+											onClick={() => {
+												if (isEditMode) {
+													if (isTemplateMode) {
 														navigate({
 															to: '/$orgSlug/menu-templates',
 															params: { orgSlug },
 														})
-													} else {
-														setSelectedTemplate(null)
-														resetToEmptyForm()
+														return
 													}
-												}}
-											>
-												Cancel
-											</Button>
-											<Button
-												type='submit'
-												disabled={
-													updateUserMenuWithAi.isPending ||
-													(isEditMode
-														? batchUpdateMenuMutation.isPending
-														: batchCreateMenuMutation.isPending)
+
+													navigate({
+														to: '/$orgSlug/user-menus',
+														params: { orgSlug },
+														search: user ? { user } : {},
+													})
+												} else if (isTemplateMode) {
+													navigate({
+														to: '/$orgSlug/menu-templates',
+														params: { orgSlug },
+													})
+												} else {
+													setSelectedTemplate(null)
+													resetToEmptyForm()
 												}
-											>
-												{isEditMode
+											}}
+										>
+											Cancel
+										</Button>
+										<Button
+											type='submit'
+											disabled={
+												updateUserMenuWithAi.isPending ||
+												(isEditMode
 													? batchUpdateMenuMutation.isPending
-														? 'Saving...'
-														: 'Save Changes'
-													: batchCreateMenuMutation.isPending
-														? isTemplateMode
-															? 'Creating Template...'
-															: 'Creating...'
-														: isTemplateMode
-															? 'Create Template'
-															: 'Create Menu'}
-											</Button>
-										</div>
+													: batchCreateMenuMutation.isPending)
+											}
+										>
+											{isEditMode
+												? batchUpdateMenuMutation.isPending
+													? 'Saving...'
+													: 'Save Changes'
+												: batchCreateMenuMutation.isPending
+													? isTemplateMode
+														? 'Creating Template...'
+														: 'Creating...'
+													: isTemplateMode
+														? 'Create Template'
+														: 'Create Menu'}
+										</Button>
+									</div>
 								</form>
 
 								<OrgRecipeSidebar

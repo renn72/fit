@@ -374,3 +374,61 @@
 
 - **Verification:**
     - Ran `pnpm -F web build` after refactor; build passed (client + SSR bundles generated).
+
+# 2026-03-03
+
+- **Recipe Form UX + Edit Diff Highlighting:**
+    - Added soft edit-highlight rings in `recipe-form` for edit mode across core fields and ingredient controls.
+    - Implemented snapshot-based diff checks for name/description/image/tags and ingredient rows (ingredient, alt ingredient, amount, unit) so only changed values are highlighted.
+
+- **AI SDK Integration + CORS Resolution:**
+    - Added AI SDK dependencies and local AI skill references used during integration.
+    - Confirmed localhost CORS issues were from browser-direct model calls.
+    - Moved AI provider calls fully to API and removed ineffective web proxy dependence from `apps/web/vite.config.ts`.
+    - Added `ZEN_API_KEY` to server env contracts and test setup; removed web-side AI key handling.
+
+- **New API AI Router (Server-Owned Model Calls):**
+    - Added `packages/api/src/routers/ai.ts` and registered it in `packages/api/src/routers/index.ts`.
+    - Added strict AI schemas in `packages/api/src/schemas/ai.ts` for recipe form and user-menu form input/output shapes.
+    - Added endpoints:
+      - `POST /ai/test`
+      - `POST /ai/update-recipe-form`
+      - `POST /ai/update-user-menu-form`
+    - Implemented JSON-only response parsing with robust fallback extraction and strict post-parse validation/normalization (IDs, ingredient/recipe existence, date normalization, macro recalculation, 1-decimal rounding).
+    - Set server default model selection to `minimax-m2.5-free`.
+
+- **Recipe Form AI Workflow Upgrade:**
+    - Replaced test-button flow with a dedicated `Ask AI` request input + send action.
+    - Server prompt now includes org ingredients (serve size + calories/carbs/protein/fat), current form state, and strict return-shape instructions.
+    - Applied validated AI response directly into TanStack form state.
+    - Added a loading overlay over the form while AI updates are in flight.
+    - Fixed laggy AI prompt typing by isolating it into a memoized local-state component; re-applied this optimization after an accidental revert.
+
+- **Recipe Form TanStack Rebuild:**
+    - Rebuilt `apps/web/src/components/admin/recipe/recipe-form.tsx` with TanStack Form + Shadcn field patterns.
+    - Preserved ingredient drag/drop, nutrition summary tiles, and sidebar ingredient library while improving responsiveness.
+
+- **User Menu Form TanStack Rebuild + Multi-Mode Support:**
+    - Rebuilt `apps/web/src/components/admin/user-menu-form/user-menu-form.tsx` with TanStack Form.
+    - Extended one shared form to handle four access paths:
+      - create menu template
+      - edit menu template
+      - create user menu
+      - edit user menu
+    - Added template edit route at `/$orgSlug/menu-templates_/edit/$menuId`.
+    - Added menu-template edit/delete actions in both table rows and grid cards.
+    - Added edit-highlighting rings for updated fields/meals/recipes in template edit flow and user-menu flows.
+
+- **User Menu AI Prompt + Server Shape Enforcement:**
+    - Added `Ask AI` input to the top of user-menu form.
+    - Server prompt for user-menu updates now includes:
+      - org ingredient inventory with full macro context
+      - org recipes with full details and ingredient nutrition context
+      - current form state
+    - Enforced response compatibility with form shape through server schema validation + normalization before returning to web.
+
+- **User Menu Page Visual Alignment:**
+    - Restyled:
+      - `apps/web/src/components/admin/user-menus/user-menus-page.tsx`
+      - `apps/web/src/components/admin/user-menus/user-menu-details-page.tsx`
+    - Brought both pages inline with `menu-templates-page` grid language (gradient headers, bordered shadow cards, compact stat chips, and color-coded macro tiles).
