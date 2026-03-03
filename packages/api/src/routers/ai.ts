@@ -68,7 +68,7 @@ type RecipeForAiContext = {
 	totalCarbohydrate: number
 }
 
-const DEFAULT_ZEN_MODEL = 'minimax-m2.5-free'
+const DEFAULT_ZEN_MODEL = 'minimax-m2.5-free' //  'kimi-k2.5'
 
 function roundOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
@@ -377,7 +377,10 @@ function normalizeAndValidateAiUserMenuForm(
 		availableRecipes.map((recipe) => [recipe.id, recipe]),
 	)
 	const availableRecipeNameMap = new Map(
-		availableRecipes.map((recipe) => [recipe.name.trim().toLowerCase(), recipe]),
+		availableRecipes.map((recipe) => [
+			recipe.name.trim().toLowerCase(),
+			recipe,
+		]),
 	)
 
 	const usedMealIds = new Set<string>()
@@ -462,7 +465,8 @@ function normalizeAndValidateAiUserMenuForm(
 							? ingredientItem.serveSize
 							: Math.max(ingredient.serveSize, 1),
 					)
-					const ratio = ingredient.serveSize > 0 ? serveSize / ingredient.serveSize : 0
+					const ratio =
+						ingredient.serveSize > 0 ? serveSize / ingredient.serveSize : 0
 
 					return {
 						id: normalizedIngredientId,
@@ -517,7 +521,9 @@ function normalizeAndValidateAiUserMenuForm(
 
 	return {
 		name: parsed.data.name.trim() || 'Untitled Menu',
-		description: parsed.data.description ? parsed.data.description.trim() : null,
+		description: parsed.data.description
+			? parsed.data.description.trim()
+			: null,
 		startDate: normalizeNullableDateInput(parsed.data.startDate),
 		endDate: normalizeNullableDateInput(parsed.data.endDate),
 		meals: normalizedMeals,
