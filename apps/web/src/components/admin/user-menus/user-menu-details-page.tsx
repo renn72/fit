@@ -9,7 +9,6 @@ import {
 	CardHeader,
 	CardTitle,
 } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
@@ -18,10 +17,9 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import {
 	ArrowLeftIcon,
 	CalendarIcon,
-	ChefHatIcon,
-	FireIcon,
+	CookingPotIcon,
+	ForkKnifeIcon,
 	PencilIcon,
-	PizzaIcon,
 } from '@phosphor-icons/react'
 import { format } from 'date-fns'
 
@@ -190,25 +188,31 @@ export function UserMenuDetailsPage() {
 
 	return (
 		<div className='flex flex-col gap-6 p-8'>
-			{/* Header */}
-			<div className='flex justify-between items-start'>
-				<div className='flex gap-4 items-center'>
-					<Button
-						variant='ghost'
-						size='sm'
-						onClick={() =>
-							navigate({
-								to: '/$orgSlug/user-menus',
-								params: { orgSlug },
-								search: userId ? { user: userId } : {},
-							})
-						}
-					>
-						<ArrowLeftIcon className='mr-2 size-4' />
-						Back to Menus
-					</Button>
-				</div>
-				<div className='flex gap-2'>
+			<div className='flex flex-wrap gap-3 justify-between items-center'>
+				<Button
+					variant='ghost'
+					size='sm'
+					onClick={() =>
+						navigate({
+							to: '/$orgSlug/user-menus',
+							params: { orgSlug },
+							search: userId ? { user: userId } : {},
+						})
+					}
+				>
+					<ArrowLeftIcon className='mr-2 size-4' />
+					Back to Menus
+				</Button>
+				<div className='flex gap-2 items-center'>
+					{typedMenu.isActive ? (
+						<Badge variant='default' className='h-6'>
+							Active
+						</Badge>
+					) : (
+						<Badge variant='secondary' className='h-6'>
+							Inactive
+						</Badge>
+					)}
 					<Button
 						variant='outline'
 						size='sm'
@@ -222,245 +226,244 @@ export function UserMenuDetailsPage() {
 						<PencilIcon className='mr-2 size-4' />
 						Edit
 					</Button>
-					{typedMenu.isActive ? (
-						<Badge variant='default'>Active</Badge>
-					) : (
-						<Badge variant='secondary'>Inactive</Badge>
-					)}
 				</div>
 			</div>
 
-			{/* Menu Info */}
-			<div className='space-y-2'>
-				<h1 className='text-3xl font-bold'>{typedMenu.name}</h1>
-				{typedMenu.description && (
-					<p className='text-lg text-muted-foreground'>
-						{typedMenu.description}
-					</p>
-				)}
-			</div>
-
-			{/* Date Range */}
-			{(typedMenu.startDate || typedMenu.endDate) && (
-				<div className='flex gap-2 items-center text-sm text-muted-foreground'>
-					<CalendarIcon className='size-4' />
-					<span>
-						{typedMenu.startDate &&
-							format(new Date(typedMenu.startDate), 'MMM d, yyyy')}
-						{typedMenu.startDate && typedMenu.endDate && ' - '}
-						{typedMenu.endDate &&
-							format(new Date(typedMenu.endDate), 'MMM d, yyyy')}
-					</span>
-				</div>
-			)}
-
-			{/* Daily Nutrition Summary */}
-			<Card>
-				<CardHeader>
-					<CardTitle className='flex gap-2 items-center text-lg'>
-						<FireIcon className='size-5' />
-						Daily Nutrition Summary
-					</CardTitle>
+			<Card className='overflow-hidden border-border/70 shadow-sm'>
+				<CardHeader className='space-y-3 border-b bg-gradient-to-r from-orange-50/70 to-emerald-50/70 dark:from-orange-950/20 dark:to-emerald-950/20'>
+					<div className='flex flex-col gap-3 justify-between sm:flex-row sm:items-start'>
+						<div className='min-w-0'>
+							<CardTitle className='text-2xl leading-tight break-words'>
+								{typedMenu.name}
+							</CardTitle>
+							<p className='text-xs text-muted-foreground'>
+								Created {format(new Date(typedMenu.createdAt), 'MMM d, yyyy')} •
+								Updated {format(new Date(typedMenu.updatedAt), 'MMM d, yyyy')}
+							</p>
+						</div>
+						{(typedMenu.startDate || typedMenu.endDate) && (
+							<div className='flex gap-1.5 items-center py-1 px-2 text-xs rounded-md border bg-background/80 text-muted-foreground'>
+								<CalendarIcon className='size-3.5' />
+								<span>
+									{typedMenu.startDate &&
+										format(new Date(typedMenu.startDate), 'MMM d, yyyy')}
+									{typedMenu.startDate && typedMenu.endDate && ' - '}
+									{typedMenu.endDate &&
+										format(new Date(typedMenu.endDate), 'MMM d, yyyy')}
+								</span>
+							</div>
+						)}
+					</div>
+					<CardDescription className='text-sm leading-relaxed text-muted-foreground line-clamp-3'>
+						{typedMenu.description || 'No description'}
+					</CardDescription>
 				</CardHeader>
-				<CardContent>
-					<div className='grid grid-cols-2 gap-6 md:grid-cols-4'>
-						<div className='space-y-1'>
-							<div className='text-sm text-muted-foreground'>Calories</div>
-							<div className='text-2xl font-bold'>
-								{Math.round(menuTotals.calories)}
+				<CardContent className='pt-4'>
+					<div className='space-y-2'>
+						<div className='text-sm font-medium'>Daily Nutrition Summary</div>
+						<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+							<div className='p-2 rounded-lg border bg-orange-50/80 dark:bg-orange-950/20'>
+								<div className='text-[11px] text-muted-foreground'>
+									Calories
+								</div>
+								<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+									{Math.round(menuTotals.calories)} kcal
+								</div>
 							</div>
-						</div>
-						<div className='space-y-1'>
-							<div className='text-sm text-muted-foreground'>Protein</div>
-							<div className='text-2xl font-bold text-blue-500'>
-								{Math.round(menuTotals.protein)}g
+							<div className='p-2 rounded-lg border bg-emerald-50/80 dark:bg-emerald-950/20'>
+								<div className='text-[11px] text-muted-foreground'>Protein</div>
+								<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+									{Math.round(menuTotals.protein)} g
+								</div>
 							</div>
-						</div>
-						<div className='space-y-1'>
-							<div className='text-sm text-muted-foreground'>Fat</div>
-							<div className='text-2xl font-bold text-yellow-500'>
-								{Math.round(menuTotals.fat)}g
+							<div className='p-2 rounded-lg border bg-blue-50/80 dark:bg-blue-950/20'>
+								<div className='text-[11px] text-muted-foreground'>Carbs</div>
+								<div className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+									{Math.round(menuTotals.carbohydrate)} g
+								</div>
 							</div>
-						</div>
-						<div className='space-y-1'>
-							<div className='text-sm text-muted-foreground'>Carbs</div>
-							<div className='text-2xl font-bold text-green-500'>
-								{Math.round(menuTotals.carbohydrate)}g
+							<div className='p-2 rounded-lg border bg-pink-50/80 dark:bg-pink-950/20'>
+								<div className='text-[11px] text-muted-foreground'>Fat</div>
+								<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+									{Math.round(menuTotals.fat)} g
+								</div>
 							</div>
 						</div>
 					</div>
 				</CardContent>
 			</Card>
 
-			<Separator />
-
-			{/* Meals */}
-			<div className='space-y-6'>
-				<h2 className='flex gap-2 items-center text-2xl font-semibold'>
-					<PizzaIcon className='size-6' />
-					Meals ({typedMenu.meals.length})
-				</h2>
+			<div className='space-y-4'>
+				<div className='flex flex-wrap gap-2 justify-between items-center'>
+					<h2 className='text-lg font-semibold'>Meal Schedule</h2>
+					<div className='py-1 px-2 text-xs font-medium rounded-md border bg-muted/30 text-muted-foreground'>
+						{typedMenu.meals.length} meals • {typedMenu.recipes.length} recipes
+					</div>
+				</div>
 
 				{recipesByMeal.map((meal) => (
-					<Card key={meal.id}>
-						<CardHeader>
-							<div className='flex justify-between items-start'>
-								<div>
-									<CardTitle className='text-xl'>
-										{meal.name || `Meal ${meal.mealIndex + 1}`}
-									</CardTitle>
-									<CardDescription>
-										{meal.recipes.length} recipe
-										{meal.recipes.length !== 1 ? 's' : ''}
-									</CardDescription>
-								</div>
-								<div className='text-sm text-right'>
-									<div className='text-muted-foreground'>Targets</div>
-									<div>
-										{meal.targetCalories && `${meal.targetCalories} cal`}
-										{meal.targetCalories && meal.targetProtein && ' | '}
-										{meal.targetProtein && `${meal.targetProtein}g protein`}
+					<Card
+						key={meal.id}
+						className='overflow-hidden border-border/70 shadow-sm'
+					>
+						<CardHeader className='space-y-3 border-b bg-gradient-to-r from-orange-50/60 to-emerald-50/60 dark:from-orange-950/20 dark:to-emerald-950/20'>
+							<div className='flex gap-3 justify-between items-start'>
+								<div className='flex gap-2 items-center min-w-0'>
+									<div className='p-1.5 rounded-md bg-orange-100 dark:bg-orange-950/40'>
+										<CookingPotIcon className='size-4 text-orange-600 dark:text-orange-300' />
 									</div>
+									<div className='min-w-0'>
+										<CardTitle className='text-base leading-tight truncate'>
+											{meal.name || `Meal ${meal.mealIndex + 1}`}
+										</CardTitle>
+										<CardDescription className='text-xs'>
+											{meal.recipes.length} recipe
+											{meal.recipes.length !== 1 ? 's' : ''}
+										</CardDescription>
+									</div>
+								</div>
+								<div className='py-1 px-2 text-xs rounded-md border bg-background/80 text-muted-foreground'>
+									{meal.targetCalories
+										? `${meal.targetCalories} cal`
+										: 'No cal target'}
+									{' • '}
+									{meal.targetProtein
+										? `${meal.targetProtein} g protein`
+										: 'No protein target'}
 								</div>
 							</div>
 						</CardHeader>
 
-						<CardContent className='space-y-4'>
-							{/* Meal Nutrition */}
-							<div className='grid grid-cols-4 gap-4 p-3 text-sm rounded-lg bg-muted/50'>
-								<div className='text-center'>
-									<div className='text-muted-foreground'>Calories</div>
-									<div className='font-semibold'>
-										{Math.round(meal.calories)}
+						<CardContent className='pt-4 space-y-3'>
+							<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+								<div className='py-1 px-2 rounded-md border bg-orange-50/70 dark:bg-orange-950/20'>
+									<div className='text-[10px] uppercase text-muted-foreground'>
+										Cal
+									</div>
+									<div className='text-xs font-medium'>
+										{Math.round(meal.calories)} kcal
 									</div>
 								</div>
-								<div className='text-center'>
-									<div className='text-muted-foreground'>Protein</div>
-									<div className='font-semibold'>
-										{Math.round(meal.protein)}g
+								<div className='py-1 px-2 rounded-md border bg-emerald-50/70 dark:bg-emerald-950/20'>
+									<div className='text-[10px] uppercase text-muted-foreground'>
+										Protein
+									</div>
+									<div className='text-xs font-medium'>
+										{Math.round(meal.protein)} g
 									</div>
 								</div>
-								<div className='text-center'>
-									<div className='text-muted-foreground'>Fat</div>
-									<div className='font-semibold'>{Math.round(meal.fat)}g</div>
+								<div className='py-1 px-2 rounded-md border bg-blue-50/70 dark:bg-blue-950/20'>
+									<div className='text-[10px] uppercase text-muted-foreground'>
+										Carbs
+									</div>
+									<div className='text-xs font-medium'>
+										{Math.round(meal.carbohydrate)} g
+									</div>
 								</div>
-								<div className='text-center'>
-									<div className='text-muted-foreground'>Carbs</div>
-									<div className='font-semibold'>
-										{Math.round(meal.carbohydrate)}g
+								<div className='py-1 px-2 rounded-md border bg-pink-50/70 dark:bg-pink-950/20'>
+									<div className='text-[10px] uppercase text-muted-foreground'>
+										Fat
+									</div>
+									<div className='text-xs font-medium'>
+										{Math.round(meal.fat)} g
 									</div>
 								</div>
 							</div>
 
-							{/* Recipes */}
-							<div className='space-y-3'>
-								<h4 className='text-sm font-medium text-muted-foreground'>
-									Recipes
-								</h4>
-								{meal.recipes.map((recipe, idx) => {
-									const recipeIngredients = typedMenu.ingredients.filter(
-										(i) =>
-											i.mealIndex === meal.mealIndex &&
-											i.recipeIndex === recipe.recipeIndex,
-									)
+							<div className='space-y-2'>
+								{meal.recipes.length === 0 ? (
+									<div className='p-3 text-xs rounded-md border bg-muted/20 text-muted-foreground'>
+										No recipes assigned to this meal.
+									</div>
+								) : (
+									meal.recipes.map((recipe, idx) => {
+										const recipeIngredients = typedMenu.ingredients.filter(
+											(i) =>
+												i.mealIndex === meal.mealIndex &&
+												i.recipeIndex === recipe.recipeIndex,
+										)
 
-									return (
-										<Card key={recipe.id} className='border-l-4'>
-											<CardHeader className='py-3'>
-												<div className='flex justify-between items-start'>
-													<div>
-														<CardTitle className='flex gap-2 items-center text-base'>
-															<ChefHatIcon className='size-4' />
-															{idx + 1}. {recipe.name}
-														</CardTitle>
-														{recipe.category && (
-															<Badge variant='outline' className='mt-1'>
-																{recipe.category}
-															</Badge>
-														)}
-													</div>
-													<div className='text-sm text-right'>
-														<div className='text-muted-foreground'>
-															{Math.round(recipe.calories)} cal
+										return (
+											<div
+												key={recipe.id}
+												className='p-3 space-y-2 rounded-md border bg-muted/20'
+											>
+												<div className='flex gap-2 justify-between items-start'>
+													<div className='flex gap-2 items-center min-w-0'>
+														<ForkKnifeIcon className='mt-0.5 shrink-0 size-4 text-emerald-600 dark:text-emerald-300' />
+														<div className='min-w-0'>
+															<p className='text-sm font-medium truncate'>
+																{idx + 1}. {recipe.name}
+															</p>
+															<div className='flex gap-2 items-center'>
+																{recipe.category && (
+																	<Badge
+																		variant='outline'
+																		className='h-5 text-[10px] px-1.5'
+																	>
+																		{recipe.category}
+																	</Badge>
+																)}
+																<p className='text-[11px] text-muted-foreground'>
+																	{Math.round(recipe.calories)} kcal •{' '}
+																	{Math.round(recipe.protein)} g protein
+																</p>
+															</div>
 														</div>
-														<div>
-															P: {Math.round(recipe.protein)}g | F:{' '}
-															{Math.round(recipe.fat)}g | C:{' '}
-															{Math.round(recipe.carbohydrate)}g
-														</div>
 													</div>
+													<p className='text-[11px] text-muted-foreground whitespace-nowrap'>
+														F {Math.round(recipe.fat)} g • C{' '}
+														{Math.round(recipe.carbohydrate)} g
+													</p>
 												</div>
-											</CardHeader>
 
-											{recipeIngredients.length > 0 && (
-												<CardContent className='pt-0 pb-3'>
-													<div className='text-sm'>
-														<div className='mb-2 text-xs font-medium text-muted-foreground'>
+												{recipeIngredients.length > 0 && (
+													<div className='pt-2 space-y-1 border-t border-border/60'>
+														<div className='text-[11px] font-medium text-muted-foreground'>
 															Ingredients
 														</div>
-														<div className='space-y-2'>
-															{recipeIngredients.map((ing) => {
-																const nutrition =
-																	calculateIngredientNutrition(ing)
-																return (
-																	<div
-																		key={ing.id}
-																		className='flex justify-between items-center py-1 border-b border-muted last:border-0'
-																	>
-																		<div className='flex-1'>
-																			<div className='font-medium'>
-																				{nutrition.name}
-																			</div>
-																			<div className='text-xs text-muted-foreground'>
-																				{ing.serveSize} {ing.serveUnit}
-																			</div>
+														{recipeIngredients.map((ing) => {
+															const nutrition =
+																calculateIngredientNutrition(ing)
+															const serveSize = ing.altIngredient
+																? (ing.altServeSize ?? ing.serveSize)
+																: ing.serveSize
+															const serveUnit = ing.altIngredient
+																? (ing.altServeUnit ?? ing.serveUnit)
+																: ing.serveUnit
+
+															return (
+																<div
+																	key={ing.id}
+																	className='flex flex-col gap-1 justify-between py-1.5 px-2 rounded-md border bg-background sm:flex-row sm:items-center'
+																>
+																	<div className='min-w-0'>
+																		<div className='text-xs font-medium truncate'>
+																			{nutrition.name}
 																		</div>
-																		<div className='flex gap-4 text-xs text-muted-foreground text-right'>
-																			<div className='min-w-[50px]'>
-																				<div className='font-medium text-foreground'>
-																					{Math.round(nutrition.calories)}
-																				</div>
-																				<div className='text-[10px]'>cal</div>
-																			</div>
-																			<div className='min-w-[40px]'>
-																				<div className='font-medium text-foreground'>
-																					{Math.round(nutrition.protein)}g
-																				</div>
-																				<div className='text-[10px]'>pro</div>
-																			</div>
-																			<div className='min-w-[40px]'>
-																				<div className='font-medium text-foreground'>
-																					{Math.round(nutrition.carbohydrate)}g
-																				</div>
-																				<div className='text-[10px]'>carb</div>
-																			</div>
-																			<div className='min-w-[40px]'>
-																				<div className='font-medium text-foreground'>
-																					{Math.round(nutrition.fat)}g
-																				</div>
-																				<div className='text-[10px]'>fat</div>
-																			</div>
+																		<div className='text-[11px] text-muted-foreground'>
+																			{serveSize} {serveUnit}
 																		</div>
 																	</div>
-																)
-															})}
-														</div>
+																	<div className='text-[11px] text-muted-foreground'>
+																		{Math.round(nutrition.calories)} kcal • P{' '}
+																		{Math.round(nutrition.protein)} g • C{' '}
+																		{Math.round(nutrition.carbohydrate)} g • F{' '}
+																		{Math.round(nutrition.fat)} g
+																	</div>
+																</div>
+															)
+														})}
 													</div>
-												</CardContent>
-											)}
-										</Card>
-									)
-								})}
+												)}
+											</div>
+										)
+									})
+								)}
 							</div>
 						</CardContent>
 					</Card>
 				))}
-			</div>
-
-			{/* Footer Info */}
-			<div className='pt-8 text-xs text-center text-muted-foreground'>
-				Created: {format(new Date(typedMenu.createdAt), 'MMM d, yyyy')} | Last
-				Updated: {format(new Date(typedMenu.updatedAt), 'MMM d, yyyy')}
 			</div>
 		</div>
 	)

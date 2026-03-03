@@ -176,8 +176,8 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 		return (
 			<div className='flex flex-col gap-6 p-8'>
 				<h1 className='text-2xl font-bold'>User Menus</h1>
-				<Card>
-					<CardContent className='p-8 text-center'>
+				<Card className='overflow-hidden border-border/70 shadow-sm'>
+					<CardContent className='py-12 text-center'>
 						<p className='text-muted-foreground'>
 							Please select a user from the sidebar to view their menus.
 						</p>
@@ -191,7 +191,7 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 
 	return (
 		<div className='flex flex-col gap-6 p-8'>
-			<div className='flex justify-between items-center'>
+			<div className='flex flex-wrap gap-3 justify-between items-center'>
 				<div>
 					<h1 className='text-2xl font-bold'>
 						{selectedUserData?.name || 'User'}&apos;s Menus
@@ -215,12 +215,14 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 			</div>
 
 			{isLoading ? (
-				<div className='text-center text-muted-foreground'>
-					Loading menus...
-				</div>
+				<Card className='overflow-hidden border-border/70 shadow-sm'>
+					<CardContent className='py-12 text-center text-muted-foreground'>
+						Loading menus...
+					</CardContent>
+				</Card>
 			) : userMenus?.length === 0 ? (
-				<Card>
-					<CardContent className='p-8 text-center'>
+				<Card className='overflow-hidden border-border/70 shadow-sm'>
+					<CardContent className='py-12 text-center'>
 						<p className='text-muted-foreground'>
 							No menus assigned to this user yet.
 						</p>
@@ -251,15 +253,29 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 								: 0
 
 						return (
-							<Card key={typedMenu.id} className='flex flex-col'>
-								<CardHeader>
+							<Card
+								key={typedMenu.id}
+								className='overflow-hidden border-border/70 shadow-sm transition-shadow bg-card hover:shadow-md flex flex-col'
+							>
+								<CardHeader className='space-y-3 pb-4 border-b bg-gradient-to-r from-orange-50/70 to-emerald-50/70 dark:from-orange-950/20 dark:to-emerald-950/20'>
 									<div className='flex gap-2 justify-between items-start'>
-										<CardTitle className='text-lg'>{typedMenu.name}</CardTitle>
+										<div className='min-w-0'>
+											<CardTitle className='text-lg leading-tight truncate'>
+												{typedMenu.name}
+											</CardTitle>
+											<p className='text-xs text-muted-foreground'>
+												{format(new Date(typedMenu.createdAt), 'MMM d, yyyy')}
+											</p>
+										</div>
 										<div className='flex gap-2 items-center'>
 											{typedMenu.isActive ? (
-												<Badge variant='default'>Active</Badge>
+												<Badge variant='default' className='h-6'>
+													Active
+												</Badge>
 											) : (
-												<Badge variant='secondary'>Inactive</Badge>
+												<Badge variant='secondary' className='h-6'>
+													Inactive
+												</Badge>
 											)}
 											<DropdownMenu>
 												<DropdownMenuTrigger
@@ -314,7 +330,7 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 											</DropdownMenu>
 										</div>
 									</div>
-									<CardDescription>
+									<CardDescription className='line-clamp-2'>
 										{typedMenu.description || 'No description'}
 									</CardDescription>
 								</CardHeader>
@@ -322,7 +338,7 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 								<CardContent className='flex-1 space-y-4'>
 									{/* Date Range */}
 									{(typedMenu.startDate || typedMenu.endDate) && (
-										<div className='text-sm text-muted-foreground'>
+										<div className='text-xs text-muted-foreground'>
 											{typedMenu.startDate &&
 												format(new Date(typedMenu.startDate), 'MMM d, yyyy')}
 											{typedMenu.startDate && typedMenu.endDate && ' - '}
@@ -332,54 +348,80 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 									)}
 
 									{/* Stats */}
-									<div className='grid grid-cols-2 gap-4 text-sm'>
-										<div>
-											<div className='text-muted-foreground'>Meals</div>
-											<div className='font-medium'>{mealCount}</div>
+									<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+										<div className='p-2 rounded-lg border bg-muted/30'>
+											<div className='text-[11px] text-muted-foreground'>
+												Meals
+											</div>
+											<div className='text-sm font-semibold'>{mealCount}</div>
 										</div>
-										<div>
-											<div className='text-muted-foreground'>Recipes</div>
-											<div className='font-medium'>{recipeCount}</div>
+										<div className='p-2 rounded-lg border bg-muted/30'>
+											<div className='text-[11px] text-muted-foreground'>
+												Recipes
+											</div>
+											<div className='text-sm font-semibold'>{recipeCount}</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-muted/30'>
+											<div className='text-[11px] text-muted-foreground'>
+												Avg Cal
+											</div>
+											<div className='text-sm font-semibold'>
+												{avgCaloriesPerRecipe}
+											</div>
+										</div>
+										<div className='p-2 rounded-lg border bg-muted/30'>
+											<div className='text-[11px] text-muted-foreground'>
+												Status
+											</div>
+											<div className='text-sm font-semibold'>
+												{typedMenu.isActive ? 'Live' : 'Paused'}
+											</div>
 										</div>
 									</div>
 
 									{/* Nutrition Summary */}
-									<div className='p-3 space-y-2 rounded-lg bg-muted/50'>
-										<div className='text-xs font-medium text-muted-foreground'>
-											Daily Nutrition
-										</div>
-										<div className='grid grid-cols-2 gap-2 text-sm'>
-											<div>
-												<span className='text-muted-foreground'>Calories:</span>{' '}
-												<span className='font-medium'>
-													{Math.round(totals.calories)}
-												</span>
+									<div className='space-y-2'>
+										<div className='text-sm font-medium'>Menu Nutrition</div>
+										<div className='grid grid-cols-2 gap-2 sm:grid-cols-4'>
+											<div className='p-2 rounded-lg border bg-orange-50/80 dark:bg-orange-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Calories
+												</div>
+												<div className='text-sm font-semibold text-orange-700 dark:text-orange-300'>
+													{Math.round(totals.calories)} kcal
+												</div>
 											</div>
-											<div>
-												<span className='text-muted-foreground'>Protein:</span>{' '}
-												<span className='font-medium'>
-													{Math.round(totals.protein)}g
-												</span>
+											<div className='p-2 rounded-lg border bg-emerald-50/80 dark:bg-emerald-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Protein
+												</div>
+												<div className='text-sm font-semibold text-emerald-700 dark:text-emerald-300'>
+													{Math.round(totals.protein)} g
+												</div>
 											</div>
-											<div>
-												<span className='text-muted-foreground'>Fat:</span>{' '}
-												<span className='font-medium'>
-													{Math.round(totals.fat)}g
-												</span>
+											<div className='p-2 rounded-lg border bg-blue-50/80 dark:bg-blue-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Carbs
+												</div>
+												<div className='text-sm font-semibold text-blue-700 dark:text-blue-300'>
+													{Math.round(totals.carbohydrate)} g
+												</div>
 											</div>
-											<div>
-												<span className='text-muted-foreground'>Carbs:</span>{' '}
-												<span className='font-medium'>
-													{Math.round(totals.carbohydrate)}g
-												</span>
+											<div className='p-2 rounded-lg border bg-pink-50/80 dark:bg-pink-950/20'>
+												<div className='text-[11px] text-muted-foreground'>
+													Fat
+												</div>
+												<div className='text-sm font-semibold text-pink-700 dark:text-pink-300'>
+													{Math.round(totals.fat)} g
+												</div>
 											</div>
 										</div>
 									</div>
 
 									{/* Per Recipe Average */}
 									{recipeCount > 0 && (
-										<div className='text-sm text-muted-foreground'>
-											Avg per recipe: {avgCaloriesPerRecipe} cal
+										<div className='text-xs text-muted-foreground'>
+											Avg per recipe: {avgCaloriesPerRecipe} kcal
 										</div>
 									)}
 								</CardContent>
