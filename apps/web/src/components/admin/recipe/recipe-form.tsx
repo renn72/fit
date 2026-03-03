@@ -103,6 +103,8 @@ export interface RecipeFormProps {
 	onSuccess?: () => void
 }
 
+const EDITED_FIELD_CLASS = 'ring-2 ring-primary/50'
+
 function parseCsvToTags(value: string | null | undefined): string[] {
 	if (!value) return []
 	return value
@@ -120,6 +122,14 @@ function joinTagsToCsv(value: string[]): string {
 
 function roundOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
+}
+
+function normalizeText(value: string): string {
+	return value.trim()
+}
+
+function normalizeTags(value: string[]): string[] {
+	return value.map((item) => item.trim()).filter(Boolean)
 }
 
 function toIngredientComboboxOptions(ingredients: IngredientOption[]) {
@@ -161,21 +171,9 @@ export function RecipeForm({
 		}),
 	)
 
-	const [ingredientSearch, setIngredientSearch] = React.useState('')
-	const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
-	const [formState, setFormState] = React.useState<RecipeFormState>({
-		name: '',
-		description: '',
-		image: '',
-		categoryTags: [],
-		metaTags: [],
-		ingredients: [],
-	})
-
-	React.useEffect(() => {
-		if (!isEditMode || !existingRecipe) return
-
-		setFormState({
+	const initialFormState = React.useMemo<RecipeFormState | null>(() => {
+		if (!isEditMode || !existingRecipe) return null
+		return {
 			name: existingRecipe.name,
 			description: existingRecipe.description ?? '',
 			image: existingRecipe.image ?? '',
@@ -188,8 +186,24 @@ export function RecipeForm({
 				unit: item.unit,
 				altIngredientId: item.altIngredientId ?? '',
 			})),
-		})
+		}
 	}, [existingRecipe, isEditMode])
+
+	const [ingredientSearch, setIngredientSearch] = React.useState('')
+	const [activeDragId, setActiveDragId] = React.useState<string | null>(null)
+	const [formState, setFormState] = React.useState<RecipeFormState>({
+		name: '',
+		description: '',
+		image: '',
+		categoryTags: [],
+		metaTags: [],
+		ingredients: [],
+	})
+
+	React.useEffect(() => {
+		if (!initialFormState) return
+		setFormState(initialFormState)
+	}, [initialFormState])
 
 	const createRecipe = useMutation(
 		orpc.recipe.create.mutationOptions({
@@ -258,6 +272,52 @@ export function RecipeForm({
 			{ calories: 0, protein: 0, carbohydrate: 0, fat: 0 },
 		)
 	}, [formState.ingredients, ingredientMap])
+
+	const initialIngredientsById = React.useMemo(() => {
+		return new Map(
+			(initialFormState?.ingredients ?? []).map((ingredient) => [
+				ingredient.id,
+				ingredient,
+			]),
+		)
+	}, [initialFormState?.ingredients])
+
+	const isTopLevelFieldEdited = React.useCallback(
+		(field: 'name' | 'description' | 'image' | 'categoryTags' | 'metaTags') => {
+			if (!isEditMode || !initialFormState) return false
+
+			switch (field) {
+				case 'name':
+					return (
+						normalizeText(formState.name) !==
+						normalizeText(initialFormState.name)
+					)
+				case 'description':
+					return (
+						normalizeText(formState.description) !==
+						normalizeText(initialFormState.description)
+					)
+				case 'image':
+					return (
+						normalizeText(formState.image) !==
+						normalizeText(initialFormState.image)
+					)
+				case 'categoryTags':
+					return (
+						JSON.stringify(normalizeTags(formState.categoryTags)) !==
+						JSON.stringify(normalizeTags(initialFormState.categoryTags))
+					)
+				case 'metaTags':
+					return (
+						JSON.stringify(normalizeTags(formState.metaTags)) !==
+						JSON.stringify(normalizeTags(initialFormState.metaTags))
+					)
+				default:
+					return false
+			}
+		},
+		[formState, initialFormState, isEditMode],
+	)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -426,7 +486,11 @@ export function RecipeForm({
 									{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
 								</h1>
 								<SidebarTrigger size='default'>
-									<Button render={<div />} className='cursor-pointer'>
+									<Button
+										render={<div />}
+										nativeButton={false}
+										className='cursor-pointer'
+									>
 										Ingredients
 										<SidebarIcon />
 									</Button>
@@ -453,6 +517,9 @@ export function RecipeForm({
 												}))
 											}
 											placeholder='e.g., High Protein Chicken Bowl'
+											className={
+												isTopLevelFieldEdited('name') ? EDITED_FIELD_CLASS : ''
+											}
 											required
 										/>
 									</div>
@@ -469,7 +536,11 @@ export function RecipeForm({
 												}))
 											}
 											placeholder='Describe the recipe and preparation notes...'
-											className='min-h-24'
+											className={`min-h-24 ${
+												isTopLevelFieldEdited('description')
+													? EDITED_FIELD_CLASS
+													: ''
+											}`}
 										/>
 									</div>
 
@@ -486,6 +557,11 @@ export function RecipeForm({
 												}
 												suggestions={CATEGORY_SUGGESTIONS}
 												placeholder='Select or type categories...'
+												className={
+													isTopLevelFieldEdited('categoryTags')
+														? EDITED_FIELD_CLASS
+														: ''
+												}
 											/>
 										</div>
 										<div className='space-y-2'>
@@ -500,6 +576,11 @@ export function RecipeForm({
 												}
 												suggestions={TAG_SUGGESTIONS}
 												placeholder='Select or type tags...'
+												className={
+													isTopLevelFieldEdited('metaTags')
+														? EDITED_FIELD_CLASS
+														: ''
+												}
 											/>
 										</div>
 									</div>
@@ -516,6 +597,9 @@ export function RecipeForm({
 												}))
 											}
 											placeholder='https://example.com/recipe.jpg'
+											className={
+												isTopLevelFieldEdited('image') ? EDITED_FIELD_CLASS : ''
+											}
 										/>
 									</div>
 								</CardContent>
@@ -585,6 +669,8 @@ export function RecipeForm({
 														<SortableIngredientRow
 															key={item.id}
 															item={item}
+															isEditMode={isEditMode}
+															initialItem={initialIngredientsById.get(item.id)}
 															allIngredients={ingredients}
 															ingredientOptions={ingredientOptions}
 															ingredientMap={ingredientMap}
@@ -641,11 +727,11 @@ export function RecipeForm({
 
 					<DragOverlay>
 						{activeDragId?.startsWith('library-ingredient-') ? (
-							<div className='p-3 rounded-md border bg-card shadow-md text-sm'>
+							<div className='p-3 text-sm rounded-md border shadow-md bg-card'>
 								Dragging ingredient...
 							</div>
 						) : activeDragId ? (
-							<div className='p-3 rounded-md border bg-card shadow-md text-sm'>
+							<div className='p-3 text-sm rounded-md border shadow-md bg-card'>
 								Reordering ingredient...
 							</div>
 						) : null}
@@ -692,6 +778,8 @@ function IngredientsDroppable({ children }: { children: React.ReactNode }) {
 
 function SortableIngredientRow({
 	item,
+	isEditMode,
+	initialItem,
 	allIngredients,
 	ingredientOptions,
 	ingredientMap,
@@ -699,6 +787,8 @@ function SortableIngredientRow({
 	onRemove,
 }: {
 	item: RecipeFormIngredient
+	isEditMode: boolean
+	initialItem?: RecipeFormIngredient
 	allIngredients: IngredientOption[]
 	ingredientOptions: Array<{ value: string; label: string }>
 	ingredientMap: Map<string, IngredientOption>
@@ -727,18 +817,38 @@ function SortableIngredientRow({
 	const carbs = selected ? roundOneDecimal(selected.carbohydrate * ratio) : 0
 	const fat = selected ? roundOneDecimal(selected.fat * ratio) : 0
 
+	const isMainIngredientEdited = isEditMode
+		? (initialItem?.ingredientId ?? '') !== item.ingredientId
+		: false
+	const isAltIngredientEdited = isEditMode
+		? (initialItem?.altIngredientId ?? '') !== item.altIngredientId
+		: false
+	const isAmountEdited = isEditMode
+		? roundOneDecimal(initialItem?.amount ?? 0) !== roundOneDecimal(item.amount)
+		: false
+	const isUnitEdited = isEditMode
+		? normalizeText(initialItem?.unit ?? '') !== normalizeText(item.unit)
+		: false
+	const isRowEdited =
+		isMainIngredientEdited ||
+		isAltIngredientEdited ||
+		isAmountEdited ||
+		isUnitEdited
+
 	return (
 		<div
 			ref={setNodeRef}
 			style={style}
-			className='p-4 space-y-4 rounded-lg border'
+			className={`p-4 space-y-4 rounded-lg border ${
+				isRowEdited ? EDITED_FIELD_CLASS : ''
+			}`}
 		>
 			<div className='flex gap-3 items-center'>
 				<Button
 					type='button'
 					variant='ghost'
 					size='sm'
-					className='w-8 h-8 p-0 cursor-grab active:cursor-grabbing'
+					className='p-0 w-8 h-8 cursor-grab active:cursor-grabbing'
 					{...attributes}
 					{...listeners}
 				>
@@ -747,33 +857,45 @@ function SortableIngredientRow({
 				<div className='grid flex-1 grid-cols-1 gap-3 lg:grid-cols-2'>
 					<div className='space-y-2'>
 						<Label>Main Ingredient</Label>
-						<VirtualizedCombobox
-							options={ingredientOptions}
-							selectedOption={item.ingredientId}
-							onSelectOption={(value) => {
-								const ingredient = allIngredients.find((i) => i.id === value)
-								onUpdateField(item.id, 'ingredientId', value)
-								if (ingredient) {
-									onUpdateField(item.id, 'unit', ingredient.serveUnit)
-								}
-							}}
-							searchPlaceholder='Search ingredients...'
-							width='100%'
-							height='240px'
-						/>
+						<div
+							className={`rounded-md ${
+								isMainIngredientEdited ? EDITED_FIELD_CLASS : ''
+							}`}
+						>
+							<VirtualizedCombobox
+								options={ingredientOptions}
+								selectedOption={item.ingredientId}
+								onSelectOption={(value) => {
+									const ingredient = allIngredients.find((i) => i.id === value)
+									onUpdateField(item.id, 'ingredientId', value)
+									if (ingredient) {
+										onUpdateField(item.id, 'unit', ingredient.serveUnit)
+									}
+								}}
+								searchPlaceholder='Search ingredients...'
+								width='100%'
+								height='240px'
+							/>
+						</div>
 					</div>
 					<div className='space-y-2'>
 						<Label>Alternative (Optional)</Label>
-						<VirtualizedCombobox
-							options={ingredientOptions}
-							selectedOption={item.altIngredientId}
-							onSelectOption={(value) =>
-								onUpdateField(item.id, 'altIngredientId', value)
-							}
-							searchPlaceholder='Search alternatives...'
-							width='100%'
-							height='240px'
-						/>
+						<div
+							className={`rounded-md ${
+								isAltIngredientEdited ? EDITED_FIELD_CLASS : ''
+							}`}
+						>
+							<VirtualizedCombobox
+								options={ingredientOptions}
+								selectedOption={item.altIngredientId}
+								onSelectOption={(value) =>
+									onUpdateField(item.id, 'altIngredientId', value)
+								}
+								searchPlaceholder='Search alternatives...'
+								width='100%'
+								height='240px'
+							/>
+						</div>
 					</div>
 				</div>
 				<Button
@@ -801,6 +923,7 @@ function SortableIngredientRow({
 							)
 						}
 						placeholder='100'
+						className={isAmountEdited ? EDITED_FIELD_CLASS : ''}
 					/>
 				</div>
 				<div className='space-y-2'>
@@ -811,13 +934,14 @@ function SortableIngredientRow({
 							onUpdateField(item.id, 'unit', event.target.value)
 						}
 						placeholder='g'
+						className={isUnitEdited ? EDITED_FIELD_CLASS : ''}
 					/>
 				</div>
 				<MacroTile label='Cal' value={`${calories}`} />
 				<MacroTile label='Protein' value={`${protein} g`} />
 			</div>
 
-			<div className='grid grid-cols-2 gap-2 text-xs text-muted-foreground sm:grid-cols-4'>
+			<div className='grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 text-muted-foreground'>
 				<div>Carbs: {carbs} g</div>
 				<div>Fat: {fat} g</div>
 				<div>
@@ -917,7 +1041,7 @@ function DraggableIngredientCard({
 					type='button'
 					variant='ghost'
 					size='sm'
-					className='w-8 h-8 p-0 mt-0.5 cursor-grab active:cursor-grabbing'
+					className='p-0 mt-0.5 w-8 h-8 cursor-grab active:cursor-grabbing'
 					title='Drag into recipe'
 					{...attributes}
 					{...listeners}
