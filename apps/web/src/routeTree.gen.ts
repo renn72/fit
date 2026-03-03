@@ -50,6 +50,7 @@ import { Route as OrgSlugWorkoutsEditWorkoutIdRouteImport } from './routes/$orgS
 import { Route as OrgSlugWarmupsEditWarmupGroupIdRouteImport } from './routes/$orgSlug/warmups_.edit.$warmupGroupId'
 import { Route as OrgSlugRecipesEditRecipeIdRouteImport } from './routes/$orgSlug/recipes_.edit.$recipeId'
 import { Route as OrgSlugMovementsEditMovementIdRouteImport } from './routes/$orgSlug/movements_.edit.$movementId'
+import { Route as OrgSlugMenuTemplatesEditMenuIdRouteImport } from './routes/$orgSlug/menu-templates_.edit.$menuId'
 import { Route as OrgSlugIngredientsEditIngredientIdRouteImport } from './routes/$orgSlug/ingredients_.edit.$ingredientId'
 import { Route as OrgSlugExercisesEditExerciseIdRouteImport } from './routes/$orgSlug/exercises_.edit.$exerciseId'
 
@@ -265,6 +266,12 @@ const OrgSlugMovementsEditMovementIdRoute =
     path: '/movements/edit/$movementId',
     getParentRoute: () => OrgSlugRoute,
   } as any)
+const OrgSlugMenuTemplatesEditMenuIdRoute =
+  OrgSlugMenuTemplatesEditMenuIdRouteImport.update({
+    id: '/menu-templates_/edit/$menuId',
+    path: '/menu-templates/edit/$menuId',
+    getParentRoute: () => OrgSlugRoute,
+  } as any)
 const OrgSlugIngredientsEditIngredientIdRoute =
   OrgSlugIngredientsEditIngredientIdRouteImport.update({
     id: '/ingredients_/edit/$ingredientId',
@@ -318,6 +325,7 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/exercises/edit/$exerciseId': typeof OrgSlugExercisesEditExerciseIdRoute
   '/$orgSlug/ingredients/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/menu-templates/edit/$menuId': typeof OrgSlugMenuTemplatesEditMenuIdRoute
   '/$orgSlug/movements/edit/$movementId': typeof OrgSlugMovementsEditMovementIdRoute
   '/$orgSlug/recipes/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
   '/$orgSlug/warmups/edit/$warmupGroupId': typeof OrgSlugWarmupsEditWarmupGroupIdRoute
@@ -363,6 +371,7 @@ export interface FileRoutesByTo {
   '/$orgSlug/workouts/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/exercises/edit/$exerciseId': typeof OrgSlugExercisesEditExerciseIdRoute
   '/$orgSlug/ingredients/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/menu-templates/edit/$menuId': typeof OrgSlugMenuTemplatesEditMenuIdRoute
   '/$orgSlug/movements/edit/$movementId': typeof OrgSlugMovementsEditMovementIdRoute
   '/$orgSlug/recipes/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
   '/$orgSlug/warmups/edit/$warmupGroupId': typeof OrgSlugWarmupsEditWarmupGroupIdRoute
@@ -409,6 +418,7 @@ export interface FileRoutesById {
   '/$orgSlug/workouts_/create': typeof OrgSlugWorkoutsCreateRoute
   '/$orgSlug/exercises_/edit/$exerciseId': typeof OrgSlugExercisesEditExerciseIdRoute
   '/$orgSlug/ingredients_/edit/$ingredientId': typeof OrgSlugIngredientsEditIngredientIdRoute
+  '/$orgSlug/menu-templates_/edit/$menuId': typeof OrgSlugMenuTemplatesEditMenuIdRoute
   '/$orgSlug/movements_/edit/$movementId': typeof OrgSlugMovementsEditMovementIdRoute
   '/$orgSlug/recipes_/edit/$recipeId': typeof OrgSlugRecipesEditRecipeIdRoute
   '/$orgSlug/warmups_/edit/$warmupGroupId': typeof OrgSlugWarmupsEditWarmupGroupIdRoute
@@ -456,6 +466,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/workouts/create'
     | '/$orgSlug/exercises/edit/$exerciseId'
     | '/$orgSlug/ingredients/edit/$ingredientId'
+    | '/$orgSlug/menu-templates/edit/$menuId'
     | '/$orgSlug/movements/edit/$movementId'
     | '/$orgSlug/recipes/edit/$recipeId'
     | '/$orgSlug/warmups/edit/$warmupGroupId'
@@ -501,6 +512,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/workouts/create'
     | '/$orgSlug/exercises/edit/$exerciseId'
     | '/$orgSlug/ingredients/edit/$ingredientId'
+    | '/$orgSlug/menu-templates/edit/$menuId'
     | '/$orgSlug/movements/edit/$movementId'
     | '/$orgSlug/recipes/edit/$recipeId'
     | '/$orgSlug/warmups/edit/$warmupGroupId'
@@ -546,6 +558,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/workouts_/create'
     | '/$orgSlug/exercises_/edit/$exerciseId'
     | '/$orgSlug/ingredients_/edit/$ingredientId'
+    | '/$orgSlug/menu-templates_/edit/$menuId'
     | '/$orgSlug/movements_/edit/$movementId'
     | '/$orgSlug/recipes_/edit/$recipeId'
     | '/$orgSlug/warmups_/edit/$warmupGroupId'
@@ -852,6 +865,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrgSlugMovementsEditMovementIdRouteImport
       parentRoute: typeof OrgSlugRoute
     }
+    '/$orgSlug/menu-templates_/edit/$menuId': {
+      id: '/$orgSlug/menu-templates_/edit/$menuId'
+      path: '/menu-templates/edit/$menuId'
+      fullPath: '/$orgSlug/menu-templates/edit/$menuId'
+      preLoaderRoute: typeof OrgSlugMenuTemplatesEditMenuIdRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
     '/$orgSlug/ingredients_/edit/$ingredientId': {
       id: '/$orgSlug/ingredients_/edit/$ingredientId'
       path: '/ingredients/edit/$ingredientId'
@@ -892,6 +912,7 @@ interface OrgSlugRouteChildren {
   OrgSlugWorkoutsCreateRoute: typeof OrgSlugWorkoutsCreateRoute
   OrgSlugExercisesEditExerciseIdRoute: typeof OrgSlugExercisesEditExerciseIdRoute
   OrgSlugIngredientsEditIngredientIdRoute: typeof OrgSlugIngredientsEditIngredientIdRoute
+  OrgSlugMenuTemplatesEditMenuIdRoute: typeof OrgSlugMenuTemplatesEditMenuIdRoute
   OrgSlugMovementsEditMovementIdRoute: typeof OrgSlugMovementsEditMovementIdRoute
   OrgSlugRecipesEditRecipeIdRoute: typeof OrgSlugRecipesEditRecipeIdRoute
   OrgSlugWarmupsEditWarmupGroupIdRoute: typeof OrgSlugWarmupsEditWarmupGroupIdRoute
@@ -922,6 +943,7 @@ const OrgSlugRouteChildren: OrgSlugRouteChildren = {
   OrgSlugExercisesEditExerciseIdRoute: OrgSlugExercisesEditExerciseIdRoute,
   OrgSlugIngredientsEditIngredientIdRoute:
     OrgSlugIngredientsEditIngredientIdRoute,
+  OrgSlugMenuTemplatesEditMenuIdRoute: OrgSlugMenuTemplatesEditMenuIdRoute,
   OrgSlugMovementsEditMovementIdRoute: OrgSlugMovementsEditMovementIdRoute,
   OrgSlugRecipesEditRecipeIdRoute: OrgSlugRecipesEditRecipeIdRoute,
   OrgSlugWarmupsEditWarmupGroupIdRoute: OrgSlugWarmupsEditWarmupGroupIdRoute,

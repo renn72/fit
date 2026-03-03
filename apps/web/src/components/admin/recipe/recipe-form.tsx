@@ -479,7 +479,6 @@ export function RecipeForm({
 			await updateRecipeWithAi.mutateAsync({
 				organisationId,
 				request: trimmedRequest,
-				model: 'minimax-m2.5-free',
 				currentForm: {
 					name: form.getFieldValue('name'),
 					description: form.getFieldValue('description'),

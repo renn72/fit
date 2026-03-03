@@ -2,6 +2,16 @@
 
 import * as React from 'react'
 
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
@@ -9,22 +19,32 @@ import { DataTableFilterList } from '@/components/data-table/data-table-filter-l
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
 	CookingPotIcon,
+	DotsThreeOutlineVerticalIcon,
 	ForkKnifeIcon,
 	ListIcon,
+	PencilSimpleIcon,
 	SquaresFourIcon,
+	TrashIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
+import { toast } from 'sonner'
 
 interface MenuTemplateMeal {
 	id: string
@@ -239,6 +259,12 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <MenuTemplateActions template={row.original} />,
+		enableSorting: false,
+		enableHiding: false,
+	}),
 ]
 
 const route = getRouteApi('/$orgSlug/menu-templates')
@@ -353,6 +379,104 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	)
 }
 
+function MenuTemplateActions({
+	template,
+	buttonClassName,
+}: {
+	template: Pick<MenuTemplate, 'id' | 'name'>
+	buttonClassName?: string
+}) {
+	const queryClient = useQueryClient()
+	const navigate = route.useNavigate()
+	const { orgSlug } = route.useParams()
+	const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = React.useState(false)
+
+	const deleteTemplate = useMutation(
+		orpc.userMenu.delete.mutationOptions({
+			onSuccess: () => {
+				toast.success('Menu template deleted successfully')
+				queryClient.invalidateQueries({
+					queryKey: orpc.userMenu.getTemplatesOrg.key(),
+				})
+				setIsDeleteConfirmOpen(false)
+			},
+			onError: (error) => {
+				toast.error(error.message || 'Failed to delete menu template')
+			},
+		}),
+	)
+
+	return (
+		<>
+			<DropdownMenu>
+				<DropdownMenuTrigger
+					render={
+						<Button
+							size='icon'
+							variant='ghost'
+							className={buttonClassName ?? 'flex items-center p-0 h-6'}
+						/>
+					}
+				>
+					<DotsThreeOutlineVerticalIcon weight='bold' className='size-4' />
+					<span className='sr-only'>Open menu</span>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align='end' className='w-40'>
+					<DropdownMenuItem
+						onMouseDown={(event) => {
+							event.preventDefault()
+							event.stopPropagation()
+							navigate({
+								to: '/$orgSlug/menu-templates/edit/$menuId',
+								params: { orgSlug, menuId: template.id },
+							})
+						}}
+					>
+						<PencilSimpleIcon className='mr-2 size-4' />
+						Edit
+					</DropdownMenuItem>
+					<DropdownMenuItem
+						className='text-destructive focus:text-destructive'
+						onMouseDown={(event) => {
+							event.preventDefault()
+							event.stopPropagation()
+							setIsDeleteConfirmOpen(true)
+						}}
+					>
+						<TrashIcon className='mr-2 size-4' />
+						Delete
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
+
+			<AlertDialog
+				open={isDeleteConfirmOpen}
+				onOpenChange={setIsDeleteConfirmOpen}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete menu template?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This action cannot be undone. The template{' '}
+							<strong>{template.name}</strong> will be permanently deleted.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() => deleteTemplate.mutate({ id: template.id })}
+							className='bg-destructive hover:bg-destructive/90'
+							disabled={deleteTemplate.isPending}
+						>
+							{deleteTemplate.isPending ? 'Deleting...' : 'Delete'}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
+	)
+}
+
 interface MenuTemplatesGridViewProps {
 	data: MenuTemplate[]
 	page: number
@@ -462,6 +586,10 @@ function MenuTemplatesGridView({
 										<div className='py-1 px-2 text-xs font-medium rounded-md border bg-background/80'>
 											{recipeCount} recipes
 										</div>
+										<MenuTemplateActions
+											template={menuTemplate}
+											buttonClassName='p-0 w-8 h-8'
+										/>
 									</div>
 								</div>
 								{menuTemplate.description && (

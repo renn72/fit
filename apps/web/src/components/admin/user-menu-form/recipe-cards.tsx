@@ -27,6 +27,9 @@ interface RecipeCardProps {
 	recipe: MealRecipe
 	recipeIdx: number
 	mealIdx: number
+	isEdited?: boolean
+	baselineRecipe?: MealRecipe
+	highlightEdits?: boolean
 	ingredientOptions: Array<{ value: string; label: string }>
 	isExpanded: boolean
 	onToggle: () => void
@@ -110,6 +113,9 @@ export function DraggableRecipeCard({
 	recipe,
 	recipeIdx,
 	mealIdx,
+	isEdited,
+	baselineRecipe,
+	highlightEdits,
 	ingredientOptions,
 	isExpanded,
 	onToggle,
@@ -148,6 +154,7 @@ export function DraggableRecipeCard({
 			style={style}
 			className={`
 				relative rounded-md border shadow-sm transition-all duration-200 bg-card
+				${isEdited ? 'ring-2 ring-primary/50' : ''}
 				${isDragging ? 'opacity-50 ring-2 ring-primary ring-offset-2 scale-[1.02]' : ''}
 			`}
 		>
@@ -155,6 +162,9 @@ export function DraggableRecipeCard({
 				recipe={recipe}
 				recipeIdx={recipeIdx}
 				mealIdx={mealIdx}
+				isEdited={isEdited}
+				baselineRecipe={baselineRecipe}
+				highlightEdits={highlightEdits}
 				ingredientOptions={ingredientOptions}
 				isExpanded={isExpanded}
 				onToggle={onToggle}
@@ -176,6 +186,9 @@ function RecipeCard({
 	recipe,
 	recipeIdx,
 	mealIdx,
+	isEdited,
+	baselineRecipe,
+	highlightEdits,
 	ingredientOptions,
 	isExpanded,
 	onToggle,
@@ -189,9 +202,13 @@ function RecipeCard({
 	attributes,
 	listeners,
 }: RecipeCardProps & { isDragSource?: boolean }) {
+	const roundToOneDecimal = (value: number) => Math.round(value * 10) / 10
+
 	return (
 		<div
-			className={`rounded-md border ${isDragSource ? 'ring-2 ring-primary' : ''}`}
+			className={`rounded-md border ${
+				isDragSource ? 'ring-2 ring-primary' : isEdited ? 'ring-2 ring-primary/50' : ''
+			}`}
 		>
 			<div
 				className='flex gap-2 items-center p-2 rounded-t-md cursor-pointer bg-muted'
@@ -335,7 +352,18 @@ function RecipeCard({
 															Number.parseFloat(e.target.value) || 0,
 														)
 													}
-													className='w-16 h-7 text-center'
+													className={`w-16 h-7 text-center ${
+														highlightEdits &&
+														roundToOneDecimal(ingredient.serveSize) !==
+															roundToOneDecimal(
+																baselineRecipe?.ingredients.find(
+																	(baseIngredient) =>
+																		baseIngredient.id === ingredient.id,
+																)?.serveSize ?? -1,
+															)
+															? 'ring-2 ring-primary/50'
+															: ''
+													}`}
 												/>
 												<Button
 													type='button'

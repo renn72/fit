@@ -27,8 +27,10 @@ import {
 	useQueryClient,
 	useSuspenseQuery,
 } from '@tanstack/react-query'
+import { useForm, useStore } from '@tanstack/react-form'
 import { useNavigate } from '@tanstack/react-router'
 
+import _ from 'lodash'
 import { MealContent } from './meal-content'
 import { MealHeader } from './meal-header'
 import { calculateMealTotals } from './nutrition-utils'
@@ -63,12 +65,122 @@ function getDateInputValue(date: Date): string {
 	return localDate.toISOString().split('T')[0]!
 }
 
+const AiMenuRequestInput = React.memo(function AiMenuRequestInput({
+	isPending,
+	onSend,
+}: {
+	isPending: boolean
+	onSend: (request: string) => Promise<void>
+}) {
+	const [request, setRequest] = React.useState('')
+	const canSend = request.trim().length > 0 && !isPending
+
+	const sendRequest = React.useCallback(async () => {
+		const trimmedRequest = request.trim()
+		if (!trimmedRequest || isPending) return
+
+		try {
+			await onSend(trimmedRequest)
+			setRequest('')
+		} catch {
+			// Parent mutation handles user-facing errors.
+		}
+	}, [isPending, onSend, request])
+
+	return (
+		<div className='flex gap-2 items-end'>
+			<div className='flex-1 space-y-2'>
+				<Label htmlFor='user-menu-ai-request'>Request</Label>
+				<Input
+					id='user-menu-ai-request'
+					value={request}
+					onChange={(event) => setRequest(event.target.value)}
+					onKeyDown={(event) => {
+						if (event.key === 'Enter') {
+							event.preventDefault()
+							void sendRequest()
+						}
+					}}
+					placeholder='e.g., make this a 7-day high-protein plan with ~2200 kcal per day'
+				/>
+			</div>
+			<Button type='button' onClick={() => void sendRequest()} disabled={!canSend}>
+				{isPending ? 'Sending...' : 'Send'}
+			</Button>
+		</div>
+	)
+})
+
 function getTodayDateString(): string {
 	return getDateInputValue(new Date())
 }
 
 function roundToOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
+}
+
+const EDITED_FIELD_CLASS = 'ring-2 ring-primary/50'
+
+function normalizeText(value: string | null | undefined): string {
+	return (value ?? '').trim()
+}
+
+function normalizeMealIngredientForCompare(ingredient: MealIngredient) {
+	return {
+		ingredientId: ingredient.ingredientId,
+		ingredientName: normalizeText(ingredient.ingredientName),
+		serveSize: roundToOneDecimal(ingredient.serveSize),
+		serveUnit: normalizeText(ingredient.serveUnit),
+		calories: roundToOneDecimal(ingredient.calories),
+		protein: roundToOneDecimal(ingredient.protein),
+		fat: roundToOneDecimal(ingredient.fat),
+		carbohydrate: roundToOneDecimal(ingredient.carbohydrate),
+	}
+}
+
+function normalizeMealRecipeForCompare(recipe: MealRecipe) {
+	return {
+		recipeName: normalizeText(recipe.recipeName),
+		recipeIndex: recipe.recipeIndex,
+		calories: roundToOneDecimal(recipe.calories),
+		protein: roundToOneDecimal(recipe.protein),
+		fat: roundToOneDecimal(recipe.fat),
+		carbohydrate: roundToOneDecimal(recipe.carbohydrate),
+		ingredients: recipe.ingredients.map(normalizeMealIngredientForCompare),
+	}
+}
+
+function normalizeMealForCompare(meal: Meal) {
+	return {
+		mealIndex: meal.mealIndex,
+		name: normalizeText(meal.name),
+		targetCalories:
+			meal.targetCalories === null ? null : roundToOneDecimal(meal.targetCalories),
+		targetProtein:
+			meal.targetProtein === null ? null : roundToOneDecimal(meal.targetProtein),
+		recipes: meal.recipes.map(normalizeMealRecipeForCompare),
+	}
+}
+
+function areMealsEqual(left: Meal, right: Meal): boolean {
+	return _.isEqual(normalizeMealForCompare(left), normalizeMealForCompare(right))
+}
+
+function areRecipesEqual(left: MealRecipe, right: MealRecipe): boolean {
+	return _.isEqual(
+		normalizeMealRecipeForCompare(left),
+		normalizeMealRecipeForCompare(right),
+	)
+}
+
+function getEmptyMenuFormData(): MenuFormData {
+	return {
+		name: '',
+		description: null,
+		startDate: getTodayDateString(),
+		endDate: null,
+		meals: [],
+	}
 }
 
 export function UserMenuForm({
@@ -84,6 +196,9 @@ export function UserMenuForm({
 	// Determine if we're in edit mode
 	const isEditMode = !!menuId
 	const isTemplateMode = mode === 'template'
+	const isUserMenuMode = mode === 'menu'
+	const isTemplateEditMode = isTemplateMode && isEditMode
+	const shouldHighlightEdits = isUserMenuMode || isTemplateEditMode
 
 	const [selectedTemplate, setSelectedTemplate] = React.useState<any>(() =>
 		isTemplateMode ? { id: null, isBlank: true } : null,
@@ -109,13 +224,123 @@ export function UserMenuForm({
 		}),
 	)
 
-	const [formData, setFormData] = React.useState<MenuFormData>({
-		name: '',
-		description: null,
-		startDate: getTodayDateString(),
-		endDate: null,
-		meals: [],
+	const form = useForm({
+		defaultValues: getEmptyMenuFormData(),
+		onSubmit: async ({ value }) => {
+			if (!isEditMode && !user) {
+				toast.error(
+					isTemplateMode
+						? 'Unable to resolve template owner'
+						: 'No user selected',
+				)
+				return
+			}
+
+			const meals = value.meals.map((meal) => {
+				const recipeCount = meal.recipes.length
+				const totalCalories = meal.recipes.reduce(
+					(sum, recipe) => sum + recipe.calories,
+					0,
+				)
+				const totalProtein = meal.recipes.reduce(
+					(sum, recipe) => sum + recipe.protein,
+					0,
+				)
+				const totalFat = meal.recipes.reduce((sum, recipe) => sum + recipe.fat, 0)
+				const totalCarbs = meal.recipes.reduce(
+					(sum, recipe) => sum + recipe.carbohydrate,
+					0,
+				)
+
+				const avgCalories = recipeCount > 0 ? totalCalories / recipeCount : 0
+				const avgProtein = recipeCount > 0 ? totalProtein / recipeCount : 0
+				const avgFat = recipeCount > 0 ? totalFat / recipeCount : 0
+				const avgCarbs = recipeCount > 0 ? totalCarbs / recipeCount : 0
+
+				return {
+					mealIndex: meal.mealIndex,
+					name: meal.name,
+					calories: roundToOneDecimal(meal.targetCalories ?? avgCalories),
+					protein: roundToOneDecimal(meal.targetProtein ?? avgProtein),
+					fat: roundToOneDecimal(avgFat),
+					carbohydrate: roundToOneDecimal(avgCarbs),
+					recipes: meal.recipes.map((recipe) => ({
+						recipeIndex: recipe.recipeIndex,
+						name: recipe.recipeName,
+						description: null,
+						category: null,
+						image: null,
+						ingredients: recipe.ingredients.map((ingredient) => ({
+							ingredientId: ingredient.ingredientId,
+							serveSize: ingredient.serveSize,
+							serveUnit: ingredient.serveUnit,
+						})),
+					})),
+				}
+			})
+
+			if (isEditMode) {
+				await batchUpdateMenuMutation.mutateAsync({
+					id: menuId!,
+					name: value.name,
+					description: value.description,
+					startDate: value.startDate ? new Date(value.startDate) : new Date(),
+					endDate: value.endDate ? new Date(value.endDate) : null,
+					meals,
+				})
+				return
+			}
+
+			await batchCreateMenuMutation.mutateAsync({
+				userId: user!,
+				menuTemplateId: isTemplateMode ? null : selectedTemplate?.id || null,
+				name: value.name,
+				description: value.description,
+				startDate: isTemplateMode
+					? null
+					: value.startDate
+						? new Date(value.startDate)
+						: new Date(),
+				endDate: isTemplateMode
+					? null
+					: value.endDate
+						? new Date(value.endDate)
+						: null,
+				isTemplate: isTemplateMode,
+				meals,
+			})
+		},
 	})
+
+	const formData = useStore(form.store, (state) => state.values as MenuFormData)
+	const [initialFormSnapshot, setInitialFormSnapshot] =
+		React.useState<MenuFormData | null>(null)
+
+	function setFormData(next: MenuFormData): void
+	function setFormData(updater: (prev: MenuFormData) => MenuFormData): void
+	function setFormData(
+		nextOrUpdater: MenuFormData | ((prev: MenuFormData) => MenuFormData),
+	): void {
+		const prev = form.state.values as MenuFormData
+		const next =
+			typeof nextOrUpdater === 'function'
+				? nextOrUpdater(prev)
+				: nextOrUpdater
+
+		form.setFieldValue('name', next.name)
+		form.setFieldValue('description', next.description)
+		form.setFieldValue('startDate', next.startDate)
+		form.setFieldValue('endDate', next.endDate)
+		form.setFieldValue('meals', next.meals)
+	}
+
+	function resetToEmptyForm(): void {
+		const nextFormData = getEmptyMenuFormData()
+		setFormData(nextFormData)
+		if (shouldHighlightEdits) {
+			setInitialFormSnapshot(_.cloneDeep(nextFormData))
+		}
+	}
 
 	// Load existing menu data when in edit mode
 	const { data: existingMenu } = useQuery(
@@ -209,7 +434,7 @@ export function UserMenuForm({
 					}),
 			}))
 
-			setFormData({
+			const nextFormData: MenuFormData = {
 				name: existingMenu.name,
 				description: existingMenu.description,
 				startDate: existingMenu.startDate
@@ -219,7 +444,10 @@ export function UserMenuForm({
 					? getDateInputValue(new Date(existingMenu.endDate))
 					: null,
 				meals: transformedMeals,
-			})
+			}
+
+			setFormData(nextFormData)
+			setInitialFormSnapshot(_.cloneDeep(nextFormData))
 
 			// Expand all meals and recipes for editing
 			setExpandedMeals(new Set(transformedMeals.map((m: Meal) => m.mealIndex)))
@@ -289,24 +517,73 @@ export function UserMenuForm({
 	const batchUpdateMenuMutation = useMutation(
 		orpc.userMenu.batchUpdate.mutationOptions({
 			onSuccess: () => {
-				toast.success('Menu updated successfully')
+				toast.success(
+					isTemplateMode
+						? 'Menu template updated successfully'
+						: 'Menu updated successfully',
+				)
+				queryClient.invalidateQueries({
+					queryKey: orpc.userMenu.getTemplatesOrg.key(),
+				})
 				queryClient.invalidateQueries({
 					queryKey: orpc.userMenu.getByUser.key(),
 				})
 				queryClient.invalidateQueries({
 					queryKey: orpc.userMenu.get.key(),
 				})
-				// Navigate back to menu list after editing
+
+				if (isTemplateMode) {
+					navigate({
+						to: '/$orgSlug/menu-templates',
+						params: { orgSlug },
+					})
+					return
+				}
+
 				navigate({
 					to: '/$orgSlug/user-menus',
-					params: { orgSlug: orgSlug },
+					params: { orgSlug },
 					search: user ? { user } : {},
 				})
 			},
 			onError: (error) => {
-				toast.error(error.message || 'Failed to update menu')
+				toast.error(
+					error.message ||
+						(isTemplateMode
+							? 'Failed to update menu template'
+							: 'Failed to update menu'),
+				)
 			},
 		}),
+	)
+
+	const updateUserMenuWithAi = useMutation(
+		orpc.ai.updateUserMenuForm.mutationOptions({
+			onSuccess: (data) => {
+				setFormData(data.form)
+				toast.success('Menu form updated from AI request')
+			},
+			onError: (error) => {
+				toast.error(error.message || 'Failed to apply AI update')
+			},
+		}),
+	)
+
+	const handleAiRequest = React.useCallback(
+		async (request: string) => {
+			const trimmedRequest = request.trim()
+			if (!trimmedRequest) {
+				toast.error('Enter a request for AI')
+				return
+			}
+
+			await updateUserMenuWithAi.mutateAsync({
+				organisationId: userOrgId,
+				request: trimmedRequest,
+				currentForm: formData,
+			})
+		},
+		[formData, updateUserMenuWithAi, userOrgId],
 	)
 
 	const recipeOptions = React.useMemo(() => {
@@ -502,13 +779,18 @@ export function UserMenuForm({
 			meal.recipes.push(mealRecipe)
 		}
 
-		setFormData({
+		const nextFormData: MenuFormData = {
 			name: template.name,
 			description: template.description,
 			startDate: getTodayDateString(),
 			endDate: null,
 			meals: initialMeals,
-		})
+		}
+
+		setFormData(nextFormData)
+		if (shouldHighlightEdits) {
+			setInitialFormSnapshot(_.cloneDeep(nextFormData))
+		}
 	}
 
 	const addMeal = () => {
@@ -1304,89 +1586,59 @@ export function UserMenuForm({
 		}
 	}
 
-	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault()
-		if (!user) {
-			toast.error(
-				isTemplateMode
-					? 'Unable to resolve template owner'
-					: 'No user selected',
+	const formHeading = isEditMode
+		? isTemplateMode
+			? 'Edit Menu Template'
+			: 'Edit User Menu'
+		: isTemplateMode
+			? 'Create Menu Template'
+			: 'Create User Menu'
+
+	const isNameEdited =
+		shouldHighlightEdits &&
+		!!initialFormSnapshot &&
+		normalizeText(formData.name) !== normalizeText(initialFormSnapshot.name)
+	const isDescriptionEdited =
+		shouldHighlightEdits &&
+		!!initialFormSnapshot &&
+		normalizeText(formData.description) !==
+			normalizeText(initialFormSnapshot.description)
+	const isStartDateEdited =
+		shouldHighlightEdits &&
+		!!initialFormSnapshot &&
+		normalizeText(formData.startDate) !== normalizeText(initialFormSnapshot.startDate)
+	const isEndDateEdited =
+		shouldHighlightEdits &&
+		!!initialFormSnapshot &&
+		normalizeText(formData.endDate) !== normalizeText(initialFormSnapshot.endDate)
+
+	const initialMealsById = React.useMemo(() => {
+		return new Map(
+			(initialFormSnapshot?.meals ?? []).map((meal) => [meal.id, meal]),
+		)
+	}, [initialFormSnapshot?.meals])
+
+	const getEditedRecipeIds = React.useCallback(
+		(meal: Meal) => {
+			const editedRecipeIds = new Set<string>()
+			if (!shouldHighlightEdits) return editedRecipeIds
+
+			const baselineMeal = initialMealsById.get(meal.id)
+			const baselineRecipesById = new Map(
+				(baselineMeal?.recipes ?? []).map((recipe) => [recipe.id, recipe]),
 			)
-			return
-		}
 
-		// Build the batch payload with all meals, recipes, and ingredients
-		const meals = formData.meals.map((meal) => {
-			const recipeCount = meal.recipes.length
-			const totalCalories = meal.recipes.reduce((sum, r) => sum + r.calories, 0)
-			const totalProtein = meal.recipes.reduce((sum, r) => sum + r.protein, 0)
-			const totalFat = meal.recipes.reduce((sum, r) => sum + r.fat, 0)
-			const totalCarbs = meal.recipes.reduce(
-				(sum, r) => sum + r.carbohydrate,
-				0,
-			)
-
-			const avgCalories = recipeCount > 0 ? totalCalories / recipeCount : 0
-			const avgProtein = recipeCount > 0 ? totalProtein / recipeCount : 0
-			const avgFat = recipeCount > 0 ? totalFat / recipeCount : 0
-			const avgCarbs = recipeCount > 0 ? totalCarbs / recipeCount : 0
-
-			return {
-				mealIndex: meal.mealIndex,
-				name: meal.name,
-				calories: roundToOneDecimal(meal.targetCalories ?? avgCalories),
-				protein: roundToOneDecimal(meal.targetProtein ?? avgProtein),
-				fat: roundToOneDecimal(avgFat),
-				carbohydrate: roundToOneDecimal(avgCarbs),
-				recipes: meal.recipes.map((recipe) => ({
-					recipeIndex: recipe.recipeIndex,
-					name: recipe.recipeName,
-					description: null,
-					category: null,
-					image: null,
-					ingredients: recipe.ingredients.map((ing) => ({
-						ingredientId: ing.ingredientId,
-						serveSize: ing.serveSize,
-						serveUnit: ing.serveUnit,
-					})),
-				})),
+			for (const recipe of meal.recipes) {
+				const baselineRecipe = baselineRecipesById.get(recipe.id)
+				if (!baselineRecipe || !areRecipesEqual(recipe, baselineRecipe)) {
+					editedRecipeIds.add(recipe.id)
+				}
 			}
-		})
 
-		if (isEditMode) {
-			// Update existing menu
-			await batchUpdateMenuMutation.mutateAsync({
-				id: menuId!,
-				name: formData.name,
-				description: formData.description,
-				startDate: formData.startDate
-					? new Date(formData.startDate)
-					: new Date(),
-				endDate: formData.endDate ? new Date(formData.endDate) : null,
-				meals,
-			})
-		} else {
-			// Create new menu/template
-			await batchCreateMenuMutation.mutateAsync({
-				userId: user,
-				menuTemplateId: isTemplateMode ? null : selectedTemplate?.id || null,
-				name: formData.name,
-				description: formData.description,
-				startDate: isTemplateMode
-					? null
-					: formData.startDate
-						? new Date(formData.startDate)
-						: new Date(),
-				endDate: isTemplateMode
-					? null
-					: formData.endDate
-						? new Date(formData.endDate)
-						: null,
-				isTemplate: isTemplateMode,
-				meals,
-			})
-		}
-	}
+			return editedRecipeIds
+		},
+		[initialMealsById, shouldHighlightEdits],
+	)
 
 	// Show user selector only in create mode when no user selected
 	if (!isEditMode && !isTemplateMode && !user) {
@@ -1425,21 +1677,15 @@ export function UserMenuForm({
 								</CardHeader>
 								<CardContent>
 									<div className='grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3'>
-										<Card
-											className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
-											onClick={() => {
-												setSelectedTemplate({ id: null, isBlank: true })
-												setExpandedMeals(new Set())
-												setExpandedRecipes(new Set())
-												setFormData({
-													name: '',
-													description: null,
-													startDate: getTodayDateString(),
-													endDate: null,
-													meals: [],
-												})
-											}}
-										>
+											<Card
+												className='border-2 border-dashed transition-colors cursor-pointer hover:bg-muted'
+												onClick={() => {
+													setSelectedTemplate({ id: null, isBlank: true })
+													setExpandedMeals(new Set())
+													setExpandedRecipes(new Set())
+													resetToEmptyForm()
+												}}
+											>
 											<CardHeader>
 												<CardTitle className='text-lg'>Blank Menu</CardTitle>
 												<CardDescription>Start from scratch</CardDescription>
@@ -1491,18 +1737,16 @@ export function UserMenuForm({
 							onDragOver={handleDragOver}
 						>
 							<div className='flex gap-0 items-start w-full'>
-								<form
-									onSubmit={handleSubmit}
-									className='flex flex-col flex-1 gap-6 p-8 min-w-0'
-								>
-									<div className='flex justify-between items-center'>
-										<h1 className='text-2xl font-bold'>
-											{isEditMode
-												? 'Edit User Menu'
-												: isTemplateMode
-													? 'Create Menu Template'
-													: 'Create User Menu'}
-										</h1>
+									<form
+									onSubmit={(event) => {
+										event.preventDefault()
+										event.stopPropagation()
+										form.handleSubmit()
+									}}
+										className='flex flex-col flex-1 gap-6 p-8 min-w-0'
+									>
+										<div className='flex justify-between items-center'>
+											<h1 className='text-2xl font-bold'>{formHeading}</h1>
 										<SidebarTrigger size='default'>
 											<Button render={<div />} className='cursor-pointer'>
 												Recipes
@@ -1510,27 +1754,36 @@ export function UserMenuForm({
 											</Button>
 										</SidebarTrigger>
 									</div>
-									{!isEditMode && !isTemplateMode && (
-										<Button
-											type='button'
-											variant='ghost'
-											onClick={() => {
-												setSelectedTemplate(null)
-												setFormData({
-													name: '',
-													description: null,
-													startDate: getTodayDateString(),
-													endDate: null,
-													meals: [],
-												})
-											}}
-											className='w-fit'
-										>
+										{!isEditMode && !isTemplateMode && (
+											<Button
+												type='button'
+												variant='ghost'
+												onClick={() => {
+													setSelectedTemplate(null)
+													resetToEmptyForm()
+												}}
+												className='w-fit'
+											>
 											← Back to templates
-										</Button>
-									)}
+											</Button>
+										)}
 
-									<Card>
+										<Card>
+											<CardHeader>
+												<CardTitle>Ask AI</CardTitle>
+												<CardDescription>
+													Send a request and AI will update this menu form.
+												</CardDescription>
+											</CardHeader>
+											<CardContent className='space-y-3'>
+												<AiMenuRequestInput
+													isPending={updateUserMenuWithAi.isPending}
+													onSend={handleAiRequest}
+												/>
+											</CardContent>
+										</Card>
+
+										<Card>
 										<CardHeader>
 											<CardTitle>Menu Details</CardTitle>
 											<CardDescription>
@@ -1541,70 +1794,92 @@ export function UserMenuForm({
 										</CardHeader>
 										<CardContent className='space-y-6'>
 											<div className='space-y-4'>
-												<div className='space-y-2'>
-													<Label htmlFor='name'>Menu Name *</Label>
-													<Input
-														id='name'
-														value={formData.name}
-														onChange={(e) =>
-															setFormData((prev) => ({
-																...prev,
-																name: e.target.value,
-															}))
-														}
-														placeholder='e.g., Weight Loss Week 1'
-														required
-													/>
-												</div>
+												<form.Field name='name'>
+													{(field) => (
+														<div className='space-y-2'>
+															<Label htmlFor={field.name}>Menu Name *</Label>
+															<Input
+																id={field.name}
+																name={field.name}
+																value={field.state.value}
+																onBlur={field.handleBlur}
+																onChange={(event) =>
+																	field.handleChange(event.target.value)
+																}
+																placeholder='e.g., Weight Loss Week 1'
+																className={isNameEdited ? EDITED_FIELD_CLASS : ''}
+																required
+															/>
+														</div>
+													)}
+												</form.Field>
 
-												<div className='space-y-2'>
-													<Label htmlFor='description'>Description</Label>
-													<Textarea
-														id='description'
-														value={formData.description ?? ''}
-														onChange={(e) =>
-															setFormData((prev) => ({
-																...prev,
-																description: e.target.value || null,
-															}))
-														}
-														placeholder='Optional description for this menu...'
-														className='min-h-20'
-													/>
-												</div>
+												<form.Field name='description'>
+													{(field) => (
+														<div className='space-y-2'>
+															<Label htmlFor={field.name}>Description</Label>
+															<Textarea
+																id={field.name}
+																name={field.name}
+																value={field.state.value ?? ''}
+																onBlur={field.handleBlur}
+																onChange={(event) =>
+																	field.handleChange(event.target.value || null)
+																}
+																placeholder='Optional description for this menu...'
+																className={`min-h-20 ${
+																	isDescriptionEdited ? EDITED_FIELD_CLASS : ''
+																}`}
+															/>
+														</div>
+													)}
+												</form.Field>
 
 												{!isTemplateMode && (
 													<div className='grid grid-cols-2 gap-4'>
-														<div className='space-y-2'>
-															<Label htmlFor='startDate'>Start Date</Label>
-															<Input
-																id='startDate'
-																type='date'
-																value={formData.startDate ?? ''}
-																onChange={(e) =>
-																	setFormData((prev) => ({
-																		...prev,
-																		startDate:
-																			e.target.value || getTodayDateString(),
-																	}))
-																}
-															/>
-														</div>
+														<form.Field name='startDate'>
+															{(field) => (
+																<div className='space-y-2'>
+																	<Label htmlFor={field.name}>Start Date</Label>
+																	<Input
+																		id={field.name}
+																		name={field.name}
+																		type='date'
+																		value={field.state.value ?? ''}
+																		onBlur={field.handleBlur}
+																		onChange={(event) =>
+																			field.handleChange(
+																				event.target.value || getTodayDateString(),
+																			)
+																		}
+																		className={
+																			isStartDateEdited ? EDITED_FIELD_CLASS : ''
+																		}
+																	/>
+																</div>
+															)}
+														</form.Field>
 
-														<div className='space-y-2'>
-															<Label htmlFor='endDate'>End Date</Label>
-															<Input
-																id='endDate'
-																type='date'
-																value={formData.endDate ?? ''}
-																onChange={(e) =>
-																	setFormData((prev) => ({
-																		...prev,
-																		endDate: e.target.value || null,
-																	}))
-																}
-															/>
-														</div>
+														<form.Field name='endDate'>
+															{(field) => (
+																<div className='space-y-2'>
+																	<Label htmlFor={field.name}>End Date</Label>
+																	<Input
+																		id={field.name}
+																		name={field.name}
+																		type='date'
+																		value={field.state.value ?? ''}
+																		onBlur={field.handleBlur}
+																		onChange={(event) =>
+																			field.handleChange(
+																				event.target.value || null,
+																			)
+																		}
+																		className={isEndDateEdited ? EDITED_FIELD_CLASS : ''}
+																	/>
+																</div>
+															)}
+														</form.Field>
 													</div>
 												)}
 											</div>
@@ -1637,10 +1912,18 @@ export function UserMenuForm({
 														formData.meals.map((meal, mealIdx) => {
 															const totals = calculateMealTotals(meal)
 															const isExpanded = expandedMeals.has(mealIdx)
+															const baselineMeal = initialMealsById.get(meal.id)
+															const isMealEdited =
+																shouldHighlightEdits &&
+																(!baselineMeal ||
+																	!areMealsEqual(meal, baselineMeal))
+															const editedRecipeIds = getEditedRecipeIds(meal)
 															return (
 																<div
 																	key={meal.id}
-																	className='rounded-lg border'
+																	className={`rounded-lg border ${
+																		isMealEdited ? EDITED_FIELD_CLASS : ''
+																	}`}
 																>
 																	<MealHeader
 																		meal={meal}
@@ -1666,6 +1949,9 @@ export function UserMenuForm({
 																		<MealContent
 																			meal={meal}
 																			mealIdx={mealIdx}
+																			baselineMeal={baselineMeal}
+																			highlightEdits={shouldHighlightEdits}
+																			editedRecipeIds={editedRecipeIds}
 																			recipeOptions={recipeOptions}
 																			ingredientOptions={ingredientOptions}
 																			expandedRecipes={expandedRecipes}
@@ -1698,57 +1984,60 @@ export function UserMenuForm({
 										</CardContent>
 									</Card>
 
-									<div className='flex gap-4 justify-end pt-4'>
-										<Button
-											type='button'
-											variant='outline'
-											onClick={() => {
-												if (isEditMode) {
-													navigate({
-														to: '/$orgSlug/user-menus',
-														params: { orgSlug },
-														search: user ? { user } : {},
-													})
-												} else if (isTemplateMode) {
-													navigate({
-														to: '/$orgSlug/menu-templates',
-														params: { orgSlug },
-													})
-												} else {
-													setSelectedTemplate(null)
-													setFormData({
-														name: '',
-														description: null,
-														startDate: getTodayDateString(),
-														endDate: null,
-														meals: [],
-													})
+										<div className='flex gap-4 justify-end pt-4'>
+											<Button
+												type='button'
+												variant='outline'
+												onClick={() => {
+													if (isEditMode) {
+														if (isTemplateMode) {
+															navigate({
+																to: '/$orgSlug/menu-templates',
+																params: { orgSlug },
+															})
+															return
+														}
+
+														navigate({
+															to: '/$orgSlug/user-menus',
+															params: { orgSlug },
+															search: user ? { user } : {},
+														})
+													} else if (isTemplateMode) {
+														navigate({
+															to: '/$orgSlug/menu-templates',
+															params: { orgSlug },
+														})
+													} else {
+														setSelectedTemplate(null)
+														resetToEmptyForm()
+													}
+												}}
+											>
+												Cancel
+											</Button>
+											<Button
+												type='submit'
+												disabled={
+													updateUserMenuWithAi.isPending ||
+													(isEditMode
+														? batchUpdateMenuMutation.isPending
+														: batchCreateMenuMutation.isPending)
 												}
-											}}
-										>
-											Cancel
-										</Button>
-										<Button
-											type='submit'
-											disabled={
-												isEditMode
+											>
+												{isEditMode
 													? batchUpdateMenuMutation.isPending
+														? 'Saving...'
+														: 'Save Changes'
 													: batchCreateMenuMutation.isPending
-											}
-										>
-											{isEditMode
-												? batchUpdateMenuMutation.isPending
-													? 'Saving...'
-													: 'Save Changes'
-												: batchCreateMenuMutation.isPending
-													? isTemplateMode
-														? 'Creating Template...'
-														: 'Creating...'
-													: isTemplateMode
-														? 'Create Template'
-														: 'Create Menu'}
-										</Button>
-									</div>
+														? isTemplateMode
+															? 'Creating Template...'
+															: 'Creating...'
+														: isTemplateMode
+															? 'Create Template'
+															: 'Create Menu'}
+											</Button>
+										</div>
 								</form>
 
 								<OrgRecipeSidebar

@@ -8,9 +8,23 @@ import type { Meal } from './types'
 
 import { ChefHatIcon } from '@phosphor-icons/react'
 
+const EDITED_FIELD_CLASS = 'ring-2 ring-primary/50'
+
+function normalizeText(value: string | null | undefined): string {
+	return (value ?? '').trim()
+}
+
+function normalizeNumber(value: number | null | undefined): number | null {
+	if (value === null || value === undefined || Number.isNaN(value)) return null
+	return Math.round(value * 10) / 10
+}
+
 interface MealContentProps {
 	meal: Meal
 	mealIdx: number
+	baselineMeal?: Meal
+	highlightEdits?: boolean
+	editedRecipeIds?: Set<string>
 	recipeOptions: Array<{ value: string; label: string }>
 	ingredientOptions: Array<{ value: string; label: string }>
 	expandedRecipes: Set<string>
@@ -53,6 +67,9 @@ interface MealContentProps {
 export function MealContent({
 	meal,
 	mealIdx,
+	baselineMeal,
+	highlightEdits = false,
+	editedRecipeIds,
 	recipeOptions,
 	ingredientOptions,
 	expandedRecipes,
@@ -69,6 +86,18 @@ export function MealContent({
 	onBalanceRecipe,
 	onDuplicateRecipe,
 }: MealContentProps) {
+	const isMealNameEdited =
+		highlightEdits &&
+		normalizeText(meal.name) !== normalizeText(baselineMeal?.name)
+	const isTargetCaloriesEdited =
+		highlightEdits &&
+		normalizeNumber(meal.targetCalories) !==
+			normalizeNumber(baselineMeal?.targetCalories)
+	const isTargetProteinEdited =
+		highlightEdits &&
+		normalizeNumber(meal.targetProtein) !==
+			normalizeNumber(baselineMeal?.targetProtein)
+
 	return (
 		<div className='p-4 space-y-4 border-t'>
 			<div className='grid grid-cols-7 gap-2 p-4 rounded-lg border bg-primary/3'>
@@ -78,7 +107,7 @@ export function MealContent({
 						value={meal.name}
 						onChange={(e) => onUpdateName(mealIdx, e.target.value)}
 						placeholder={`Meal ${mealIdx + 1}`}
-						className='h-9'
+						className={`h-9 ${isMealNameEdited ? EDITED_FIELD_CLASS : ''}`}
 					/>
 				</div>
 
@@ -87,7 +116,7 @@ export function MealContent({
 					<Input
 						type='number'
 						step='0.1'
-						className='h-9'
+						className={`h-9 ${isTargetCaloriesEdited ? EDITED_FIELD_CLASS : ''}`}
 						value={meal.targetCalories ?? ''}
 						onChange={(e) =>
 							onUpdateTargets(
@@ -104,7 +133,7 @@ export function MealContent({
 					<Input
 						type='number'
 						step='0.1'
-						className='h-9'
+						className={`h-9 ${isTargetProteinEdited ? EDITED_FIELD_CLASS : ''}`}
 						value={meal.targetProtein ?? ''}
 						onChange={(e) =>
 							onUpdateTargets(
@@ -183,6 +212,9 @@ export function MealContent({
 							recipe={recipe}
 							recipeIdx={recipeIdx}
 							mealIdx={mealIdx}
+							isEdited={editedRecipeIds?.has(recipe.id) ?? false}
+							baselineRecipe={baselineMeal?.recipes.find((r) => r.id === recipe.id)}
+							highlightEdits={highlightEdits}
 							ingredientOptions={ingredientOptions}
 							isExpanded={expandedRecipes.has(recipe.id)}
 							onToggle={() => onToggleRecipe(recipe.id)}
