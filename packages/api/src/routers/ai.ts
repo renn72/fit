@@ -68,7 +68,9 @@ type RecipeForAiContext = {
 	totalCarbohydrate: number
 }
 
-const DEFAULT_ZEN_MODEL = 'minimax-m2.5-free' //  'kimi-k2.5'
+type AiUserMenuFormState = (typeof AiUserMenuFormStateInput)['_output']
+
+const DEFAULT_ZEN_MODEL = 'kimi-k2.5' // 'minimax-m2.5-free' //  'kimi-k2.5'
 
 function roundOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
@@ -274,6 +276,122 @@ async function getRecipesForAiContext(
 	})
 }
 
+function calculateIngredientMacrosFromServeSize(
+	ingredient: IngredientForAiContext,
+	serveSize: number,
+) {
+	const normalizedServeSize = roundOneDecimal(Math.max(0, serveSize))
+	const ratio =
+		ingredient.serveSize > 0 ? normalizedServeSize / ingredient.serveSize : 0
+
+	return {
+		serveSize: normalizedServeSize,
+		ratio,
+		calories: roundOneDecimal(ingredient.calories * ratio),
+		protein: roundOneDecimal(ingredient.protein * ratio),
+		fat: roundOneDecimal(ingredient.fat * ratio),
+		carbohydrate: roundOneDecimal(ingredient.carbohydrate * ratio),
+	}
+}
+
+function calculateRecipeMacroTotals(
+	ingredients: Array<{
+		calories: number
+		protein: number
+		fat: number
+		carbohydrate: number
+	}>,
+) {
+	return ingredients.reduce(
+		(acc, item) => ({
+			calories: acc.calories + item.calories,
+			protein: acc.protein + item.protein,
+			fat: acc.fat + item.fat,
+			carbohydrate: acc.carbohydrate + item.carbohydrate,
+		}),
+		{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+	)
+}
+
+function buildUserMenuIngredientMacroContext(
+	currentForm: AiUserMenuFormState,
+	availableIngredients: IngredientForAiContext[],
+) {
+	const availableIngredientMap = new Map(
+		availableIngredients.map((ingredient) => [ingredient.id, ingredient]),
+	)
+
+	return currentForm.meals.map((meal) => ({
+		mealId: meal.id,
+		mealName: meal.name,
+		recipes: meal.recipes.map((recipe) => ({
+			recipeId: recipe.id,
+			recipeName: recipe.recipeName,
+			ingredients: recipe.ingredients.map((ingredientRow) => {
+				const referenceIngredient = availableIngredientMap.get(
+					ingredientRow.ingredientId,
+				)
+				const ratioDerivedMacros = referenceIngredient
+					? calculateIngredientMacrosFromServeSize(
+							referenceIngredient,
+							ingredientRow.serveSize,
+						)
+					: null
+
+				return {
+					ingredientRowId: ingredientRow.id,
+					ingredientId: ingredientRow.ingredientId,
+					ingredientName: ingredientRow.ingredientName,
+					currentServeSize: ingredientRow.serveSize,
+					currentServeUnit: ingredientRow.serveUnit,
+					currentMacros: {
+						calories: ingredientRow.calories,
+						protein: ingredientRow.protein,
+						fat: ingredientRow.fat,
+						carbohydrate: ingredientRow.carbohydrate,
+					},
+					referenceIngredient: referenceIngredient
+						? {
+								id: referenceIngredient.id,
+								name: referenceIngredient.name,
+								serveSize: referenceIngredient.serveSize,
+								serveUnit: referenceIngredient.serveUnit,
+								calories: referenceIngredient.calories,
+								protein: referenceIngredient.protein,
+								fat: referenceIngredient.fat,
+								carbohydrate: referenceIngredient.carbohydrate,
+							}
+						: null,
+					ratioVsReferenceServeSize: ratioDerivedMacros?.ratio ?? null,
+					ratioDerivedMacros: ratioDerivedMacros
+						? {
+								calories: ratioDerivedMacros.calories,
+								protein: ratioDerivedMacros.protein,
+								fat: ratioDerivedMacros.fat,
+								carbohydrate: ratioDerivedMacros.carbohydrate,
+							}
+						: null,
+				}
+			}),
+		})),
+	}))
+}
+
+function buildUserMenuFormPromptContext(currentForm: AiUserMenuFormState) {
+	return {
+		name: currentForm.name,
+		description: currentForm.description,
+		startDate: currentForm.startDate,
+		endDate: currentForm.endDate,
+		meals: currentForm.meals.map((meal) => ({
+			id: meal.id,
+			mealIndex: meal.mealIndex,
+			name: meal.name,
+			recipes: meal.recipes,
+		})),
+	}
+}
+
 async function requestZenChatCompletion({
 	messages,
 	model = DEFAULT_ZEN_MODEL,
@@ -460,38 +578,29 @@ function normalizeAndValidateAiUserMenuForm(
 						ingredientItem.id,
 						usedIngredientIds,
 					)
-					const serveSize = roundOneDecimal(
+					const calculatedMacros = calculateIngredientMacrosFromServeSize(
+						ingredient,
 						ingredientItem.serveSize > 0
 							? ingredientItem.serveSize
 							: Math.max(ingredient.serveSize, 1),
 					)
-					const ratio =
-						ingredient.serveSize > 0 ? serveSize / ingredient.serveSize : 0
 
 					return {
 						id: normalizedIngredientId,
 						recipeToIngredientId: ingredientItem.recipeToIngredientId.trim(),
 						ingredientId: ingredient.id,
 						ingredientName: ingredient.name,
-						serveSize,
+						serveSize: calculatedMacros.serveSize,
 						serveUnit: ingredientItem.serveUnit.trim() || ingredient.serveUnit,
-						calories: roundOneDecimal(ingredient.calories * ratio),
-						protein: roundOneDecimal(ingredient.protein * ratio),
-						fat: roundOneDecimal(ingredient.fat * ratio),
-						carbohydrate: roundOneDecimal(ingredient.carbohydrate * ratio),
+						calories: calculatedMacros.calories,
+						protein: calculatedMacros.protein,
+						fat: calculatedMacros.fat,
+						carbohydrate: calculatedMacros.carbohydrate,
 					}
 				},
 			)
 
-			const totals = normalizedIngredients.reduce(
-				(acc, item) => ({
-					calories: acc.calories + item.calories,
-					protein: acc.protein + item.protein,
-					fat: acc.fat + item.fat,
-					carbohydrate: acc.carbohydrate + item.carbohydrate,
-				}),
-				{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
-			)
+			const totals = calculateRecipeMacroTotals(normalizedIngredients)
 
 			return {
 				id: normalizedRecipeId,
@@ -530,7 +639,11 @@ function normalizeAndValidateAiUserMenuForm(
 	}
 }
 
-function normalizeAndValidateAiUserMenuFormFast(form: unknown) {
+function normalizeAndValidateAiUserMenuFormFast(
+	form: unknown,
+	currentForm: AiUserMenuFormState,
+	availableIngredients: IngredientForAiContext[],
+) {
 	const parsed = AiUserMenuFormStateInput.safeParse(form)
 	if (!parsed.success) {
 		throw new ORPCError('INTERNAL_SERVER_ERROR', {
@@ -538,69 +651,140 @@ function normalizeAndValidateAiUserMenuFormFast(form: unknown) {
 		})
 	}
 
-	const usedMealIds = new Set<string>()
-	const usedRecipeIds = new Set<string>()
-	const usedIngredientIds = new Set<string>()
+	const availableIngredientMap = new Map(
+		availableIngredients.map((ingredient) => [ingredient.id, ingredient]),
+	)
+	const aiMealsById = new Map(parsed.data.meals.map((meal) => [meal.id, meal]))
 
-	const normalizedMeals = parsed.data.meals.map((meal, mealIndex) => {
-		const normalizedMealId = toUniqueId(meal.id, usedMealIds)
-		const targetCalories =
-			meal.targetCalories === null
-				? null
-				: roundOneDecimal(Math.max(0, meal.targetCalories))
-		const targetProtein =
-			meal.targetProtein === null
-				? null
-				: roundOneDecimal(Math.max(0, meal.targetProtein))
-
-		const normalizedRecipes = meal.recipes.map((recipe, recipeIndex) => {
-			const normalizedRecipeId = toUniqueId(recipe.id, usedRecipeIds)
-			const normalizedIngredients = recipe.ingredients.map(
-				(ingredientItem) => ({
-					id: toUniqueId(ingredientItem.id, usedIngredientIds),
-					recipeToIngredientId: ingredientItem.recipeToIngredientId.trim(),
-					ingredientId: ingredientItem.ingredientId.trim(),
-					ingredientName:
-						ingredientItem.ingredientName.trim() ||
-						`Ingredient ${recipeIndex + 1}`,
-					serveSize: roundOneDecimal(Math.max(0, ingredientItem.serveSize)),
-					serveUnit: ingredientItem.serveUnit.trim(),
-					calories: roundOneDecimal(Math.max(0, ingredientItem.calories)),
-					protein: roundOneDecimal(Math.max(0, ingredientItem.protein)),
-					fat: roundOneDecimal(Math.max(0, ingredientItem.fat)),
-					carbohydrate: roundOneDecimal(
-						Math.max(0, ingredientItem.carbohydrate),
-					),
-				}),
-			)
-
-			const totals = normalizedIngredients.reduce(
-				(acc, item) => ({
-					calories: acc.calories + item.calories,
-					protein: acc.protein + item.protein,
-					fat: acc.fat + item.fat,
-					carbohydrate: acc.carbohydrate + item.carbohydrate,
-				}),
-				{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
-			)
-
-			return {
-				id: normalizedRecipeId,
-				recipeId: recipe.recipeId.trim(),
-				recipeName: recipe.recipeName.trim() || `Recipe ${recipeIndex + 1}`,
-				recipeIndex,
-				calories: roundOneDecimal(totals.calories),
-				protein: roundOneDecimal(totals.protein),
-				fat: roundOneDecimal(totals.fat),
-				carbohydrate: roundOneDecimal(totals.carbohydrate),
-				ingredients: normalizedIngredients,
-			}
+	if (parsed.data.meals.length !== currentForm.meals.length) {
+		throw new ORPCError('INTERNAL_SERVER_ERROR', {
+			message:
+				'FAST mode can only tweak ingredient ratios; meal count must stay unchanged',
 		})
+	}
+
+	const normalizedMeals = currentForm.meals.map((currentMeal, mealIndex) => {
+		const aiMeal = aiMealsById.get(currentMeal.id)
+		if (!aiMeal) {
+			throw new ORPCError('INTERNAL_SERVER_ERROR', {
+				message: `FAST mode cannot add/remove meals; missing meal id ${currentMeal.id}`,
+			})
+		}
+		if (aiMeal.recipes.length !== currentMeal.recipes.length) {
+			throw new ORPCError('INTERNAL_SERVER_ERROR', {
+				message: `FAST mode cannot add/remove recipes in meal ${mealIndex + 1}`,
+			})
+		}
+
+		const aiRecipesById = new Map(
+			aiMeal.recipes.map((recipe) => [recipe.id, recipe]),
+		)
+
+		const normalizedRecipes = currentMeal.recipes.map(
+			(currentRecipe, recipeIndex) => {
+				const aiRecipe = aiRecipesById.get(currentRecipe.id)
+				if (!aiRecipe) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: `FAST mode cannot add/remove recipes; missing recipe id ${currentRecipe.id} at meal ${mealIndex + 1}`,
+					})
+				}
+
+				if (aiRecipe.recipeId.trim() !== currentRecipe.recipeId.trim()) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: `FAST mode cannot replace recipes; recipeId changed at meal ${mealIndex + 1}, recipe ${recipeIndex + 1}`,
+					})
+				}
+
+				if (aiRecipe.ingredients.length !== currentRecipe.ingredients.length) {
+					throw new ORPCError('INTERNAL_SERVER_ERROR', {
+						message: `FAST mode cannot add/remove ingredients at meal ${mealIndex + 1}, recipe ${recipeIndex + 1}`,
+					})
+				}
+
+				const aiIngredientsById = new Map(
+					aiRecipe.ingredients.map((ingredient) => [ingredient.id, ingredient]),
+				)
+
+				const normalizedIngredients = currentRecipe.ingredients.map(
+					(currentIngredient, ingredientIndex) => {
+						const aiIngredient = aiIngredientsById.get(currentIngredient.id)
+						if (!aiIngredient) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: `FAST mode cannot add/remove ingredients; missing ingredient row id ${currentIngredient.id} at meal ${mealIndex + 1}, recipe ${recipeIndex + 1}`,
+							})
+						}
+
+						if (
+							aiIngredient.ingredientId.trim() !==
+							currentIngredient.ingredientId.trim()
+						) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: `FAST mode cannot swap ingredients at meal ${mealIndex + 1}, recipe ${recipeIndex + 1}, ingredient ${ingredientIndex + 1}`,
+							})
+						}
+
+						const ingredientReference = availableIngredientMap.get(
+							currentIngredient.ingredientId,
+						)
+						if (!ingredientReference) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: `Unknown ingredientId in current form at meal ${mealIndex + 1}, recipe ${recipeIndex + 1}, ingredient ${ingredientIndex + 1}`,
+							})
+						}
+
+						const calculatedMacros = calculateIngredientMacrosFromServeSize(
+							ingredientReference,
+							aiIngredient.serveSize,
+						)
+
+						return {
+							id: currentIngredient.id,
+							recipeToIngredientId:
+								currentIngredient.recipeToIngredientId.trim(),
+							ingredientId: currentIngredient.ingredientId,
+							ingredientName: ingredientReference.name,
+							serveSize: calculatedMacros.serveSize,
+							serveUnit:
+								currentIngredient.serveUnit.trim() ||
+								ingredientReference.serveUnit,
+							calories: calculatedMacros.calories,
+							protein: calculatedMacros.protein,
+							fat: calculatedMacros.fat,
+							carbohydrate: calculatedMacros.carbohydrate,
+						}
+					},
+				)
+
+				const totals = calculateRecipeMacroTotals(normalizedIngredients)
+
+				return {
+					id: currentRecipe.id,
+					recipeId: currentRecipe.recipeId.trim(),
+					recipeName:
+						currentRecipe.recipeName.trim() || `Recipe ${recipeIndex + 1}`,
+					recipeIndex,
+					calories: roundOneDecimal(totals.calories),
+					protein: roundOneDecimal(totals.protein),
+					fat: roundOneDecimal(totals.fat),
+					carbohydrate: roundOneDecimal(totals.carbohydrate),
+					ingredients: normalizedIngredients,
+				}
+			},
+		)
+
+		const targetCalories =
+			currentMeal.targetCalories === null
+				? null
+				: roundOneDecimal(Math.max(0, currentMeal.targetCalories))
+		const targetProtein =
+			currentMeal.targetProtein === null
+				? null
+				: roundOneDecimal(Math.max(0, currentMeal.targetProtein))
 
 		return {
-			id: normalizedMealId,
+			id: currentMeal.id,
 			mealIndex,
-			name: meal.name.trim() || `Meal ${mealIndex + 1}`,
+			name: currentMeal.name.trim() || `Meal ${mealIndex + 1}`,
 			targetCalories,
 			targetProtein,
 			recipes: normalizedRecipes,
@@ -608,12 +792,12 @@ function normalizeAndValidateAiUserMenuFormFast(form: unknown) {
 	})
 
 	return {
-		name: parsed.data.name.trim() || 'Untitled Menu',
-		description: parsed.data.description
-			? parsed.data.description.trim()
+		name: currentForm.name.trim() || 'Untitled Menu',
+		description: currentForm.description
+			? currentForm.description.trim()
 			: null,
-		startDate: normalizeNullableDateInput(parsed.data.startDate),
-		endDate: normalizeNullableDateInput(parsed.data.endDate),
+		startDate: normalizeNullableDateInput(currentForm.startDate),
+		endDate: normalizeNullableDateInput(currentForm.endDate),
 		meals: normalizedMeals,
 	}
 }
@@ -773,6 +957,24 @@ Rules:
 				})
 			}
 
+			const [availableIngredients, availableRecipes] = await Promise.all([
+				getIngredientsForAiContext(input.organisationId),
+				getRecipesForAiContext(input.organisationId),
+			])
+			if (availableIngredients.length === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No ingredients available for this organisation',
+				})
+			}
+
+			const currentFormIngredientContext = buildUserMenuIngredientMacroContext(
+				input.currentForm,
+				availableIngredients,
+			)
+			const currentFormForPrompt = buildUserMenuFormPromptContext(
+				input.currentForm,
+			)
+
 			const schemaExample = {
 				name: 'string',
 				description: 'string|null',
@@ -783,18 +985,12 @@ Rules:
 						id: 'string',
 						mealIndex: 0,
 						name: 'string',
-						targetCalories: 500,
-						targetProtein: 40,
 						recipes: [
 							{
 								id: 'string',
 								recipeId: 'string',
 								recipeName: 'string',
 								recipeIndex: 0,
-								calories: 500,
-								protein: 40,
-								fat: 15,
-								carbohydrate: 45,
 								ingredients: [
 									{
 										id: 'string',
@@ -815,64 +1011,55 @@ Rules:
 				],
 			}
 
-			let systemPrompt = `
+			const baseSystemPrompt = `
 	You update a user menu form based on a user's request.
 	Return JSON only. No markdown, no commentary.
 	The response must be a single object with this exact shape:
 	${JSON.stringify(schemaExample)}
-	`.trim()
-			let userPrompt = ''
-			let thinkingIngredients: IngredientForAiContext[] = []
-			let thinkingRecipes: RecipeForAiContext[] = []
 
-			if (input.mode === 'thinking') {
-				thinkingIngredients = await getIngredientsForAiContext(
-					input.organisationId,
-				)
-				thinkingRecipes = await getRecipesForAiContext(input.organisationId)
-				if (thinkingIngredients.length === 0) {
-					throw new ORPCError('BAD_REQUEST', {
-						message: 'No ingredients available for this organisation',
-					})
-				}
-
-				systemPrompt = `
-	${systemPrompt}
-
-	Rules:
-	- Use ingredientId values only from the provided ingredient list.
-	- Use recipeId values from provided recipes whenever possible.
+	Domain model:
+	- A menu is a group of meals.
+	- Each meal contains recipe choices for the user.
+	- Each recipe contains ingredients and their serve sizes.
+	- Meal-level calories/protein/fat/carbohydrate values are intentionally not provided in the input context.
+	- Recipe macros must come from ingredient ratios against each ingredient's reference serve size:
+	  ratio = ingredientServeSize / referenceIngredientServeSize
+	  macro = referenceMacro * ratio
+	- Keep output directly usable for UI form state.
 	- Keep fields plain JSON types. Do not return undefined.
-	- Keep ids where possible; create ids for new meals/recipes/ingredients.
 	- startDate and endDate must be YYYY-MM-DD strings or null.
 	- mealIndex and recipeIndex must be zero-based integers.
-	- Keep the output directly usable for UI form state.
 	`.trim()
 
-				userPrompt = JSON.stringify({
-					userRequest: input.request,
-					currentForm: input.currentForm,
-					availableIngredients: thinkingIngredients,
-					availableRecipes: thinkingRecipes,
-				})
-			} else {
-				systemPrompt = `
-	${systemPrompt}
+			const modeRules =
+				input.mode === 'thinking'
+					? `
+	Mode rules (thinking):
+	- You may add or delete recipes inside meals.
+	- You may add or delete ingredients inside recipes.
+	- Use ingredientId values only from availableIngredients.
+	- Use recipeId values from availableRecipes whenever selecting existing recipes.
+	- Keep existing ids where possible; generate ids for new meals/recipes/ingredients.
+	`
+					: `
+	Mode rules (fast):
+	- Only tweak ingredient ratios by changing ingredient serveSize values.
+	- Do not add/delete/reorder meals, recipes, or ingredients.
+	- Do not change recipeId or ingredientId.
+	- Keep menu name/description/dates, meal names, and meal targets unchanged.
+	- Preserve existing ids and structure.
+	`
 
-	Rules:
-	- Use only the currentForm and userRequest provided.
-	- Keep fields plain JSON types. Do not return undefined.
-	- Keep existing ids where possible; create ids for new meals/recipes/ingredients.
-	- startDate and endDate must be YYYY-MM-DD strings or null.
-	- mealIndex and recipeIndex must be zero-based integers.
-	- Return data directly usable as UI form state.
-	`.trim()
+			const systemPrompt = `${baseSystemPrompt}\n\n${modeRules}`.trim()
 
-				userPrompt = JSON.stringify({
-					userRequest: input.request,
-					currentForm: input.currentForm,
-				})
-			}
+			const userPrompt = JSON.stringify({
+				mode: input.mode,
+				userRequest: input.request,
+				currentForm: currentFormForPrompt,
+				currentFormIngredientContext,
+				availableIngredients,
+				availableRecipes,
+			})
 
 			const completion = await requestZenChatCompletion({
 				messages: [
@@ -893,10 +1080,14 @@ Rules:
 				input.mode === 'thinking'
 					? normalizeAndValidateAiUserMenuForm(
 							parsedJson,
-							thinkingIngredients,
-							thinkingRecipes,
+							availableIngredients,
+							availableRecipes,
 						)
-					: normalizeAndValidateAiUserMenuFormFast(parsedJson)
+					: normalizeAndValidateAiUserMenuFormFast(
+							parsedJson,
+							input.currentForm,
+							availableIngredients,
+						)
 
 			return AiUserMenuUpdateOutput.parse({
 				form: normalizedForm,
