@@ -62,28 +62,50 @@ function EditWorkoutPage() {
 		description: workout.description,
 		category: workout.category,
 		warmupGroupId: workout.warmupGroupId ?? null,
-		exercises: (workout.exercises ?? []).map((link) => ({
-			id: link.id,
-			index: link.index,
-			exercise: {
-				id: link.exercise.id,
-				name: link.exercise.name,
-				movement: link.exercise.movement
-					? {
-							name: link.exercise.movement.name,
-						}
-					: null,
-			},
-		})),
-		superSets: (workout.superSets ?? []).map((link) => ({
-			id: link.id,
-			index: link.index,
-			superSet: {
-				id: link.superSet.id,
-				name: link.superSet.name,
-				superSetExercises: link.superSet.superSetExercises ?? [],
-			},
-		})),
+		exercises: (workout.exercises ?? []).flatMap((link) => {
+			if (!link.exercise) return []
+			return [
+				{
+					id: link.id,
+					index: link.index,
+					exercise: {
+						id: link.exercise.id,
+						name: link.exercise.name,
+						movementName: link.exercise.movement?.name ?? null,
+						movement: link.exercise.movement
+							? {
+									name: link.exercise.movement.name,
+								}
+							: null,
+						sets: link.exercise.sets ?? null,
+						reps: link.exercise.reps ?? null,
+						repUnit: link.exercise.repUnit ?? null,
+						ormPercent: link.exercise.ormPercent ?? null,
+						targetRpe: link.exercise.targetRpe ?? null,
+						restTime: link.exercise.restTime ?? null,
+						restUnit: link.exercise.restUnit ?? null,
+						tempoDown: link.exercise.tempoDown ?? null,
+						tempoPause: link.exercise.tempoPause ?? null,
+						tempoUp: link.exercise.tempoUp ?? null,
+						notes: link.exercise.notes ?? null,
+					},
+				},
+			]
+		}),
+		superSets: (workout.superSets ?? []).flatMap((link) => {
+			if (!link.superSet) return []
+			return [
+				{
+					id: link.id,
+					index: link.index,
+					superSet: {
+						id: link.superSet.id,
+						name: link.superSet.name,
+						superSetExercises: link.superSet.superSetExercises ?? [],
+					},
+				},
+			]
+		}),
 	}
 
 	return (

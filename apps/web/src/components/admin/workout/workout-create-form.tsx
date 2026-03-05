@@ -16,17 +16,19 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Textarea } from '@/components/ui/textarea'
 import { orpc } from '@/utils/orpc'
 
-import { useForm } from '@tanstack/react-form'
+import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import {
 	closestCorners,
 	DndContext,
 	type DragEndEvent,
+	type DragOverEvent,
 	DragOverlay,
 	type DragStartEvent,
 	KeyboardSensor,
 	PointerSensor,
+	pointerWithin,
 	useDraggable,
 	useDroppable,
 	useSensor,
@@ -59,13 +61,24 @@ const workoutItemSchema = z.object({
 	type: z.enum(['exercise', 'superset']),
 	movementName: z.string().nullable().optional(),
 	memberCount: z.number().int().min(0).optional(),
+	sets: z.number().int().nullable().optional(),
+	reps: z.number().int().nullable().optional(),
+	repUnit: z.string().nullable().optional(),
+	ormPercent: z.number().nullable().optional(),
+	targetRpe: z.number().nullable().optional(),
+	restTime: z.number().int().nullable().optional(),
+	restUnit: z.string().nullable().optional(),
+	tempoDown: z.number().int().nullable().optional(),
+	tempoPause: z.number().int().nullable().optional(),
+	tempoUp: z.number().int().nullable().optional(),
+	notes: z.string().nullable().optional(),
 })
 
 const workoutFormSchema = z.object({
 	name: z.string().min(1, 'Name is required'),
-	description: z.string().nullable().optional(),
-	category: z.string().nullable().optional(),
-	warmupGroupId: z.string().nullable().optional(),
+	description: z.string().nullable(),
+	category: z.string().nullable(),
+	warmupGroupId: z.string().nullable(),
 	items: z
 		.array(workoutItemSchema)
 		.min(1, 'At least one exercise or superset is required'),
@@ -79,6 +92,17 @@ type LibraryItem = {
 	type: 'exercise' | 'superset'
 	movementName?: string | null
 	memberCount?: number
+	sets?: number | null
+	reps?: number | null
+	repUnit?: string | null
+	ormPercent?: number | null
+	targetRpe?: number | null
+	restTime?: number | null
+	restUnit?: string | null
+	tempoDown?: number | null
+	tempoPause?: number | null
+	tempoUp?: number | null
+	notes?: string | null
 }
 
 type DragData =
@@ -101,6 +125,17 @@ interface WorkoutExerciseLink {
 		movement?: {
 			name: string
 		} | null
+		sets?: number | null
+		reps?: number | null
+		repUnit?: string | null
+		ormPercent?: number | null
+		targetRpe?: number | null
+		restTime?: number | null
+		restUnit?: string | null
+		tempoDown?: number | null
+		tempoPause?: number | null
+		tempoUp?: number | null
+		notes?: string | null
 	}
 }
 
@@ -130,6 +165,17 @@ interface OrgExerciseOption {
 	isSuperSet: boolean
 	movementName: string | null
 	superSetExercises?: Array<unknown>
+	sets?: number | null
+	reps?: number | null
+	repUnit?: string | null
+	ormPercent?: number | null
+	targetRpe?: number | null
+	restTime?: number | null
+	restUnit?: string | null
+	tempoDown?: number | null
+	tempoPause?: number | null
+	tempoUp?: number | null
+	notes?: string | null
 }
 
 interface WarmupGroupOption {
@@ -159,6 +205,17 @@ function mapWorkoutToBuilderItems(
 			movementName:
 				link.exercise.movementName ?? link.exercise.movement?.name ?? null,
 			memberCount: undefined,
+			sets: link.exercise.sets ?? null,
+			reps: link.exercise.reps ?? null,
+			repUnit: link.exercise.repUnit ?? null,
+			ormPercent: link.exercise.ormPercent ?? null,
+			targetRpe: link.exercise.targetRpe ?? null,
+			restTime: link.exercise.restTime ?? null,
+			restUnit: link.exercise.restUnit ?? null,
+			tempoDown: link.exercise.tempoDown ?? null,
+			tempoPause: link.exercise.tempoPause ?? null,
+			tempoUp: link.exercise.tempoUp ?? null,
+			notes: link.exercise.notes ?? null,
 			index: link.index,
 		})),
 		...(workout.superSets ?? []).map((link) => ({
@@ -215,6 +272,7 @@ export function WorkoutCreateForm({
 	const [activeDragData, setActiveDragData] = React.useState<DragData | null>(
 		null,
 	)
+	const lastOverIdRef = React.useRef<string | null>(null)
 
 	const sensors = useSensors(
 		useSensor(PointerSensor, {
@@ -332,16 +390,18 @@ export function WorkoutCreateForm({
 		},
 	})
 
-	const builderItems = form.useStore((state) => state.values.items)
+	const builderItems = useStore(
+		form.store,
+		(state) => state.values.items as WorkoutBuilderItem[],
+	)
 
 	const exercises = (exercisesData as OrgExerciseOption[] | undefined) ?? []
 	const warmupGroups =
 		(warmupGroupsData as WarmupGroupOption[] | undefined) ?? []
 
-	const filteredExercises = React.useMemo(() => {
+	const filteredLibraryItems = React.useMemo(() => {
 		const searchTerm = libraryQuery.trim().toLowerCase()
 		return exercises
-			.filter((item) => !item.isSuperSet)
 			.filter((item) => {
 				if (!searchTerm) return true
 				const nameMatch = item.name.toLowerCase().includes(searchTerm)
@@ -350,29 +410,34 @@ export function WorkoutCreateForm({
 					.includes(searchTerm)
 				return nameMatch || movementMatch
 			})
-			.map((item) => ({
-				id: item.id,
-				name: item.name,
-				type: 'exercise' as const,
-				movementName: item.movementName,
-			}))
-	}, [exercises, libraryQuery])
-
-	const filteredSupersets = React.useMemo(() => {
-		const searchTerm = libraryQuery.trim().toLowerCase()
-		return exercises
-			.filter((item) => item.isSuperSet)
-			.filter((item) => {
-				if (!searchTerm) return true
-				return item.name.toLowerCase().includes(searchTerm)
-			})
-			.map((item) => ({
-				id: item.id,
-				name: item.name,
-				type: 'superset' as const,
-				movementName: null,
-				memberCount: item.superSetExercises?.length ?? 0,
-			}))
+			.map((item) =>
+				item.isSuperSet
+					? ({
+							id: item.id,
+							name: item.name,
+							type: 'superset' as const,
+							movementName: null,
+							memberCount: item.superSetExercises?.length ?? 0,
+						} satisfies LibraryItem)
+					: ({
+							id: item.id,
+							name: item.name,
+							type: 'exercise' as const,
+							movementName: item.movementName,
+							sets: item.sets ?? null,
+							reps: item.reps ?? null,
+							repUnit: item.repUnit ?? null,
+							ormPercent: item.ormPercent ?? null,
+							targetRpe: item.targetRpe ?? null,
+							restTime: item.restTime ?? null,
+							restUnit: item.restUnit ?? null,
+							tempoDown: item.tempoDown ?? null,
+							tempoPause: item.tempoPause ?? null,
+							tempoUp: item.tempoUp ?? null,
+							notes: item.notes ?? null,
+						} satisfies LibraryItem),
+			)
+			.sort((a, b) => a.name.localeCompare(b.name))
 	}, [exercises, libraryQuery])
 
 	const addLibraryItem = (item: LibraryItem, insertIndex?: number) => {
@@ -394,6 +459,17 @@ export function WorkoutCreateForm({
 			type: item.type,
 			movementName: item.movementName ?? null,
 			memberCount: item.memberCount,
+			sets: item.sets ?? null,
+			reps: item.reps ?? null,
+			repUnit: item.repUnit ?? null,
+			ormPercent: item.ormPercent ?? null,
+			targetRpe: item.targetRpe ?? null,
+			restTime: item.restTime ?? null,
+			restUnit: item.restUnit ?? null,
+			tempoDown: item.tempoDown ?? null,
+			tempoPause: item.tempoPause ?? null,
+			tempoUp: item.tempoUp ?? null,
+			notes: item.notes ?? null,
 		}
 
 		if (
@@ -434,18 +510,26 @@ export function WorkoutCreateForm({
 	const onDragStart = (event: DragStartEvent) => {
 		const dragData = event.active.data.current as DragData | undefined
 		setActiveDragData(dragData ?? null)
+		lastOverIdRef.current = null
+	}
+
+	const onDragOver = (event: DragOverEvent) => {
+		lastOverIdRef.current = event.over ? String(event.over.id) : null
 	}
 
 	const onDragEnd = (event: DragEndEvent) => {
 		const dragData = event.active.data.current as DragData | undefined
-		const over = event.over
 		setActiveDragData(null)
 
-		if (!dragData || !over) return
+		const overId = event.over
+			? String(event.over.id)
+			: (lastOverIdRef.current ?? null)
+		lastOverIdRef.current = null
+
+		if (!dragData || !overId) return
 
 		if (dragData.kind === 'library') {
 			const currentItems = form.getFieldValue('items')
-			const overId = String(over.id)
 			const insertIndex =
 				overId === WORKOUT_DROPZONE_ID
 					? currentItems.length
@@ -458,7 +542,6 @@ export function WorkoutCreateForm({
 		}
 
 		if (dragData.kind === 'builder') {
-			const overId = String(over.id)
 			if (overId === WORKOUT_DROPZONE_ID) {
 				const currentItems = form.getFieldValue('items')
 				const fromIndex = currentItems.findIndex(
@@ -500,8 +583,13 @@ export function WorkoutCreateForm({
 		>
 			<DndContext
 				sensors={sensors}
-				collisionDetection={closestCorners}
+				collisionDetection={(args) => {
+					const pointerCollisions = pointerWithin(args)
+					if (pointerCollisions.length > 0) return pointerCollisions
+					return closestCorners(args)
+				}}
 				onDragStart={onDragStart}
+				onDragOver={onDragOver}
 				onDragEnd={onDragEnd}
 			>
 				<div className='space-y-6'>
@@ -614,7 +702,7 @@ export function WorkoutCreateForm({
 									<div className='space-y-3'>
 										<div
 											ref={setDropZoneRef}
-											className={`rounded-xl border p-3 transition-colors ${
+											className={`rounded-xl border p-3 min-h-40 transition-colors ${
 												isOver ? 'border-primary bg-primary/5' : 'border-border'
 											}`}
 										>
@@ -683,51 +771,23 @@ export function WorkoutCreateForm({
 							placeholder='Search exercises or supersets...'
 						/>
 
-						<div className='space-y-2'>
-							<div className='text-sm font-medium text-muted-foreground'>
-								Exercises
+						<ScrollArea className='p-2 rounded-md border h-[30rem]'>
+							<div className='space-y-2'>
+								{filteredLibraryItems.length === 0 ? (
+									<p className='py-6 px-2 text-sm text-center text-muted-foreground'>
+										No exercises or supersets found.
+									</p>
+								) : (
+									filteredLibraryItems.map((item) => (
+										<LibraryDraggableItem
+											key={`${item.type}-${item.id}`}
+											item={item}
+											onAdd={addLibraryItem}
+										/>
+									))
+								)}
 							</div>
-							<ScrollArea className='p-2 h-60 rounded-md border'>
-								<div className='space-y-2'>
-									{filteredExercises.length === 0 ? (
-										<p className='py-6 px-2 text-sm text-center text-muted-foreground'>
-											No exercises found.
-										</p>
-									) : (
-										filteredExercises.map((item) => (
-											<LibraryDraggableItem
-												key={`exercise-${item.id}`}
-												item={item}
-												onAdd={addLibraryItem}
-											/>
-										))
-									)}
-								</div>
-							</ScrollArea>
-						</div>
-
-						<div className='space-y-2'>
-							<div className='text-sm font-medium text-muted-foreground'>
-								Supersets
-							</div>
-							<ScrollArea className='p-2 h-52 rounded-md border'>
-								<div className='space-y-2'>
-									{filteredSupersets.length === 0 ? (
-										<p className='py-6 px-2 text-sm text-center text-muted-foreground'>
-											No supersets found.
-										</p>
-									) : (
-										filteredSupersets.map((item) => (
-											<LibraryDraggableItem
-												key={`superset-${item.id}`}
-												item={item}
-												onAdd={addLibraryItem}
-											/>
-										))
-									)}
-								</div>
-							</ScrollArea>
-						</div>
+						</ScrollArea>
 					</CardContent>
 				</Card>
 
@@ -745,7 +805,104 @@ function mapLibraryToBuilderItem(item: LibraryItem): WorkoutBuilderItem {
 		type: item.type,
 		movementName: item.movementName ?? null,
 		memberCount: item.memberCount,
+		sets: item.sets ?? null,
+		reps: item.reps ?? null,
+		repUnit: item.repUnit ?? null,
+		ormPercent: item.ormPercent ?? null,
+		targetRpe: item.targetRpe ?? null,
+		restTime: item.restTime ?? null,
+		restUnit: item.restUnit ?? null,
+		tempoDown: item.tempoDown ?? null,
+		tempoPause: item.tempoPause ?? null,
+		tempoUp: item.tempoUp ?? null,
+		notes: item.notes ?? null,
 	}
+}
+
+function getExerciseDetailBadges(
+	item: Pick<
+		WorkoutBuilderItem,
+		| 'movementName'
+		| 'sets'
+		| 'reps'
+		| 'repUnit'
+		| 'ormPercent'
+		| 'targetRpe'
+		| 'restTime'
+		| 'restUnit'
+		| 'tempoDown'
+		| 'tempoPause'
+		| 'tempoUp'
+	>,
+): string[] {
+	const details: string[] = []
+
+	if (item.movementName) details.push(item.movementName)
+
+	const hasSetsOrReps = item.sets !== null || item.reps !== null
+	if (hasSetsOrReps) {
+		const sets = item.sets === null ? '?' : String(item.sets)
+		const reps = item.reps === null ? '?' : String(item.reps)
+		details.push(`${sets} x ${reps}${item.repUnit ? ` ${item.repUnit}` : ''}`)
+	}
+
+	if (item.ormPercent !== null) details.push(`${item.ormPercent}% 1RM`)
+	if (item.targetRpe !== null) details.push(`RPE ${item.targetRpe}`)
+	if (item.restTime !== null)
+		details.push(
+			`Rest ${item.restTime}${item.restUnit ? ` ${item.restUnit}` : ''}`,
+		)
+
+	const hasTempo =
+		item.tempoDown !== null || item.tempoPause !== null || item.tempoUp !== null
+	if (hasTempo) {
+		const down = item.tempoDown === null ? '-' : String(item.tempoDown)
+		const pause = item.tempoPause === null ? '-' : String(item.tempoPause)
+		const up = item.tempoUp === null ? '-' : String(item.tempoUp)
+		details.push(`Tempo ${down}-${pause}-${up}`)
+	}
+
+	return details
+}
+
+function ExerciseDetails({ item }: { item: WorkoutBuilderItem }) {
+	if (item.type !== 'exercise') {
+		return (
+			<p className='text-xs truncate text-muted-foreground'>
+				{`${item.memberCount ?? 0} exercises`}
+			</p>
+		)
+	}
+
+	const detailBadges = getExerciseDetailBadges(item)
+	const trimmedNotes = item.notes?.trim() ?? ''
+
+	return (
+		<div className='space-y-1'>
+			<div className='flex flex-wrap gap-1'>
+				{detailBadges.length === 0 ? (
+					<Badge variant='outline' className='px-1 font-normal text-[10px]'>
+						No details
+					</Badge>
+				) : (
+					detailBadges.map((detail) => (
+						<Badge
+							key={detail}
+							variant='outline'
+							className='px-1 font-normal text-[10px]'
+						>
+							{detail}
+						</Badge>
+					))
+				)}
+			</div>
+			{trimmedNotes ? (
+				<p className='text-xs line-clamp-2 text-muted-foreground'>
+					{trimmedNotes}
+				</p>
+			) : null}
+		</div>
+	)
 }
 
 function WorkoutItemPreview({ item }: { item: WorkoutBuilderItem }) {
@@ -762,11 +919,7 @@ function WorkoutItemPreview({ item }: { item: WorkoutBuilderItem }) {
 				)}
 				<div className='flex-1 min-w-0'>
 					<p className='font-medium truncate'>{item.name}</p>
-					<p className='text-xs truncate text-muted-foreground'>
-						{item.type === 'superset'
-							? `${item.memberCount ?? 0} exercises`
-							: item.movementName || 'No movement'}
-					</p>
+					<ExerciseDetails item={item} />
 				</div>
 			</div>
 		</div>
@@ -817,12 +970,15 @@ function LibraryDraggableItem({
 			)}
 
 			<div className='flex-1 min-w-0'>
-				<p className='text-sm font-medium truncate'>{item.name}</p>
-				<p className='text-xs truncate text-muted-foreground'>
-					{item.type === 'superset'
-						? `${item.memberCount ?? 0} exercises`
-						: item.movementName || 'No movement'}
-				</p>
+				<div className='flex gap-2 items-center'>
+					<p className='text-sm font-medium truncate'>{item.name}</p>
+					{item.type === 'superset' ? (
+						<Badge variant='secondary' className='py-0 px-1.5 text-[10px]'>
+							Superset
+						</Badge>
+					) : null}
+				</div>
+				<ExerciseDetails item={mapLibraryToBuilderItem(item)} />
 			</div>
 
 			<Button
@@ -895,12 +1051,15 @@ function SortableWorkoutItem({
 			)}
 
 			<div className='flex-1 min-w-0'>
-				<p className='text-sm font-medium truncate'>{item.name}</p>
-				<p className='text-xs truncate text-muted-foreground'>
-					{item.type === 'superset'
-						? `${item.memberCount ?? 0} exercises`
-						: item.movementName || 'No movement'}
-				</p>
+				<div className='flex gap-2 items-center'>
+					<p className='text-sm font-medium truncate'>{item.name}</p>
+					{item.type === 'superset' ? (
+						<Badge variant='secondary' className='py-0 px-1.5 text-[10px]'>
+							Superset
+						</Badge>
+					) : null}
+				</div>
+				<ExerciseDetails item={item} />
 			</div>
 
 			<Button
