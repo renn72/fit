@@ -8,10 +8,22 @@ import { protectedProcedure } from '../index'
 import {
 	OrganisationCreateInput,
 	OrganisationGetPlanByCodeInput,
+	OrganisationUpdateMetaTagsInput,
 	PlanCreateInput,
 	PlanDeleteInput,
 	PlanUpdateInput,
 } from '../schemas/organisation'
+
+function normalizeMetaTagsCsv(metaTags: string | null | undefined): string {
+	return Array.from(
+		new Set(
+			(metaTags ?? '')
+				.split(',')
+				.map((tag) => tag.trim())
+				.filter(Boolean),
+		),
+	).join(',')
+}
 
 export const orgRouter = {
 	create: protectedProcedure
@@ -205,6 +217,7 @@ export const orgRouter = {
 							plan: {
 								columns: {
 									name: true,
+									metaTags: true,
 									maxMembers: true,
 									maxTrainers: true,
 									priceMonthly: true,
@@ -217,7 +230,9 @@ export const orgRouter = {
 			})
 
 			return orgs.map((o) => {
-				const sub = o.subscriptions?.[0]
+				const sub = [...(o.subscriptions ?? [])].sort(
+					(a, b) => b.createdAt.getTime() - a.createdAt.getTime(),
+				)[0]
 				const plan = sub?.plan
 
 				// Calculate effective limits
@@ -265,6 +280,7 @@ export const orgRouter = {
 					creatorEmail: o.creator?.email ?? '',
 					memberCount: o.members?.length ?? 0,
 					planName: plan?.name ?? 'No Plan',
+					planMetaTags: plan?.metaTags ?? '',
 					// Subscription details
 					subscriptionId: sub?.id,
 					// Discount info
@@ -292,6 +308,40 @@ export const orgRouter = {
 			})
 		}),
 
+	updateMetaTags: protectedProcedure
+		.route({
+			method: 'PATCH',
+			path: '/organisation/meta-tags',
+			summary: 'Update organisation meta tags (Dictator only)',
+			tags: ['Organisation'],
+		})
+		.input(OrganisationUpdateMetaTagsInput)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message:
+						'You do not have permission to update organisation meta tags',
+				})
+			}
+
+			const [updatedOrg] = await db
+				.update(organisation)
+				.set({
+					metaTags: normalizeMetaTagsCsv(input.metaTags),
+				})
+				.where(eq(organisation.id, input.organisationId))
+				.returning()
+
+			if (!updatedOrg) {
+				throw new ORPCError('NOT_FOUND', {
+					message: 'Organisation not found',
+				})
+			}
+
+			return updatedOrg
+		}),
+
 	// ***************** Plan Management (Dictator Only) *******************
 	createPlan: protectedProcedure
 		.route({
@@ -309,7 +359,13 @@ export const orgRouter = {
 				})
 			}
 
-			const [newPlan] = await db.insert(plan).values(input).returning()
+			const [newPlan] = await db
+				.insert(plan)
+				.values({
+					...input,
+					metaTags: normalizeMetaTagsCsv(input.metaTags),
+				})
+				.returning()
 			return newPlan
 		}),
 
@@ -330,9 +386,16 @@ export const orgRouter = {
 			}
 
 			const { id, ...updateData } = input
+			const nextMetaTags =
+				updateData.metaTags === undefined
+					? undefined
+					: normalizeMetaTagsCsv(updateData.metaTags)
 			const [updatedPlan] = await db
 				.update(plan)
-				.set(updateData)
+				.set({
+					...updateData,
+					metaTags: nextMetaTags,
+				})
 				.where(eq(plan.id, id))
 				.returning()
 

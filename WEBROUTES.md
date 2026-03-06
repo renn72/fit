@@ -104,6 +104,27 @@ This document summarizes the current TanStack Router setup and every route defin
 - Rendering:
   - `ssr: false`
 
+### `/dictator/app-features`
+- File: `apps/web/src/routes/dictator/app-features.tsx`
+- Purpose:
+  - Global app-level feature controls
+  - Manages `aiEnabled` and `aiNutritionEnabled` toggles
+- Data:
+  - Prefetches `orpc.feature.getAppFeatures`
+- Rendering:
+  - `ssr: false`
+
+### `/dictator/org-features`
+- File: `apps/web/src/routes/dictator/org-features.tsx`
+- Purpose:
+  - Organisation-level feature/metatag management
+  - Toggles `aiEnabled` and `aiNutritionEnabled` in organisation `metaTags`
+  - Displays plan `metaTags` as read-only context
+- Data:
+  - Prefetches `orpc.organisation.getAll`
+- Rendering:
+  - `ssr: false`
+
 ### `/dictator/orgs`
 - File: `apps/web/src/routes/dictator/orgs.tsx`
 - Purpose:
@@ -293,6 +314,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - Create recipe form
 - Data:
   - Prefetches `orpc.ingredient.getAllOrg`
+  - Form additionally queries `orpc.feature.getAiAccess` at component level to decide if AI controls are visible
 - Rendering:
   - `ssr: false`
 
@@ -302,6 +324,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - Edit recipe form
 - Data:
   - Prefetches `orpc.ingredient.getAllOrg` and `orpc.recipe.get`
+  - Form additionally queries `orpc.feature.getAiAccess` at component level to decide if AI controls are visible
 - Rendering:
   - `ssr: false`
 
@@ -391,6 +414,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - Create menu template using shared `UserMenuForm` in `mode='template'`
 - Data:
   - Prefetches `orpc.recipe.getOrg` and `orpc.userMenu.getTemplatesOrg`
+  - `UserMenuForm` also queries `orpc.feature.getAiAccess` to conditionally show AI controls
 - Rendering:
   - `ssr: false`
 
@@ -400,6 +424,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - Edit menu template using shared `UserMenuForm` in `mode='template'`
 - Data:
   - Prefetches `orpc.recipe.getOrg`, `orpc.userMenu.getTemplatesOrg`, and `orpc.userMenu.get`
+  - `UserMenuForm` also queries `orpc.feature.getAiAccess` to conditionally show AI controls
 - Rendering:
   - `ssr: false`
 
@@ -417,6 +442,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - User menu creation flow
 - Data:
   - Prefetches `orpc.userMenu.getTemplatesOrg`
+  - `UserMenuForm` also queries `orpc.feature.getAiAccess` to conditionally show AI controls
 - Rendering:
   - `ssr: false`
 
@@ -435,10 +461,11 @@ This document summarizes the current TanStack Router setup and every route defin
   - Edit existing user menu
 - Data:
   - Prefetches `orpc.userMenu.get` and `orpc.userMenu.getTemplatesOrg`
+  - `UserMenuForm` also queries `orpc.feature.getAiAccess` to conditionally show AI controls
 - Rendering:
   - `ssr: false`
 
 ## Route Inventory Source
 
 - Generated tree used for path verification: `apps/web/src/routeTree.gen.ts`
-- Full path count in generated tree: 44 concrete file routes (plus `__root` layout)
+- Full path count in generated tree: 46 concrete file routes (plus `__root` layout)

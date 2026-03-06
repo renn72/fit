@@ -206,6 +206,15 @@ export function RecipeForm({
 		}),
 	)
 
+	const { data: aiAccess } = useQuery(
+		orpc.feature.getAiAccess.queryOptions({
+			input: { organisationId },
+		}),
+	)
+	const isAiEnabled =
+		aiAccess?.effective.aiEnabled === true &&
+		aiAccess?.effective.aiNutritionEnabled === true
+
 	const initialFormValues = React.useMemo<RecipeFormValues | null>(() => {
 		if (!isEditMode || !existingRecipe) return null
 		return {
@@ -470,6 +479,11 @@ export function RecipeForm({
 
 	const handleAiRequest = React.useCallback(
 		async (request: string) => {
+			if (!isAiEnabled) {
+				toast.error('AI features are not enabled for this organisation')
+				return
+			}
+
 			const trimmedRequest = request.trim()
 			if (!trimmedRequest) {
 				toast.error('Enter a request for AI')
@@ -489,7 +503,7 @@ export function RecipeForm({
 				},
 			})
 		},
-		[form, organisationId, updateRecipeWithAi],
+		[form, isAiEnabled, organisationId, updateRecipeWithAi],
 	)
 
 	return (
@@ -526,20 +540,22 @@ export function RecipeForm({
 									</SidebarTrigger>
 								</div>
 
-								<Card>
-									<CardHeader>
-										<CardTitle>Ask AI</CardTitle>
-										<CardDescription>
-											Send a request and AI will update this recipe form.
-										</CardDescription>
-									</CardHeader>
-									<CardContent className='space-y-3'>
-										<AiRequestInput
-											isPending={updateRecipeWithAi.isPending}
-											onSend={handleAiRequest}
-										/>
-									</CardContent>
-								</Card>
+								{isAiEnabled && (
+									<Card>
+										<CardHeader>
+											<CardTitle>Ask AI</CardTitle>
+											<CardDescription>
+												Send a request and AI will update this recipe form.
+											</CardDescription>
+										</CardHeader>
+										<CardContent className='space-y-3'>
+											<AiRequestInput
+												isPending={updateRecipeWithAi.isPending}
+												onSend={handleAiRequest}
+											/>
+										</CardContent>
+									</Card>
+								)}
 
 								<Card>
 									<CardHeader>

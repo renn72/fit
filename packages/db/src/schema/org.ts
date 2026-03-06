@@ -14,6 +14,7 @@ export const organisation = s.sqliteTable(
 		name: s.text('name').notNull(),
 		slug: s.text('slug').notNull().unique(),
 		timezone: s.text('timezone').notNull().default('UTC'),
+		metaTags: s.text('meta_tags').default('').notNull(),
 		state: s.text('state').notNull(),
 		creatorId: s.text('creator_id').references(() => user.id, {
 			onDelete: 'set null',
@@ -80,7 +81,19 @@ export const plan = s.sqliteTable('plan', {
 	maxMembers: s.integer('max_members').default(1).notNull(),
 	maxTrainers: s.integer('max_trainers').default(1).notNull(),
 	tags: s.text('tags').default('').notNull(),
+	metaTags: s.text('meta_tags').default('').notNull(),
 	hidden: s.integer('hidden', { mode: 'boolean' }).default(false).notNull(),
+})
+
+export const features = s.sqliteTable('features', {
+	aiEnabled: s
+		.integer('ai_enabled', { mode: 'boolean' })
+		.default(false)
+		.notNull(),
+	aiNutritionEnabled: s
+		.integer('ai_nutrition_enabled', { mode: 'boolean' })
+		.default(false)
+		.notNull(),
 })
 
 export const planCode = s.sqliteTable('plan_code', {

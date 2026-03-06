@@ -538,6 +538,15 @@ export function UserMenuForm({
 		}),
 	)
 
+	const { data: aiAccess } = useQuery(
+		orpc.feature.getAiAccess.queryOptions({
+			input: { organisationId: userOrgId },
+		}),
+	)
+	const isAiEnabled =
+		aiAccess?.effective.aiEnabled === true &&
+		aiAccess?.effective.aiNutritionEnabled === true
+
 	const batchCreateMenuMutation = useMutation(
 		orpc.userMenu.batchCreate.mutationOptions({
 			onSuccess: () => {
@@ -630,6 +639,11 @@ export function UserMenuForm({
 
 	const handleAiRequest = React.useCallback(
 		async (request: string, mode: AiMenuMode) => {
+			if (!isAiEnabled) {
+				toast.error('AI features are not enabled for this organisation')
+				return
+			}
+
 			const trimmedRequest = request.trim()
 			if (!trimmedRequest) {
 				toast.error('Enter a request for AI')
@@ -643,7 +657,7 @@ export function UserMenuForm({
 				currentForm: formDataRef.current,
 			})
 		},
-		[updateUserMenuWithAi, userOrgId],
+		[isAiEnabled, updateUserMenuWithAi, userOrgId],
 	)
 
 	const recipeOptions = React.useMemo(() => {
@@ -1831,22 +1845,24 @@ export function UserMenuForm({
 											</Button>
 										)}
 
-										<Card>
-											<CardHeader>
-												<CardTitle>Ask AI</CardTitle>
-												<CardDescription>
-													Send a request and AI will update this menu form.
-												</CardDescription>
-											</CardHeader>
-											<CardContent className='space-y-3'>
-												<AiMenuRequestInput
-													isPending={updateUserMenuWithAi.isPending}
-													mode={aiMode}
-													onModeChange={setAiMode}
-													onSend={handleAiRequest}
-												/>
-											</CardContent>
-										</Card>
+										{isAiEnabled && (
+											<Card>
+												<CardHeader>
+													<CardTitle>Ask AI</CardTitle>
+													<CardDescription>
+														Send a request and AI will update this menu form.
+													</CardDescription>
+												</CardHeader>
+												<CardContent className='space-y-3'>
+													<AiMenuRequestInput
+														isPending={updateUserMenuWithAi.isPending}
+														mode={aiMode}
+														onModeChange={setAiMode}
+														onSend={handleAiRequest}
+													/>
+												</CardContent>
+											</Card>
+										)}
 
 										<Card>
 											<CardHeader>

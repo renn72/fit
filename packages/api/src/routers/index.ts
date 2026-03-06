@@ -2,6 +2,7 @@ import { adminSetupRouter } from './admin-setup'
 import { aiRouter } from './ai'
 import { blockTemplateRouter } from './block-template'
 import { exerciseRouter } from './exercise'
+import { featureRouter } from './feature'
 import { ingredientRouter } from './ingredient'
 import { menuTemplateRouter } from './menu-template'
 import { movementRouter } from './movement'
@@ -47,6 +48,7 @@ export const appRouter = {
 	movement: movementRouter,
 	exercise: exerciseRouter,
 	ingredient: ingredientRouter,
+	feature: featureRouter,
 	recipe: recipeRouter,
 	workout: workoutRouter,
 	warmup: warmupRouter,

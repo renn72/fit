@@ -25,9 +25,9 @@ This file summarizes the current oRPC API implementation by reading:
 - `healthCheck` (`GET /health-check`) returns `'OK'`.
 - `privateData` (`GET /private-data`) returns `{ message, user }` for authenticated users.
 - Mounted routers:
-- `organisation`, `user`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `ai`.
+- `organisation`, `user`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `feature`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `ai`.
 
-Total procedures in router files: **122**.
+Total procedures in router files: **126**.
 
 ## Cross-Cutting Patterns
 
@@ -38,6 +38,7 @@ Total procedures in router files: **122**.
 - Many org-scoped endpoints validate `organisationId` against `context.session.user.organisationId` unless `dictator`.
 - Multiple domains use transactional writes (`db.transaction`) for batch or multi-entity operations.
 - Ingredient nutrition values are often rounded to 1 decimal in API writes.
+- AI availability is gated by both app-level feature flags and org/plan meta tags (`aiEnabled`, `aiNutritionEnabled`).
 
 ## Router Details
 
@@ -51,6 +52,7 @@ Total procedures in router files: **122**.
 | `getAllPlans` | `GET` | `/organisation/plans` | Get all visible plans |
 | `getPlanByCode` | `GET` | `/organisation/plan-by-code/{code}` | Resolve plan by access code |
 | `getAll` | `GET` | `/organisation/all` | Dictator-only org list |
+| `updateMetaTags` | `PATCH` | `/organisation/meta-tags` | Dictator-only organisation metatag update |
 | `createPlan` | `POST` | `/plan` | Dictator-only plan create |
 | `updatePlan` | `PATCH` | `/plan` | Dictator-only plan update |
 | `deletePlan` | `DELETE` | `/plan/{id}` | Dictator-only plan delete |
@@ -68,9 +70,12 @@ Total procedures in router files: **122**.
 - creator info,
 - member count,
 - subscription/plan info,
+- `planMetaTags` from the org's latest subscription plan,
 - effective member/trainer limits,
 - discounted monthly/yearly prices,
 - active-discount and active-bonus flags.
+- `updateMetaTags` normalizes CSV tags (trim + dedupe) before write.
+- `createPlan` and `updatePlan` now support normalized plan `metaTags`.
 
 ## `userRouter` (`packages/api/src/routers/user.ts`)
 
@@ -101,6 +106,26 @@ Total procedures in router files: **122**.
 - effective limits (`plan + bonus`),
 - discounted prices (`percentage` or fixed discount),
 - active discount/bonus flags based on expiry.
+
+## `featureRouter` (`packages/api/src/routers/feature.ts`)
+
+### Endpoints
+| Procedure | Method | Path | Summary |
+|---|---|---|---|
+| `getAppFeatures` | `GET` | `/feature/app` | Get app-level feature flags |
+| `updateAppFeatures` | `PATCH` | `/feature/app` | Dictator-only update of app-level feature flags |
+| `getAiAccess` | `GET` | `/feature/ai-access` | Resolve effective AI access for an organisation |
+
+### Behavior Notes
+- `getAppFeatures` auto-initializes a default `features` row (`aiEnabled=false`, `aiNutritionEnabled=false`) when missing.
+- `updateAppFeatures` is `dictator`-only and rewrites app-level toggle state.
+- `getAiAccess`:
+- allows non-dictator users to query only their own organisation,
+- combines app toggles + org meta tags + current plan meta tags,
+- computes `effective.aiEnabled`, `effective.aiNutritionEnabled`, and `effective.allEnabled`.
+- Effective AI access requires:
+- app-level toggle on, and
+- corresponding metatag present in either organisation `metaTags` or plan `metaTags`.
 
 ## `movementRouter` (`packages/api/src/routers/movement.ts`)
 
@@ -378,6 +403,9 @@ Total procedures in router files: **122**.
 
 ### Behavior Notes
 - Access requires `itemUpdater` or `dictator`.
+- All AI endpoints also require effective AI feature access (`feature.getAiAccess` logic):
+- app-level flags must be enabled, and
+- org or active plan must include `aiEnabled` and `aiNutritionEnabled` meta tags.
 - Uses external OpenAI-compatible endpoint:
 - `POST https://opencode.ai/zen/v1/chat/completions`
 - auth header from `env.ZEN_API_KEY`

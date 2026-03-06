@@ -1,6 +1,8 @@
 import { db } from '@fit/db'
 import { env } from '@fit/env/server'
 
+import { getAiFeatureAccessForOrganisation } from './feature'
+
 import { randomUUID } from 'node:crypto'
 import { ORPCError } from '@orpc/server'
 import { protectedProcedure } from '../index'
@@ -802,6 +804,23 @@ function normalizeAndValidateAiUserMenuFormFast(
 	}
 }
 
+function assertAiFeaturesEnabled(access: {
+	effective: {
+		aiEnabled: boolean
+		aiNutritionEnabled: boolean
+		allEnabled: boolean
+	}
+}) {
+	if (access.effective.allEnabled) {
+		return
+	}
+
+	throw new ORPCError('FORBIDDEN', {
+		message:
+			'AI features are not enabled for this organisation. Enable app-level AI toggles and aiEnabled/aiNutritionEnabled meta tags on organisation or plan.',
+	})
+}
+
 export const aiRouter = {
 	test: protectedProcedure
 		.route({
@@ -818,6 +837,16 @@ export const aiRouter = {
 					message: 'You do not have permission to use AI tools',
 				})
 			}
+
+			const userOrgId = context.session.user.organisationId
+			if (!userOrgId) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'User is not associated with an organisation',
+				})
+			}
+
+			const access = await getAiFeatureAccessForOrganisation(userOrgId)
+			assertAiFeaturesEnabled(access)
 
 			const payload = await requestZenChatCompletion({
 				messages: [{ role: 'user', content: input.prompt }],
@@ -859,6 +888,11 @@ export const aiRouter = {
 						'You do not have permission to update recipes for this organisation',
 				})
 			}
+
+			const access = await getAiFeatureAccessForOrganisation(
+				input.organisationId,
+			)
+			assertAiFeaturesEnabled(access)
 
 			const ingredients = await getIngredientsForAiContext(input.organisationId)
 			if (ingredients.length === 0) {
@@ -956,6 +990,11 @@ Rules:
 						'You do not have permission to update menus for this organisation',
 				})
 			}
+
+			const access = await getAiFeatureAccessForOrganisation(
+				input.organisationId,
+			)
+			assertAiFeaturesEnabled(access)
 
 			const [availableIngredients, availableRecipes] = await Promise.all([
 				getIngredientsForAiContext(input.organisationId),

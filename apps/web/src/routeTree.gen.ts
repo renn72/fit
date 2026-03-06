@@ -22,10 +22,12 @@ import { Route as DictatorPlansRouteImport } from './routes/dictator/plans'
 import { Route as DictatorOrgsRouteImport } from './routes/dictator/orgs'
 import { Route as DictatorOrgMovementsRouteImport } from './routes/dictator/org-movements'
 import { Route as DictatorOrgIngredientsRouteImport } from './routes/dictator/org-ingredients'
+import { Route as DictatorOrgFeaturesRouteImport } from './routes/dictator/org-features'
 import { Route as DictatorGenerationRouteImport } from './routes/dictator/generation'
 import { Route as DictatorExercisesRouteImport } from './routes/dictator/exercises'
 import { Route as DictatorBaseMovementsRouteImport } from './routes/dictator/base-movements'
 import { Route as DictatorBaseIngredientsRouteImport } from './routes/dictator/base-ingredients'
+import { Route as DictatorAppFeaturesRouteImport } from './routes/dictator/app-features'
 import { Route as OrgSlugWorkoutsRouteImport } from './routes/$orgSlug/workouts'
 import { Route as OrgSlugWarmupsRouteImport } from './routes/$orgSlug/warmups'
 import { Route as OrgSlugUserMenusRouteImport } from './routes/$orgSlug/user-menus'
@@ -119,6 +121,11 @@ const DictatorOrgIngredientsRoute = DictatorOrgIngredientsRouteImport.update({
   path: '/org-ingredients',
   getParentRoute: () => DictatorRoute,
 } as any)
+const DictatorOrgFeaturesRoute = DictatorOrgFeaturesRouteImport.update({
+  id: '/org-features',
+  path: '/org-features',
+  getParentRoute: () => DictatorRoute,
+} as any)
 const DictatorGenerationRoute = DictatorGenerationRouteImport.update({
   id: '/generation',
   path: '/generation',
@@ -137,6 +144,11 @@ const DictatorBaseMovementsRoute = DictatorBaseMovementsRouteImport.update({
 const DictatorBaseIngredientsRoute = DictatorBaseIngredientsRouteImport.update({
   id: '/base-ingredients',
   path: '/base-ingredients',
+  getParentRoute: () => DictatorRoute,
+} as any)
+const DictatorAppFeaturesRoute = DictatorAppFeaturesRouteImport.update({
+  id: '/app-features',
+  path: '/app-features',
   getParentRoute: () => DictatorRoute,
 } as any)
 const OrgSlugWorkoutsRoute = OrgSlugWorkoutsRouteImport.update({
@@ -305,10 +317,12 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/dictator/app-features': typeof DictatorAppFeaturesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
   '/dictator/generation': typeof DictatorGenerationRoute
+  '/dictator/org-features': typeof DictatorOrgFeaturesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
   '/dictator/org-movements': typeof DictatorOrgMovementsRoute
   '/dictator/orgs': typeof DictatorOrgsRoute
@@ -351,10 +365,12 @@ export interface FileRoutesByTo {
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/dictator/app-features': typeof DictatorAppFeaturesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
   '/dictator/generation': typeof DictatorGenerationRoute
+  '/dictator/org-features': typeof DictatorOrgFeaturesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
   '/dictator/org-movements': typeof DictatorOrgMovementsRoute
   '/dictator/orgs': typeof DictatorOrgsRoute
@@ -398,10 +414,12 @@ export interface FileRoutesById {
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
   '/$orgSlug/workouts': typeof OrgSlugWorkoutsRoute
+  '/dictator/app-features': typeof DictatorAppFeaturesRoute
   '/dictator/base-ingredients': typeof DictatorBaseIngredientsRoute
   '/dictator/base-movements': typeof DictatorBaseMovementsRoute
   '/dictator/exercises': typeof DictatorExercisesRoute
   '/dictator/generation': typeof DictatorGenerationRoute
+  '/dictator/org-features': typeof DictatorOrgFeaturesRoute
   '/dictator/org-ingredients': typeof DictatorOrgIngredientsRoute
   '/dictator/org-movements': typeof DictatorOrgMovementsRoute
   '/dictator/orgs': typeof DictatorOrgsRoute
@@ -446,10 +464,12 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
+    | '/dictator/app-features'
     | '/dictator/base-ingredients'
     | '/dictator/base-movements'
     | '/dictator/exercises'
     | '/dictator/generation'
+    | '/dictator/org-features'
     | '/dictator/org-ingredients'
     | '/dictator/org-movements'
     | '/dictator/orgs'
@@ -492,10 +512,12 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
+    | '/dictator/app-features'
     | '/dictator/base-ingredients'
     | '/dictator/base-movements'
     | '/dictator/exercises'
     | '/dictator/generation'
+    | '/dictator/org-features'
     | '/dictator/org-ingredients'
     | '/dictator/org-movements'
     | '/dictator/orgs'
@@ -538,10 +560,12 @@ export interface FileRouteTypes {
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
     | '/$orgSlug/workouts'
+    | '/dictator/app-features'
     | '/dictator/base-ingredients'
     | '/dictator/base-movements'
     | '/dictator/exercises'
     | '/dictator/generation'
+    | '/dictator/org-features'
     | '/dictator/org-ingredients'
     | '/dictator/org-movements'
     | '/dictator/orgs'
@@ -669,6 +693,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DictatorOrgIngredientsRouteImport
       parentRoute: typeof DictatorRoute
     }
+    '/dictator/org-features': {
+      id: '/dictator/org-features'
+      path: '/org-features'
+      fullPath: '/dictator/org-features'
+      preLoaderRoute: typeof DictatorOrgFeaturesRouteImport
+      parentRoute: typeof DictatorRoute
+    }
     '/dictator/generation': {
       id: '/dictator/generation'
       path: '/generation'
@@ -695,6 +726,13 @@ declare module '@tanstack/react-router' {
       path: '/base-ingredients'
       fullPath: '/dictator/base-ingredients'
       preLoaderRoute: typeof DictatorBaseIngredientsRouteImport
+      parentRoute: typeof DictatorRoute
+    }
+    '/dictator/app-features': {
+      id: '/dictator/app-features'
+      path: '/app-features'
+      fullPath: '/dictator/app-features'
+      preLoaderRoute: typeof DictatorAppFeaturesRouteImport
       parentRoute: typeof DictatorRoute
     }
     '/$orgSlug/workouts': {
@@ -954,10 +992,12 @@ const OrgSlugRouteWithChildren =
   OrgSlugRoute._addFileChildren(OrgSlugRouteChildren)
 
 interface DictatorRouteChildren {
+  DictatorAppFeaturesRoute: typeof DictatorAppFeaturesRoute
   DictatorBaseIngredientsRoute: typeof DictatorBaseIngredientsRoute
   DictatorBaseMovementsRoute: typeof DictatorBaseMovementsRoute
   DictatorExercisesRoute: typeof DictatorExercisesRoute
   DictatorGenerationRoute: typeof DictatorGenerationRoute
+  DictatorOrgFeaturesRoute: typeof DictatorOrgFeaturesRoute
   DictatorOrgIngredientsRoute: typeof DictatorOrgIngredientsRoute
   DictatorOrgMovementsRoute: typeof DictatorOrgMovementsRoute
   DictatorOrgsRoute: typeof DictatorOrgsRoute
@@ -966,10 +1006,12 @@ interface DictatorRouteChildren {
 }
 
 const DictatorRouteChildren: DictatorRouteChildren = {
+  DictatorAppFeaturesRoute: DictatorAppFeaturesRoute,
   DictatorBaseIngredientsRoute: DictatorBaseIngredientsRoute,
   DictatorBaseMovementsRoute: DictatorBaseMovementsRoute,
   DictatorExercisesRoute: DictatorExercisesRoute,
   DictatorGenerationRoute: DictatorGenerationRoute,
+  DictatorOrgFeaturesRoute: DictatorOrgFeaturesRoute,
   DictatorOrgIngredientsRoute: DictatorOrgIngredientsRoute,
   DictatorOrgMovementsRoute: DictatorOrgMovementsRoute,
   DictatorOrgsRoute: DictatorOrgsRoute,

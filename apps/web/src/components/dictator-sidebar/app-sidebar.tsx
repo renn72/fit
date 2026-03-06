@@ -2,7 +2,6 @@ import type * as React from 'react'
 
 import { NavMain } from '@/components/dictator-sidebar/nav-main'
 import { NavSecondary } from '@/components/dictator-sidebar/nav-secondary'
-import { NavUser } from '@/components/dictator-sidebar/nav-user'
 import {
 	Sidebar,
 	SidebarContent,
@@ -44,6 +43,14 @@ const data = {
 				{
 					title: 'Plans',
 					url: '/dictator/plans',
+				},
+				{
+					title: 'App Features',
+					url: '/dictator/app-features',
+				},
+				{
+					title: 'Org Features',
+					url: '/dictator/org-features',
 				},
 				{
 					title: 'Generation',

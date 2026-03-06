@@ -29,7 +29,8 @@ const planCreateSchema = z.object({
 	maxMembers: z.number().int().min(1),
 	maxTrainers: z.number().int().min(1),
 	tags: z.string(),
-	hidden: z.boolean().default(false),
+	metaTags: z.string(),
+	hidden: z.boolean(),
 })
 
 export interface PlanCreateFormProps {
@@ -65,6 +66,7 @@ export function PlanCreateForm({ onSuccess }: PlanCreateFormProps) {
 			maxMembers: 1,
 			maxTrainers: 1,
 			tags: '',
+			metaTags: '',
 			hidden: false,
 		},
 		validators: {
@@ -251,6 +253,25 @@ export function PlanCreateForm({ onSuccess }: PlanCreateFormProps) {
 							/>
 							<FieldDescription>
 								Comma-separated tags for categorization
+							</FieldDescription>
+						</Field>
+					)}
+				</form.Field>
+
+				<form.Field name='metaTags'>
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Meta Tags</FieldLabel>
+							<Input
+								id={field.name}
+								name={field.name}
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								placeholder='Comma-separated meta tags (e.g., aiEnabled,aiNutritionEnabled)'
+							/>
+							<FieldDescription>
+								Comma-separated meta tags used for feature gating
 							</FieldDescription>
 						</Field>
 					)}

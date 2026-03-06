@@ -30,6 +30,7 @@ const planUpdateSchema = z.object({
 	maxMembers: z.number().int().min(1),
 	maxTrainers: z.number().int().min(1),
 	tags: z.string(),
+	metaTags: z.string(),
 	hidden: z.boolean(),
 })
 
@@ -44,6 +45,7 @@ interface Plan {
 	maxMembers: number
 	maxTrainers: number
 	tags: string
+	metaTags: string
 	hidden: boolean
 }
 
@@ -82,6 +84,7 @@ export function PlanEditForm({ plan: planData, onSuccess }: PlanEditFormProps) {
 			maxMembers: planData.maxMembers,
 			maxTrainers: planData.maxTrainers,
 			tags: planData.tags,
+			metaTags: planData.metaTags,
 			hidden: planData.hidden,
 		},
 		validators: {
@@ -261,6 +264,25 @@ export function PlanEditForm({ plan: planData, onSuccess }: PlanEditFormProps) {
 							/>
 							<FieldDescription>
 								Comma-separated tags for categorization
+							</FieldDescription>
+						</Field>
+					)}
+				</form.Field>
+
+				<form.Field name='metaTags'>
+					{(field) => (
+						<Field>
+							<FieldLabel htmlFor={field.name}>Meta Tags</FieldLabel>
+							<Input
+								id={field.name}
+								name={field.name}
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(e.target.value)}
+								placeholder='Comma-separated meta tags'
+							/>
+							<FieldDescription>
+								Comma-separated meta tags used for feature gating
 							</FieldDescription>
 						</Field>
 					)}

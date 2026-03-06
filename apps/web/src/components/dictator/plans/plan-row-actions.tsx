@@ -36,6 +36,7 @@ interface Plan {
 	maxMembers: number
 	maxTrainers: number
 	tags: string
+	metaTags: string
 	hidden: boolean
 }
 

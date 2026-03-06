@@ -22,6 +22,7 @@ export const PlanCreateInput = z.object({
 	maxMembers: z.number().int().min(1),
 	maxTrainers: z.number().int().min(1),
 	tags: z.string().optional().default(''),
+	metaTags: z.string().optional().default(''),
 	hidden: z.boolean().default(false),
 })
 
@@ -36,9 +37,15 @@ export const PlanUpdateInput = z.object({
 	maxMembers: z.number().int().min(1).optional(),
 	maxTrainers: z.number().int().min(1).optional(),
 	tags: z.string().optional(),
+	metaTags: z.string().optional(),
 	hidden: z.boolean().optional(),
 })
 
 export const PlanDeleteInput = z.object({
 	id: z.string().min(1),
+})
+
+export const OrganisationUpdateMetaTagsInput = z.object({
+	organisationId: z.string().min(1),
+	metaTags: z.string().default(''),
 })

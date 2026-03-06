@@ -143,6 +143,18 @@ export function PlansTable() {
 				},
 			},
 			{
+				id: 'metaTags',
+				accessorKey: 'metaTags',
+				header: 'Meta Tags',
+				filterFn,
+				meta: {
+					label: 'Meta Tags',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
 				id: 'actions',
 				cell: ({ row }: { row: any }) => <PlanRowActions row={row} />,
 			},
