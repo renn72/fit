@@ -4,7 +4,6 @@ import ButtonLink from './ButtonLink.astro'
 import { navLinks, site } from '../data/site'
 
 const pathname = Astro.url.pathname
-const activeLink = navLinks.find((link) => link.href === pathname)
 ---
 
 <header class='site-header'>
@@ -31,8 +30,12 @@ const activeLink = navLinks.find((link) => link.href === pathname)
 
     <details class='mobile-nav'>
       <summary aria-label='Open site navigation'>
-        <span>Menu</span>
-        <strong>{activeLink?.label ?? 'Home'}</strong>
+        <span class='mobile-nav-sr'>Menu</span>
+        <span class='mobile-nav-icon' aria-hidden='true'>
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
       </summary>
       <nav aria-label='Primary mobile' class='mobile-nav-panel'>
         {navLinks.map((link) => (
