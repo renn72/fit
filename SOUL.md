@@ -303,7 +303,7 @@ When AI calls were attempted directly from localhost web code, CORS blocked the 
 - **Insight:** For model providers, CORS is usually the signal that the call belongs on the server anyway. Browser-direct model calls combine UX instability with secret exposure risk. The reliable pattern is web -> API route -> provider.
 
 ### Model Selection and Secrets Are Server Responsibilities
-Moving model configuration from client to API and defaulting it server-side (`minimax-m2.5-free`) simplified the frontend and hardened control.
+Moving model configuration from client to API and keeping it server-configured simplified the frontend and hardened control.
 - **Insight:** The client should send intent, not infra choices. Provider model, API key usage, and retry/error normalization belong to the server contract.
 
 ### LLM Output Must Be Treated as Untrusted Input

@@ -395,7 +395,7 @@
       - `POST /ai/update-recipe-form`
       - `POST /ai/update-user-menu-form`
     - Implemented JSON-only response parsing with robust fallback extraction and strict post-parse validation/normalization (IDs, ingredient/recipe existence, date normalization, macro recalculation, 1-decimal rounding).
-    - Set server default model selection to `minimax-m2.5-free`.
+    - Moved model selection into server-side configuration.
 
 - **Recipe Form AI Workflow Upgrade:**
     - Replaced test-button flow with a dedicated `Ask AI` request input + send action.

@@ -72,8 +72,6 @@ type RecipeForAiContext = {
 
 type AiUserMenuFormState = (typeof AiUserMenuFormStateInput)['_output']
 
-const DEFAULT_ZEN_MODEL = 'kimi-k2.5' // 'minimax-m2.5-free' //  'kimi-k2.5'
-
 function roundOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
 }
@@ -396,11 +394,19 @@ function buildUserMenuFormPromptContext(currentForm: AiUserMenuFormState) {
 
 async function requestZenChatCompletion({
 	messages,
-	model = DEFAULT_ZEN_MODEL,
+	model,
 }: {
 	messages: Array<{ role: 'system' | 'user'; content: string }>
 	model?: string
 }) {
+	const resolvedModel = model?.trim() || env.ZEN_MODEL?.trim()
+
+	if (!resolvedModel) {
+		throw new ORPCError('INTERNAL_SERVER_ERROR', {
+			message: 'AI model is not configured on the server',
+		})
+	}
+
 	const response = await fetch('https://opencode.ai/zen/v1/chat/completions', {
 		method: 'POST',
 		headers: {
@@ -408,7 +414,7 @@ async function requestZenChatCompletion({
 			Authorization: `Bearer ${env.ZEN_API_KEY}`,
 		},
 		body: JSON.stringify({
-			model,
+			model: resolvedModel,
 			temperature: 0.2,
 			response_format: { type: 'json_object' },
 			messages,

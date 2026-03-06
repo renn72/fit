@@ -409,7 +409,7 @@ Total procedures in router files: **126**.
 - Uses external OpenAI-compatible endpoint:
 - `POST https://opencode.ai/zen/v1/chat/completions`
 - auth header from `env.ZEN_API_KEY`
-- default model `kimi-k2.5`
+- model selection comes from server configuration (`env.ZEN_MODEL`)
 - requests JSON object responses (`response_format: { type: 'json_object' }`).
 - Includes robust model output parsing:
 - direct JSON parse,
