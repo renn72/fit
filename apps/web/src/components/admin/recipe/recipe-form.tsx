@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { DocsLink } from '@/components/docs-link'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -163,6 +164,10 @@ function normalizeText(value: string): string {
 	return value.trim()
 }
 
+function normalizeName(value: string): string {
+	return value.trim().toLowerCase()
+}
+
 function normalizeTags(value: string[]): string[] {
 	return value.map((item) => item.trim()).filter(Boolean)
 }
@@ -205,6 +210,11 @@ export function RecipeForm({
 			enabled: isEditMode && !!recipeId,
 		}),
 	)
+
+	const recipesQueryOptions = orpc.recipe.getOrg.queryOptions({
+		input: { organisationId },
+	})
+	const { data: orgRecipes } = useQuery(recipesQueryOptions)
 
 	const { data: aiAccess } = useQuery(
 		orpc.feature.getAiAccess.queryOptions({
@@ -272,6 +282,21 @@ export function RecipeForm({
 			onSubmit: recipeFormSchema,
 		},
 		onSubmit: async ({ value }) => {
+			const normalizedInputName = normalizeName(value.name)
+			const recipesInOrg =
+				orgRecipes ?? (await queryClient.ensureQueryData(recipesQueryOptions))
+
+			const duplicateRecipe = recipesInOrg.some(
+				(item) =>
+					normalizeName(item.name) === normalizedInputName &&
+					(!isEditMode || item.id !== recipeId),
+			)
+
+			if (duplicateRecipe) {
+				toast.error('A recipe with this name already exists in your organisation.')
+				return
+			}
+
 			const validIngredients = value.ingredients.filter(
 				(item) => item.ingredientId && item.unit && item.amount > 0,
 			)
@@ -528,16 +553,19 @@ export function RecipeForm({
 									<h1 className='text-2xl font-bold'>
 										{isEditMode ? 'Edit Recipe' : 'Create Recipe'}
 									</h1>
-									<SidebarTrigger size='default'>
-										<Button
-											render={<div />}
-											nativeButton={false}
-											className='cursor-pointer'
-										>
-											Ingredients
-											<SidebarIcon />
-										</Button>
-									</SidebarTrigger>
+									<div className='flex gap-2 items-center'>
+										<DocsLink doc='createRecipes' label='Recipe Docs' />
+										<SidebarTrigger size='default'>
+											<Button
+												render={<div />}
+												nativeButton={false}
+												className='cursor-pointer'
+											>
+												Ingredients
+												<SidebarIcon />
+											</Button>
+										</SidebarTrigger>
+									</div>
 								</div>
 
 								{isAiEnabled && (

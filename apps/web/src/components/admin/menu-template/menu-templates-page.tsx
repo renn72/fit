@@ -16,6 +16,7 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { DocsLink } from '@/components/docs-link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -341,9 +342,12 @@ function MenuTemplatesContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Menu Templates</h1>
-				<Link to='/$orgSlug/menu-templates/create' params={{ orgSlug }}>
-					<Button className='cursor-pointer'>Create Menu Template</Button>
-				</Link>
+				<div className='flex gap-2 items-center'>
+					<DocsLink doc='createMenuTemplates' label='Template Docs' />
+					<Link to='/$orgSlug/menu-templates/create' params={{ orgSlug }}>
+						<Button className='cursor-pointer'>Create Menu Template</Button>
+					</Link>
+				</div>
 			</div>
 
 			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 
+import { DocsLink } from '@/components/docs-link'
 import { Button } from '@/components/ui/button'
 import {
 	Card,
@@ -168,6 +169,10 @@ function normalizeText(value: string | null | undefined): string {
 	return (value ?? '').trim()
 }
 
+function normalizeName(value: string | null | undefined): string {
+	return normalizeText(value).toLowerCase()
+}
+
 function normalizeMealIngredientForCompare(ingredient: MealIngredient) {
 	return {
 		ingredientId: ingredient.ingredientId,
@@ -285,6 +290,22 @@ export function UserMenuForm({
 						: 'No user selected',
 				)
 				return
+			}
+
+			if (isTemplateMode) {
+				const normalizedInputName = normalizeName(value.name)
+				const duplicateTemplate = (menuTemplates ?? []).some(
+					(template) =>
+						normalizeName(template.name) === normalizedInputName &&
+						(!isEditMode || template.id !== menuId),
+				)
+
+				if (duplicateTemplate) {
+					toast.error(
+						'A menu template with this name already exists in your organisation.',
+					)
+					return
+				}
 			}
 
 			const meals = value.meals.map((meal) => {
@@ -1667,6 +1688,10 @@ export function UserMenuForm({
 		: isTemplateMode
 			? 'Create Menu Template'
 			: 'Create User Menu'
+	const docsLinkTarget = isTemplateMode
+		? 'createMenuTemplates'
+		: 'assignMenuTemplateToUser'
+	const docsLinkLabel = isTemplateMode ? 'Template Docs' : 'User Menu Docs'
 
 	const isNameEdited =
 		shouldHighlightEdits &&
@@ -1720,6 +1745,9 @@ export function UserMenuForm({
 	if (!isEditMode && !isTemplateMode && !user) {
 		return (
 			<div className='flex flex-col gap-4 p-8'>
+				<div className='flex justify-end'>
+					<DocsLink doc={docsLinkTarget} label={docsLinkLabel} />
+				</div>
 				<Card>
 					<CardHeader>
 						<CardTitle>No User Selected</CardTitle>
@@ -1736,14 +1764,15 @@ export function UserMenuForm({
 		<SidebarProvider defaultOpen={false}>
 			<div className='w-full min-h-svh'>
 				<div className='flex flex-col gap-6 justify-center w-full'>
-					{!isEditMode && !selectedTemplate ? (
-						<div className='flex flex-col gap-6 justify-center p-8 w-full'>
-							<div className='flex justify-between items-center'>
-								<h1 className='text-2xl font-bold'>
-									{isTemplateMode ? 'Create Menu Template' : 'Create User Menu'}
-								</h1>
-							</div>
-							<Card>
+						{!isEditMode && !selectedTemplate ? (
+							<div className='flex flex-col gap-6 justify-center p-8 w-full'>
+								<div className='flex justify-between items-center'>
+									<h1 className='text-2xl font-bold'>
+										{isTemplateMode ? 'Create Menu Template' : 'Create User Menu'}
+									</h1>
+									<DocsLink doc={docsLinkTarget} label={docsLinkLabel} />
+								</div>
+								<Card>
 								<CardHeader>
 									<CardTitle>Select Menu Template</CardTitle>
 									<CardDescription>
@@ -1814,23 +1843,29 @@ export function UserMenuForm({
 						>
 							<div className='flex gap-0 items-start w-full'>
 								<div className='relative flex flex-col flex-1 min-w-0'>
-									<form
+										<form
 										onSubmit={(event) => {
 											event.preventDefault()
 											event.stopPropagation()
 											form.handleSubmit()
 										}}
-										className='flex flex-col gap-6 p-8 min-w-0'
-									>
-										<div className='flex justify-between items-center'>
-											<h1 className='text-2xl font-bold'>{formHeading}</h1>
-											<SidebarTrigger size='default'>
-												<Button render={<div />} className='cursor-pointer'>
-													Recipes
-													<SidebarIcon />
-												</Button>
-											</SidebarTrigger>
-										</div>
+											className='flex flex-col gap-6 p-8 min-w-0'
+										>
+											<div className='flex justify-between items-center'>
+												<h1 className='text-2xl font-bold'>{formHeading}</h1>
+												<div className='flex gap-2 items-center'>
+													<DocsLink
+														doc={docsLinkTarget}
+														label={docsLinkLabel}
+													/>
+													<SidebarTrigger size='default'>
+														<Button render={<div />} className='cursor-pointer'>
+															Recipes
+															<SidebarIcon />
+														</Button>
+													</SidebarTrigger>
+												</div>
+											</div>
 										{!isEditMode && !isTemplateMode && (
 											<Button
 												type='button'

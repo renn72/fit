@@ -6,6 +6,7 @@ import { IngredientRowActions } from '@/components/admin/ingredient/ingredient-r
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
+import { DocsLink } from '@/components/docs-link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -287,9 +288,12 @@ function IngredientsContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Ingredients</h1>
-				<Link to='/$orgSlug/ingredients/create' params={{ orgSlug }}>
-					<Button className='cursor-pointer'>Create Ingredient</Button>
-				</Link>
+				<div className='flex gap-2 items-center'>
+					<DocsLink doc='createIngredients' label='Ingredient Docs' />
+					<Link to='/$orgSlug/ingredients/create' params={{ orgSlug }}>
+						<Button className='cursor-pointer'>Create Ingredient</Button>
+					</Link>
+				</div>
 			</div>
 
 			<div className='w-full max-w-sm'>

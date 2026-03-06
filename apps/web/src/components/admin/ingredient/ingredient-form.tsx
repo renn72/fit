@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { DocsLink } from '@/components/docs-link'
 import {
 	Field,
 	FieldError,
@@ -12,7 +13,7 @@ import { TagsInput } from '@/components/ui-extended/tags-input'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 
 import { toast } from 'sonner'
 import { z } from 'zod'
@@ -44,6 +45,7 @@ export interface IngredientFormIngredient {
 
 export interface IngredientFormProps {
 	mode: 'create' | 'edit'
+	organisationId: string
 	ingredient?: IngredientFormIngredient
 	onSuccess?: () => void
 }
@@ -67,13 +69,23 @@ function roundOneDecimal(value: number): number {
 	return Math.round(value * 10) / 10
 }
 
+function normalizeName(value: string): string {
+	return value.trim().toLowerCase()
+}
+
 export function IngredientForm({
 	mode,
+	organisationId,
 	ingredient,
 	onSuccess,
 }: IngredientFormProps) {
 	const queryClient = useQueryClient()
 	const isEditMode = mode === 'edit'
+	const ingredientsQueryOptions = orpc.ingredient.getAllOrg.queryOptions({
+		input: { organisationId },
+	})
+
+	const { data: orgIngredients } = useQuery(ingredientsQueryOptions)
 
 	const createIngredient = useMutation(
 		orpc.ingredient.create.mutationOptions({
@@ -125,8 +137,26 @@ export function IngredientForm({
 			onSubmit: ingredientFormSchema,
 		},
 		onSubmit: async ({ value }) => {
+			const normalizedInputName = normalizeName(value.name)
+			const ingredientsInOrg =
+				orgIngredients ??
+				(await queryClient.ensureQueryData(ingredientsQueryOptions))
+
+			const duplicateIngredient = ingredientsInOrg.some(
+				(item) =>
+					normalizeName(item.name) === normalizedInputName &&
+					(!isEditMode || item.id !== ingredient?.id),
+			)
+
+			if (duplicateIngredient) {
+				toast.error(
+					'An ingredient with this name already exists in your organisation.',
+				)
+				return
+			}
+
 			const payload = {
-				name: value.name,
+				name: value.name.trim(),
 				category: joinCategories(value.category),
 				calories: roundOneDecimal(value.calories),
 				protein: roundOneDecimal(value.protein),
@@ -158,6 +188,9 @@ export function IngredientForm({
 			}}
 			className='flex flex-col gap-4'
 		>
+			<div className='flex justify-end'>
+				<DocsLink doc='createIngredients' label='Ingredient Form Docs' />
+			</div>
 			<FieldGroup>
 				<form.Field name='name'>
 					{(field) => (

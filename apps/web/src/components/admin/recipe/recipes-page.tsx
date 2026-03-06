@@ -7,6 +7,7 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
+import { DocsLink } from '@/components/docs-link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -364,9 +365,12 @@ function RecipesContent({ userOrgId }: { userOrgId: string }) {
 		<div className='flex flex-col gap-4 p-4 w-full h-full'>
 			<div className='flex justify-between items-center'>
 				<h1 className='text-2xl font-bold tracking-tight'>Recipes</h1>
-				<Link to='/$orgSlug/recipes/create' params={{ orgSlug }}>
-					<Button>Create Recipe</Button>
-				</Link>
+				<div className='flex gap-2 items-center'>
+					<DocsLink doc='createRecipes' label='Recipe Docs' />
+					<Link to='/$orgSlug/recipes/create' params={{ orgSlug }}>
+						<Button>Create Recipe</Button>
+					</Link>
+				</div>
 			</div>
 
 			<div className='w-full max-w-sm'>

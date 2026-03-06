@@ -6,25 +6,33 @@ import { defineConfig } from 'astro/config'
 export default defineConfig({
 	integrations: [
 		starlight({
-			title: 'My Docs',
-			social: [
-				{
-					icon: 'github',
-					label: 'GitHub',
-					href: 'https://github.com/withastro/starlight',
-				},
-			],
+			title: 'Forma Docs',
+			disable404Route: true,
 			sidebar: [
 				{
-					label: 'Guides',
+					label: 'User Menu System',
 					items: [
-						// Each item here is one entry in the navigation menu.
-						{ label: 'Example Guide', slug: 'guides/example' },
+						{
+							label: 'Workflow Overview',
+							slug: 'guides/user-menu-system/workflow-overview',
+						},
+						{
+							label: 'Create Ingredients',
+							slug: 'guides/user-menu-system/create-ingredients',
+						},
+						{
+							label: 'Create Recipes',
+							slug: 'guides/user-menu-system/create-recipes',
+						},
+						{
+							label: 'Create Menu Templates',
+							slug: 'guides/user-menu-system/create-menu-templates',
+						},
+						{
+							label: 'Assign Menu Template to User',
+							slug: 'guides/user-menu-system/assign-menu-template-to-user',
+						},
 					],
-				},
-				{
-					label: 'Reference',
-					autogenerate: { directory: 'reference' },
 				},
 			],
 		}),

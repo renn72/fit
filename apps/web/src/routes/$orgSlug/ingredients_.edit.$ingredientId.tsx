@@ -2,6 +2,7 @@ import {
 	IngredientForm,
 	type IngredientFormIngredient,
 } from '@/components/admin/ingredient/ingredient-form'
+import { DocsLink } from '@/components/docs-link'
 import { Button } from '@/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
@@ -25,12 +26,18 @@ export const Route = createFileRoute(
 function EditIngredientPage() {
 	const navigate = useNavigate()
 	const { orgSlug, ingredientId } = Route.useParams()
+	const { session } = Route.useRouteContext()
+	const organisationId = session?.user?.organisationId
 
 	const { data: ingredient } = useSuspenseQuery(
 		orpc.ingredient.get.queryOptions({
 			input: { id: ingredientId },
 		}),
 	)
+
+	if (!organisationId) {
+		return <div>Missing organization</div>
+	}
 
 	if (!ingredient) {
 		return <div>Ingredient not found</div>
@@ -60,15 +67,19 @@ function EditIngredientPage() {
 				</Button>
 			</div>
 
-			<div className='space-y-2'>
-				<h1 className='text-2xl font-bold tracking-tight'>Edit Ingredient</h1>
-				<p className='text-muted-foreground'>
-					Update ingredient details and categories.
-				</p>
+			<div className='flex flex-wrap gap-3 justify-between items-start'>
+				<div className='space-y-2'>
+					<h1 className='text-2xl font-bold tracking-tight'>Edit Ingredient</h1>
+					<p className='text-muted-foreground'>
+						Update ingredient details and categories.
+					</p>
+				</div>
+				<DocsLink doc='createIngredients' label='Ingredient Docs' />
 			</div>
 
 			<IngredientForm
 				mode='edit'
+				organisationId={organisationId}
 				ingredient={formIngredient}
 				onSuccess={() => {
 					navigate({ to: '/$orgSlug/ingredients', params: { orgSlug } })

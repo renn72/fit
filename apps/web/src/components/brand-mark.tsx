@@ -16,6 +16,8 @@ export function BrandMark({
 			className={cn(
 				'inline-grid place-items-center rounded-[0.7rem] [background:linear-gradient(135deg,#f7d58a_0%,#e0a64b_48%,#9e6420_100%)]',
 				' text-[#2c200f] font-black leading-none select-none font-[Outfit,sans-serif]',
+				' shadow-[inset_2px_2px_2px_1px_#ffffff81]',
+				// 'shadow-[inset_4px_4px_1px_#bebeba,inset_-4px_-4px_1px_#ffffff]',
 				className,
 			)}
 		>

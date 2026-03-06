@@ -12,6 +12,7 @@ import {
 	AlertDialogHeader,
 	AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { DocsLink } from '@/components/docs-link'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -175,7 +176,10 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 	if (!selectedUser) {
 		return (
 			<div className='flex flex-col gap-6 p-8'>
-				<h1 className='text-2xl font-bold'>User Menus</h1>
+				<div className='flex gap-2 justify-between items-center'>
+					<h1 className='text-2xl font-bold'>User Menus</h1>
+					<DocsLink doc='assignMenuTemplateToUser' label='User Menu Docs' />
+				</div>
 				<Card className='overflow-hidden border-border/70 shadow-sm'>
 					<CardContent className='py-12 text-center'>
 						<p className='text-muted-foreground'>
@@ -189,30 +193,33 @@ export function UserMenusPage({ orgSlug }: UserMenusPageProps) {
 
 	const selectedUserData = users.find((u) => u.id === selectedUser)
 
-	return (
-		<div className='flex flex-col gap-6 p-8'>
-			<div className='flex flex-wrap gap-3 justify-between items-center'>
-				<div>
+		return (
+			<div className='flex flex-col gap-6 p-8'>
+				<div className='flex flex-wrap gap-3 justify-between items-center'>
+					<div>
 					<h1 className='text-2xl font-bold'>
 						{selectedUserData?.name || 'User'}&apos;s Menus
 					</h1>
-					<p className='text-sm text-muted-foreground'>
-						{userMenus?.length || 0} menu{userMenus?.length !== 1 ? 's' : ''}{' '}
-						assigned
-					</p>
+						<p className='text-sm text-muted-foreground'>
+							{userMenus?.length || 0} menu{userMenus?.length !== 1 ? 's' : ''}{' '}
+							assigned
+						</p>
+					</div>
+					<div className='flex gap-2 items-center'>
+						<DocsLink doc='assignMenuTemplateToUser' label='User Menu Docs' />
+						<Button
+							onClick={() =>
+								navigate({
+									to: '/$orgSlug/user-menu-create',
+									params: { orgSlug },
+									search: { user: selectedUser },
+								})
+							}
+						>
+							Create Menu
+						</Button>
+					</div>
 				</div>
-				<Button
-					onClick={() =>
-						navigate({
-							to: '/$orgSlug/user-menu-create',
-							params: { orgSlug },
-							search: { user: selectedUser },
-						})
-					}
-				>
-					Create Menu
-				</Button>
-			</div>
 
 			{isLoading ? (
 				<Card className='overflow-hidden border-border/70 shadow-sm'>
