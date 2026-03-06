@@ -2,10 +2,10 @@
 
 import type * as React from 'react'
 
-import { BrandMark } from '@/components/brand-mark'
 import { NavMain } from '@/components/admin-sidebar/nav-main'
 import { NavUser } from '@/components/admin-sidebar/nav-user'
 import { NavUserSelect } from '@/components/admin-sidebar/nav-user-select'
+import { BrandMark } from '@/components/brand-mark'
 import {
 	Sidebar,
 	SidebarContent,
@@ -141,7 +141,7 @@ export function AppSidebar({
 			</SidebarContent>
 			<SidebarFooter>
 				<SidebarMenuItem>
-					<BrandMark className='size-10 text-xl' />
+					<BrandMark className='text-2xl size-8' />
 				</SidebarMenuItem>
 			</SidebarFooter>
 		</Sidebar>

@@ -42,13 +42,13 @@ export function SidebarHeader({ session }: { session: any }) {
 						<SidebarIcon />
 					</Button>
 					<Separator orientation='vertical' className='mr-2 h-4' />
-						<Breadcrumb className='hidden sm:block'>
-							<BreadcrumbList>
-								<BreadcrumbItem>
-									<BrandMark className='size-8 text-base' />
-								</BreadcrumbItem>
-								<BreadcrumbSeparator />
-								<BreadcrumbItem>
+					<Breadcrumb className='hidden sm:block'>
+						<BreadcrumbList>
+							<BreadcrumbItem>
+								<BrandMark className='text-xl size-8' />
+							</BreadcrumbItem>
+							<BreadcrumbSeparator />
+							<BreadcrumbItem>
 								<BreadcrumbPage className='capitalize'>{bc}</BreadcrumbPage>
 							</BreadcrumbItem>
 						</BreadcrumbList>
