@@ -1,5 +1,6 @@
 'use client'
 
+import { BrandMark } from '@/components/brand-mark'
 import { ModeToggle } from '@/components/mode-toggle'
 import {
 	Breadcrumb,
@@ -41,18 +42,13 @@ export function SidebarHeader({ session }: { session: any }) {
 						<SidebarIcon />
 					</Button>
 					<Separator orientation='vertical' className='mr-2 h-4' />
-					<Breadcrumb className='hidden sm:block'>
-						<BreadcrumbList>
-							<BreadcrumbItem>
-								<img
-									alt='Fit by wsys'
-									src='/logo.webp'
-									width='32'
-									height='32'
-								/>
-							</BreadcrumbItem>
-							<BreadcrumbSeparator />
-							<BreadcrumbItem>
+						<Breadcrumb className='hidden sm:block'>
+							<BreadcrumbList>
+								<BreadcrumbItem>
+									<BrandMark className='size-8 text-base' />
+								</BreadcrumbItem>
+								<BreadcrumbSeparator />
+								<BreadcrumbItem>
 								<BreadcrumbPage className='capitalize'>{bc}</BreadcrumbPage>
 							</BreadcrumbItem>
 						</BreadcrumbList>

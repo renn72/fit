@@ -2,6 +2,7 @@
 
 import type * as React from 'react'
 
+import { BrandMark } from '@/components/brand-mark'
 import { NavMain } from '@/components/admin-sidebar/nav-main'
 import { NavUser } from '@/components/admin-sidebar/nav-user'
 import { NavUserSelect } from '@/components/admin-sidebar/nav-user-select'
@@ -140,7 +141,7 @@ export function AppSidebar({
 			</SidebarContent>
 			<SidebarFooter>
 				<SidebarMenuItem>
-					<img alt='Fit by wsys' src='/logo.webp' width='40' height='40' />
+					<BrandMark className='size-10 text-xl' />
 				</SidebarMenuItem>
 			</SidebarFooter>
 		</Sidebar>

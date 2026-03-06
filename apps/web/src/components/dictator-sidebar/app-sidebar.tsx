@@ -1,5 +1,6 @@
 import type * as React from 'react'
 
+import { BrandMark } from '@/components/brand-mark'
 import { NavMain } from '@/components/dictator-sidebar/nav-main'
 import { NavSecondary } from '@/components/dictator-sidebar/nav-secondary'
 import {
@@ -118,7 +119,7 @@ export function DictatorSidebar({
 			<SidebarHeader>
 				<SidebarMenu>
 					<SidebarMenuItem>
-						<img alt='Fit by wsys' src='/logo.webp' width='40' height='40' />
+						<BrandMark className='size-10 text-xl' />
 					</SidebarMenuItem>
 				</SidebarMenu>
 			</SidebarHeader>
