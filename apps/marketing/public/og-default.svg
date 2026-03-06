@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" role="img" aria-label="Forma by WSYS">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#121216" />
+      <stop offset="100%" stop-color="#1d1d24" />
+    </linearGradient>
+    <linearGradient id="accent" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#e1b663" />
+      <stop offset="100%" stop-color="#b8842e" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <rect x="64" y="64" width="1072" height="502" rx="32" fill="none" stroke="#2c2c36" />
+  <text x="96" y="180" fill="#c4c4cf" font-size="34" font-family="Plus Jakarta Sans, Arial, sans-serif">by WSYS</text>
+  <text x="96" y="300" fill="#ffffff" font-size="108" font-weight="700" font-family="Outfit, Plus Jakarta Sans, Arial, sans-serif">FORMA</text>
+  <text x="96" y="390" fill="url(#accent)" font-size="46" font-family="Plus Jakarta Sans, Arial, sans-serif">Shape better programs. Deliver better outcomes.</text>
+</svg>

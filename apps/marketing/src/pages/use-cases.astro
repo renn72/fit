@@ -1,0 +1,129 @@
+---
+import ButtonLink from '../components/ButtonLink.astro'
+import PageHero from '../components/PageHero.astro'
+import SectionHeading from '../components/SectionHeading.astro'
+import { audienceSegments } from '../data/site'
+import MarketingLayout from '../layouts/MarketingLayout.astro'
+
+const description =
+	'See how Forma supports personal trainers, online coaches, growing coaching teams, and high-performance environments with trainer-first operational control.'
+
+const scaleRows = [
+	{
+		stage: 'Solo Coach',
+		focus: 'Execution consistency and time efficiency',
+		forma:
+			'Unified planning, check-ins, metrics review, and client app delivery in one workflow',
+	},
+	{
+		stage: 'Growing Team',
+		focus: 'Workflow standardization across trainers',
+		forma:
+			'Centralized operations, clearer accountability, and repeatable coaching systems',
+	},
+	{
+		stage: 'High-Performance Environment',
+		focus: 'Precision oversight and advanced analysis',
+		forma:
+			'Detailed tracking, elite workflow control, and support for professional athlete needs',
+	},
+]
+---
+
+<MarketingLayout title='Use Cases' description={description}>
+  <PageHero
+    eyebrow='Use Cases'
+    title='Built for how professional coaches actually operate.'
+    description='Forma supports everyday coaching delivery and advanced high-performance environments in one connected system.'
+    primaryHref='/contact'
+    primaryLabel='Book a Demo'
+    secondaryHref='/features'
+    secondaryLabel='See How Forma Works'
+  />
+
+  <section class='section'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Who Forma Serves'
+        title='From independent coaches to elite support teams.'
+        description='Forma adapts to your operating model without forcing your coaching approach into a generic template.'
+      />
+      <div class='card-grid cols-3'>
+        {audienceSegments.map((segment) => (
+          <article class='card'>
+            <h3>{segment.title}</h3>
+            <p>{segment.description}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Scale Path'
+        title='How Forma supports growth without operational drift.'
+        description='Keep coaching quality high while complexity increases.'
+      />
+      <div class='panel'>
+        <table class='compare-table'>
+          <thead>
+            <tr>
+              <th scope='col'>Business Stage</th>
+              <th scope='col'>Primary Requirement</th>
+              <th scope='col'>How Forma Supports It</th>
+            </tr>
+          </thead>
+          <tbody>
+            {scaleRows.map((row) => (
+              <tr>
+                <td><strong>{row.stage}</strong></td>
+                <td>{row.focus}</td>
+                <td>{row.forma}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container'>
+      <div class='card-grid cols-2'>
+        <article class='panel'>
+          <p class='eyebrow'>Trainer Priority</p>
+          <h3 style='margin: 0.6rem 0;'>Deep control where coaches need it.</h3>
+          <p>
+            Forma gives trainers control over programming structure, nutrition
+            strategy, check-in cadence, and progress review standards.
+          </p>
+        </article>
+        <article class='panel'>
+          <p class='eyebrow'>Client Priority</p>
+          <h3 style='margin: 0.6rem 0;'>Low-friction execution where clients need it.</h3>
+          <p>
+            Dedicated training and nutrition apps keep client-side interaction
+            simple while coaches retain full operational depth in the web app.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container narrow'>
+      <div class='highlight-band'>
+        <h2>Need to evaluate fit for your coaching model?</h2>
+        <p style='margin-top: 0.7rem;'>
+          We will walk through your workflow, team structure, and reporting
+          standards to show exactly how Forma can support your environment.
+        </p>
+        <div class='hero-actions'>
+          <ButtonLink href='/contact'>Book a Demo</ButtonLink>
+        </div>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>

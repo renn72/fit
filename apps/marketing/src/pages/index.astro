@@ -1,0 +1,210 @@
+---
+import ButtonLink from '../components/ButtonLink.astro'
+import SectionHeading from '../components/SectionHeading.astro'
+import { architecture, coreMetrics, featureAreas, site } from '../data/site'
+import MarketingLayout from '../layouts/MarketingLayout.astro'
+
+const homeDescription =
+	'Forma is a trainer-first coaching operating system for training programs, nutrition planning, metrics tracking, check-ins, photo reviews, and AI-assisted workflows across serious coaching businesses.'
+---
+
+<MarketingLayout title='Forma | Trainer-First Coaching OS' description={homeDescription}>
+  <section class='section page-hero'>
+    <div class='container'>
+      <p class='eyebrow'>{site.byline}</p>
+      <h1>{site.tagline}</h1>
+      <p class='hero-copy'>
+        Forma gives trainers one connected system for programming, nutrition,
+        progress tracking, check-ins, photo reviews, AI-assisted workflows, and
+        team management.
+      </p>
+      <div class='hero-actions'>
+        <ButtonLink href='/contact'>Book a Demo</ButtonLink>
+        <ButtonLink href='/features' variant='secondary'>
+          See How Forma Works
+        </ButtonLink>
+      </div>
+      <div class='kicker-row'>
+        <span class='chip'>Built for trainers first</span>
+        <span class='chip'>Deep tools, streamlined client UX</span>
+        <span class='chip'>Ready for high-performance environments</span>
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container'>
+      <div class='highlight-band'>
+        <p>
+          <strong>Deep tools for trainers. Streamlined experiences for clients.</strong>
+          {' '}
+          Forma is not a consumer fitness app or a basic template tool. It is a
+          serious coaching operating system for professionals.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Connected Ecosystem'
+        title='One coaching platform. Three focused product surfaces.'
+        description='Operate from a single source of truth in the web app while clients get dedicated training and nutrition experiences.'
+      />
+      <div class='card-grid cols-3'>
+        {architecture.map((item) => (
+          <article class='panel'>
+            <h3>{item.title}</h3>
+            <p>{item.description}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Core Platform'
+        title='Training, nutrition, tracking, reviews, and team operations in one system.'
+        description='Forma unifies the workflows serious coaches run every week so execution quality does not break as client volume grows.'
+      />
+      <div class='card-grid cols-4'>
+        {featureAreas.map((feature) => (
+          <article class='card'>
+            <h3>{feature.title}</h3>
+            <p>{feature.short}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='AI Assistance'
+        title='AI that improves coaching throughput without diluting coach control.'
+        description='Use AI in Forma to accelerate program creation, build nutrition structures, and surface practical insights from adherence and performance trends.'
+      />
+      <div class='card-grid cols-3'>
+        <article class='panel'>
+          <h3>Build faster</h3>
+          <ul class='list-clean'>
+            <li>Generate first-pass training structures in minutes</li>
+            <li>Speed up nutrition planning with better starting points</li>
+            <li>Reduce repetitive admin work in setup-heavy workflows</li>
+          </ul>
+        </article>
+        <article class='panel'>
+          <h3>Coach smarter</h3>
+          <ul class='list-clean'>
+            <li>Surface adherence, progress, and performance patterns</li>
+            <li>Identify trend shifts sooner across client cohorts</li>
+            <li>Prioritize interventions where they matter most</li>
+          </ul>
+        </article>
+        <article class='panel'>
+          <h3>Stay in control</h3>
+          <ul class='list-clean'>
+            <li>Keep final decisions with the coach, not the model</li>
+            <li>Use AI as an assistant, not an autopilot</li>
+            <li>Maintain programming standards across your team</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Progress Visibility'
+        title='See what is changing, not just what was prescribed.'
+        description='Forma combines metrics, check-ins, adherence signals, and progress photos so trainers can coach with complete context.'
+      />
+      <div class='card-grid cols-2'>
+        <article class='panel'>
+          <h3>Track what matters</h3>
+          <div class='kicker-row'>
+            {coreMetrics.map((metric) => (
+              <span class='chip'>{metric}</span>
+            ))}
+          </div>
+        </article>
+        <article class='panel'>
+          <h3>Future product screenshots</h3>
+          <div class='card-grid cols-2' style='margin-top: 0.8rem;'>
+            <div class='screenshot-shell'>
+              <div>
+                <strong>Placeholder</strong>
+                Metrics and trend dashboard capture
+              </div>
+            </div>
+            <div class='screenshot-shell'>
+              <div>
+                <strong>Placeholder</strong>
+                Check-in and photo review workflow capture
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Scale and Precision'
+        title='From solo coaching to elite performance support.'
+        description='Forma scales operationally for growing teams and remains precise enough for professional athlete management and high-performance oversight.'
+      />
+      <div class='card-grid cols-3'>
+        <article class='panel'>
+          <h3>Solo coaches</h3>
+          <p>
+            Standardize delivery, automate repetitive setup, and keep every
+            client workflow visible.
+          </p>
+        </article>
+        <article class='panel'>
+          <h3>Coaching businesses</h3>
+          <p>
+            Coordinate trainers, enforce process quality, and scale without
+            operational drift.
+          </p>
+        </article>
+        <article class='panel'>
+          <h3>Elite environments</h3>
+          <p>
+            Run higher-detail programming and oversight workflows suitable for
+            professional athletes.
+          </p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container narrow'>
+      <div class='highlight-band'>
+        <p class='eyebrow'>Ready to Upgrade Your Coaching Operation?</p>
+        <h2 style='margin: 0.7rem 0;'>
+          Build faster. Coach smarter. Operate with precision.
+        </h2>
+        <p>
+          See how Forma can support your coaching model, your client base, and
+          your team structure.
+        </p>
+        <div class='hero-actions'>
+          <ButtonLink href='/contact'>Book a Demo</ButtonLink>
+          <ButtonLink href='/use-cases' variant='secondary'>
+            See How Forma Works
+          </ButtonLink>
+        </div>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>

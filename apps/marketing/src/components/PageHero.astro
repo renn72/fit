@@ -1,0 +1,43 @@
+---
+import ButtonLink from './ButtonLink.astro'
+
+interface Props {
+	eyebrow?: string
+	title: string
+	description: string
+	primaryHref?: string
+	primaryLabel?: string
+	secondaryHref?: string
+	secondaryLabel?: string
+}
+
+const {
+	eyebrow,
+	title,
+	description,
+	primaryHref,
+	primaryLabel,
+	secondaryHref,
+	secondaryLabel,
+}: Props = Astro.props
+---
+
+<section class='page-hero section'>
+  <div class='container narrow'>
+    {eyebrow && <p class='eyebrow'>{eyebrow}</p>}
+    <h1>{title}</h1>
+    <p class='hero-copy'>{description}</p>
+    {(primaryHref || secondaryHref) && (
+      <div class='hero-actions'>
+        {primaryHref && primaryLabel && (
+          <ButtonLink href={primaryHref}>{primaryLabel}</ButtonLink>
+        )}
+        {secondaryHref && secondaryLabel && (
+          <ButtonLink href={secondaryHref} variant='secondary'>
+            {secondaryLabel}
+          </ButtonLink>
+        )}
+      </div>
+    )}
+  </div>
+</section>

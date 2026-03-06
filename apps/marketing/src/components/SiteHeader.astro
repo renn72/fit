@@ -1,0 +1,35 @@
+---
+import ButtonLink from './ButtonLink.astro'
+
+import { navLinks, site } from '../data/site'
+
+const pathname = Astro.url.pathname
+---
+
+<header class='site-header'>
+  <div class='container header-inner'>
+    <a href='/' class='brand' aria-label='Forma home'>
+      <span class='brand-mark' aria-hidden='true'>F</span>
+      <span class='brand-text'>
+        <strong>{site.name}</strong>
+        <small>{site.byline}</small>
+      </span>
+    </a>
+
+    <nav aria-label='Primary' class='site-nav'>
+      {navLinks.map((link) => (
+        <a
+          href={link.href}
+          class:list={['nav-link', pathname === link.href && 'active']}
+          aria-current={pathname === link.href ? 'page' : undefined}
+        >
+          {link.label}
+        </a>
+      ))}
+    </nav>
+
+    <div class='header-cta'>
+      <ButtonLink href='/contact' size='sm'>Book a Demo</ButtonLink>
+    </div>
+  </div>
+</header>

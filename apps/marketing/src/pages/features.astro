@@ -1,0 +1,72 @@
+---
+import ButtonLink from '../components/ButtonLink.astro'
+import PageHero from '../components/PageHero.astro'
+import SectionHeading from '../components/SectionHeading.astro'
+import { featureAreas } from '../data/site'
+import MarketingLayout from '../layouts/MarketingLayout.astro'
+
+const description =
+	'Explore Forma features for training programming, nutrition, check-ins, metrics visibility, photo tracking, AI-assisted workflows, team operations, and professional athlete support.'
+---
+
+<MarketingLayout title='Features' description={description}>
+  <PageHero
+    eyebrow='Platform Features'
+    title='Deep tools for serious coaching workflows.'
+    description='Forma brings programming, nutrition, tracking, and team operations into one trainer-first platform designed for precision and scale.'
+    primaryHref='/contact'
+    primaryLabel='Book a Demo'
+    secondaryHref='/use-cases'
+    secondaryLabel='See How Forma Works'
+  />
+
+  <section class='section'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Capability Areas'
+        title='Everything needed to run modern coaching operations.'
+        description='Each capability area is designed to keep coach control high and client execution simple.'
+      />
+
+      <div class='card-grid cols-2'>
+        {featureAreas.map((feature, index) => (
+          <article class='panel' id={feature.id}>
+            <p class='eyebrow'>Feature {index + 1}</p>
+            <h3 style='margin: 0.5rem 0 0.65rem;'>{feature.title}</h3>
+            <p>{feature.short}</p>
+            <ul class='list-clean' style='margin-top: 0.65rem;'>
+              {feature.bullets.map((bullet) => (
+                <li>{bullet}</li>
+              ))}
+            </ul>
+            <div class='screenshot-shell' style='margin-top: 1rem;'>
+              <div>
+                <strong>Screenshot Placeholder</strong>
+                {feature.title} interface capture
+              </div>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container narrow'>
+      <div class='highlight-band'>
+        <p class='eyebrow'>Implementation Impact</p>
+        <h2 style='margin: 0.7rem 0;'>
+          Replace disconnected tools with one coaching operating system.
+        </h2>
+        <p>
+          Forma gives your team one operational layer for service delivery,
+          quality control, and measurable outcomes.
+        </p>
+        <div class='hero-actions'>
+          <ButtonLink href='/contact'>Book a Demo</ButtonLink>
+          <ButtonLink href='/' variant='secondary'>Back to Homepage</ButtonLink>
+        </div>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>

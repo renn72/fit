@@ -1,0 +1,17 @@
+{
+	"name": "marketing",
+	"version": "0.0.1",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "astro dev",
+		"start": "astro dev",
+		"build": "astro build",
+		"preview": "astro preview"
+	},
+	"dependencies": {
+		"@fontsource-variable/plus-jakarta-sans": "^5.2.6",
+		"@fontsource-variable/outfit": "^5.2.8",
+		"astro": "^5.18.0"
+	}
+}

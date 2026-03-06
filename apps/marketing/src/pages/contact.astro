@@ -1,0 +1,112 @@
+---
+import ButtonLink from '../components/ButtonLink.astro'
+import PageHero from '../components/PageHero.astro'
+import MarketingLayout from '../layouts/MarketingLayout.astro'
+
+const description =
+	'Book a Forma demo to review trainer workflows, team operations, and high-performance coaching requirements with WSYS.'
+---
+
+<MarketingLayout title='Contact / Demo' description={description}>
+  <PageHero
+    eyebrow='Contact / Demo'
+    title='Book a Forma demo'
+    description='We will review your coaching workflow, business model, and performance requirements to show how Forma can support your operation.'
+    primaryHref='/contact'
+    primaryLabel='Book a Demo'
+    secondaryHref='/features'
+    secondaryLabel='See How Forma Works'
+  />
+
+  <section class='section'>
+    <div class='container contact-grid'>
+      <article class='panel'>
+        <h2 style='margin-bottom: 0.9rem;'>Request a tailored walkthrough</h2>
+        <p>
+          Share your coaching structure and priorities. Our team will prepare a
+          focused walkthrough relevant to your environment.
+        </p>
+
+        <form
+          class='form-stack'
+          action='mailto:demo@wsys.com'
+          method='post'
+          enctype='text/plain'
+          style='margin-top: 1rem;'
+        >
+          <label>
+            Full Name
+            <input type='text' name='name' autocomplete='name' required />
+          </label>
+
+          <label>
+            Work Email
+            <input type='email' name='email' autocomplete='email' required />
+          </label>
+
+          <label>
+            Business Type
+            <select name='businessType' required>
+              <option value=''>Select...</option>
+              <option>Personal Trainer</option>
+              <option>Online Coaching Business</option>
+              <option>Gym Team</option>
+              <option>Nutrition Coaching Business</option>
+              <option>High-Performance Team</option>
+              <option>Professional Athlete Support Team</option>
+            </select>
+          </label>
+
+          <label>
+            Team Size
+            <select name='teamSize' required>
+              <option value=''>Select...</option>
+              <option>Solo</option>
+              <option>2-5 trainers</option>
+              <option>6-15 trainers</option>
+              <option>16+ trainers</option>
+            </select>
+          </label>
+
+          <label>
+            What are you solving for?
+            <textarea
+              name='goals'
+              placeholder='Example: We want tighter check-in workflows, clearer progress visibility, and faster program creation across our team.'
+              required
+            />
+          </label>
+
+          <div class='hero-actions'>
+            <button type='submit' class='btn btn-primary btn-md'>Book a Demo</button>
+            <ButtonLink href='/features' variant='secondary'>
+              See How Forma Works
+            </ButtonLink>
+          </div>
+        </form>
+      </article>
+
+      <aside class='panel'>
+        <h3>What to expect</h3>
+        <ul class='list-clean' style='margin-top: 0.6rem;'>
+          <li>Workflow review across training, nutrition, and check-ins</li>
+          <li>Operational fit assessment for your coaching model</li>
+          <li>Demo focused on your client volume and team setup</li>
+          <li>Guidance on rollout path and implementation priorities</li>
+        </ul>
+
+        <div class='screenshot-shell' style='margin-top: 1rem; min-height: 160px;'>
+          <div>
+            <strong>Placeholder</strong>
+            Demo flow screenshot slot
+          </div>
+        </div>
+
+        <p style='margin-top: 1rem;'>
+          Prefer direct email?
+          <a href='mailto:demo@wsys.com' style='color: var(--primary);'>demo@wsys.com</a>
+        </p>
+      </aside>
+    </div>
+  </section>
+</MarketingLayout>

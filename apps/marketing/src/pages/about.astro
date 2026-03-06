@@ -1,0 +1,97 @@
+---
+import ButtonLink from '../components/ButtonLink.astro'
+import PageHero from '../components/PageHero.astro'
+import SectionHeading from '../components/SectionHeading.astro'
+import { operatingPrinciples, site } from '../data/site'
+import MarketingLayout from '../layouts/MarketingLayout.astro'
+
+const description =
+	'Learn about Forma by WSYS, a trainer-first coaching operating system built for premium coaching operations and high-performance environments.'
+---
+
+<MarketingLayout title='About' description={description}>
+  <PageHero
+    eyebrow='About Forma'
+    title='Trainer-first software for serious coaching operations.'
+    description='Forma is built by WSYS to give coaching professionals the control, precision, and operational clarity needed to deliver better outcomes at scale.'
+    primaryHref='/contact'
+    primaryLabel='Book a Demo'
+    secondaryHref='/features'
+    secondaryLabel='See How Forma Works'
+  />
+
+  <section class='section'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Why Forma Exists'
+        title='Coaching operations outgrew disconnected tools.'
+        description='Most coaching businesses rely on fragmented software stacks that create admin drag, inconsistent client delivery, and weak performance visibility. Forma was built to replace that fragmentation with one connected system.'
+      />
+      <div class='card-grid cols-2'>
+        <article class='panel'>
+          <h3>The Problem</h3>
+          <ul class='list-clean'>
+            <li>Programming, nutrition, and check-ins split across multiple systems</li>
+            <li>Limited team-level oversight and operational consistency</li>
+            <li>Client progress data difficult to review in one place</li>
+          </ul>
+        </article>
+        <article class='panel'>
+          <h3>The Forma Approach</h3>
+          <ul class='list-clean'>
+            <li>One web platform for coaching operations and trainer control</li>
+            <li>Dedicated client experiences for training and nutrition execution</li>
+            <li>AI assistance to increase speed and improve decision support</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container'>
+      <SectionHeading
+        eyebrow='Brand Principles'
+        title='Premium, precise, and performance-focused by design.'
+        description='These principles shape product decisions across every workflow in Forma.'
+      />
+      <div class='card-grid cols-3'>
+        {operatingPrinciples.map((principle) => (
+          <article class='card'>
+            <h3>{principle.title}</h3>
+            <p>{principle.description}</p>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class='section'>
+    <div class='container'>
+      <div class='panel'>
+        <p class='eyebrow'>{site.byline}</p>
+        <h2 style='margin: 0.6rem 0 0.8rem;'>Built by WSYS</h2>
+        <p>
+          WSYS builds high-performance digital systems for teams that need
+          operational rigor, not lightweight app templates. Forma applies that
+          same philosophy to coaching businesses and athlete support operations.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class='section section-muted'>
+    <div class='container narrow'>
+      <div class='highlight-band'>
+        <h2>Want to see if Forma matches your standards?</h2>
+        <p style='margin-top: 0.7rem;'>
+          We can map your existing workflow and show where Forma improves
+          precision, speed, and oversight.
+        </p>
+        <div class='hero-actions'>
+          <ButtonLink href='/contact'>Book a Demo</ButtonLink>
+        </div>
+      </div>
+    </div>
+  </section>
+</MarketingLayout>
