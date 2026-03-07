@@ -21,3 +21,4 @@ Documentation upkeep rules:
 - If the repo structure or package boundaries materially change, update `ARCHITECTURE.md` in the same work session.
 - Keep `SOUL.md` condensed and stable. Historical detail belongs in `SESSION_LOG.md`.
 - After finishing an update git add and commit with a relevant message
+- start each session on a new worktree
