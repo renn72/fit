@@ -7,103 +7,52 @@ import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-adv
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
-import { useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
 import { createColumnHelper } from '@tanstack/react-table'
 
 import {
-	BarbellIcon,
-	CalendarBlankIcon,
-	FireIcon,
 	ListIcon,
-	MoonIcon,
-	PlayCircleIcon,
+	PencilSimpleIcon,
 	SquaresFourIcon,
-	TargetIcon,
+	TrashIcon,
 } from '@phosphor-icons/react'
 import _ from 'lodash'
+import { toast } from 'sonner'
 
-interface WorkoutExercise {
-	id: string
-	index: number
-	exercise: {
-		id: string
-		name: string
-		movement?: {
-			name: string
-		}
-	}
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
-interface WorkoutSuperSet {
-	id: string
-	index: number
-	superSet: {
-		id: string
-		name: string
-		isSuperSet: boolean
-		superSetExercises?: Array<{
-			exercise: {
-				id: string
-				name: string
-				movement?: {
-					name: string
-				}
-			}
-		}>
-	}
-}
-
-interface WorkoutWarmup {
-	id: string
-	name: string
-}
-
-interface WorkoutWarmupGroup {
-	id: string
-	name: string
-	warmups: WorkoutWarmup[]
-}
-
-interface Workout {
-	id: string
-	name: string
-	category: string | null
-	exercises: WorkoutExercise[]
-	superSets: WorkoutSuperSet[]
-	warmupGroup?: WorkoutWarmupGroup
-}
-
-interface BlockTemplateWorkout {
-	id: string
-	index: number
-	workout: Workout
-}
-
-interface BlockTemplate {
+interface UserBlockTemplate {
 	id: string
 	name: string
 	description: string | null
 	category: string | null
-	restDayIndex: number | null
+	tags: string[]
+	restDayIndexes: number[]
 	createdAt: Date
-	creatorName?: string
-	workouts: BlockTemplateWorkout[]
+	creatorName: string | null
+	workouts: Array<{
+		id: string
+		dayIndex: number
+		warmups: Array<{ id: string }>
+		exercises: Array<{ id: string }>
+	}>
 }
 
-const columnHelper = createColumnHelper<BlockTemplate>()
+const route = getRouteApi('/$orgSlug/block-templates')
+const columnHelper = createColumnHelper<UserBlockTemplate>()
+
+function countTotalExercises(template: UserBlockTemplate): number {
+	return template.workouts.reduce(
+		(total, workoutItem) => total + workoutItem.exercises.length,
+		0,
+	)
+}
 
 const columns = [
 	columnHelper.display({
@@ -141,19 +90,6 @@ const columns = [
 		enableSorting: true,
 		enableHiding: false,
 	}),
-	columnHelper.accessor('description', {
-		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Description' />
-		),
-		cell: ({ row }) => {
-			const desc = row.getValue('description') as string | null
-			return desc ? (desc.length > 50 ? `${desc.slice(0, 50)}...` : desc) : '-'
-		},
-		meta: {
-			label: 'Description',
-			variant: 'text',
-		},
-	}),
 	columnHelper.accessor('category', {
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Category' />
@@ -163,29 +99,36 @@ const columns = [
 			variant: 'text',
 		},
 	}),
-	columnHelper.accessor('workouts', {
+	columnHelper.display({
+		id: 'tags',
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Tags' />
+		),
+		cell: ({ row }) => row.original.tags.length || '-',
+		meta: {
+			label: 'Tags',
+			variant: 'number',
+		},
+	}),
+	columnHelper.display({
+		id: 'workouts',
 		header: ({ column }) => (
 			<DataTableColumnHeader column={column} label='Workouts' />
 		),
-		cell: ({ row }) => {
-			const workouts = row.getValue('workouts') as BlockTemplateWorkout[]
-			return <span>{workouts?.length || 0} workouts</span>
-		},
+		cell: ({ row }) => row.original.workouts.length,
 		meta: {
 			label: 'Workouts',
 			variant: 'number',
 		},
 	}),
-	columnHelper.accessor('restDayIndex', {
+	columnHelper.display({
+		id: 'restDays',
 		header: ({ column }) => (
-			<DataTableColumnHeader column={column} label='Rest Day' />
+			<DataTableColumnHeader column={column} label='Rest Days' />
 		),
-		cell: ({ row }) => {
-			const restDay = row.getValue('restDayIndex') as number | null
-			return restDay !== null ? `Day ${restDay + 1}` : '-'
-		},
+		cell: ({ row }) => row.original.restDayIndexes.length,
 		meta: {
-			label: 'Rest Day',
+			label: 'Rest Days',
 			variant: 'number',
 		},
 	}),
@@ -208,88 +151,103 @@ const columns = [
 			variant: 'date',
 		},
 	}),
+	columnHelper.display({
+		id: 'actions',
+		cell: ({ row }) => <TemplateActions template={row.original} />,
+		enableSorting: false,
+		enableHiding: false,
+	}),
 ]
-
-const route = getRouteApi('/$orgSlug/block-templates')
 
 export function BlockTemplatesPage() {
 	const { session } = route.useRouteContext()
-
 	const userOrgId = session.user.organisationId
-	if (!_.isString(userOrgId)) return <div>Missing org</div>
+
+	if (!_.isString(userOrgId)) {
+		return <div>Missing organisation</div>
+	}
+
 	return <BlockTemplatesContent userOrgId={userOrgId} />
 }
 
 function BlockTemplatesContent({ userOrgId }: { userOrgId: string }) {
 	const { orgSlug } = route.useParams()
-	const { data: blockTemplates } = useSuspenseQuery(
-		orpc.blockTemplate.getAllOrg.queryOptions({
+	const navigate = route.useNavigate()
+	const { view, page, perPage, sort } = route.useSearch()
+
+	const { data } = useSuspenseQuery(
+		orpc.userBlock.getTemplatesOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
 	)
 
-	const navigate = route.useNavigate()
-	const { view, page, perPage, sort } = route.useSearch()
-
-	const blockTemplatesData = (blockTemplates as BlockTemplate[]) ?? []
-
+	const templates = (data as UserBlockTemplate[]) ?? []
 	const { paginatedData, pageCount } = React.useMemo(() => {
-		const processed = [...blockTemplatesData]
+		const processed = [...templates]
 
 		if (sort && sort.length > 0) {
 			const { id, desc } = sort[0]
-			processed.sort((a, b) => {
-				const aValue = a[id as keyof BlockTemplate]
-				const bValue = b[id as keyof BlockTemplate]
+			processed.sort((left, right) => {
+				const leftValue = left[id as keyof UserBlockTemplate]
+				const rightValue = right[id as keyof UserBlockTemplate]
 
-				if (aValue === bValue) return 0
-				if (aValue === null || aValue === undefined) return 1
-				if (bValue === null || bValue === undefined) return -1
-
-				if (aValue < bValue) return desc ? 1 : -1
+				if (leftValue === rightValue) return 0
+				if (leftValue === null || leftValue === undefined) return 1
+				if (rightValue === null || rightValue === undefined) return -1
+				if (leftValue < rightValue) return desc ? 1 : -1
 				return desc ? -1 : 1
 			})
 		}
 
 		const total = processed.length
-		const pageCount = Math.ceil(total / perPage)
+		const nextPageCount = Math.max(1, Math.ceil(total / perPage))
 		const start = (page - 1) * perPage
-		const end = start + perPage
-		const paginatedData = processed.slice(start, end)
-
-		return { paginatedData, pageCount }
-	}, [blockTemplatesData, page, perPage, sort])
+		return {
+			paginatedData: processed.slice(start, start + perPage),
+			pageCount: nextPageCount,
+		}
+	}, [page, perPage, sort, templates])
 
 	const { table } = useDataTable({
 		data: paginatedData,
 		columns,
 		pageCount,
-		getRowId: (originalRow) => originalRow.id,
+		getRowId: (row) => row.id,
 		initialState: {
 			sorting: sort as any,
 			columnPinning: { right: ['actions'] },
 		},
 	})
 
-	const handleViewChange = (newView: string) => {
-		navigate({
-			to: '/$orgSlug/block-templates',
-			params: { orgSlug },
-			search: (prev) => ({ ...prev, view: newView as 'table' | 'grid' }),
-			replace: true,
-		})
-	}
-
 	return (
 		<div className='flex flex-col gap-4 p-4 w-full'>
-			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold tracking-tight'>Block Templates</h1>
-				<Link to='/$orgSlug/block-templates' params={{ orgSlug }}>
-					<Button>Create Block Template</Button>
+			<div className='flex flex-wrap gap-3 justify-between items-center'>
+				<div>
+					<h1 className='text-2xl font-semibold tracking-tight'>Block Templates</h1>
+					<p className='text-sm text-muted-foreground'>
+						Reusable blocks built on copied workouts and movement-backed exercises.
+					</p>
+				</div>
+				<Link to='/$orgSlug/block-templates/create' params={{ orgSlug }}>
+					<Button>Create Template</Button>
 				</Link>
 			</div>
 
-			<Tabs value={view} onValueChange={handleViewChange} className='w-full'>
+			<Tabs
+				value={view}
+				onValueChange={(nextView) =>
+					navigate({
+						to: '/$orgSlug/block-templates',
+						params: { orgSlug },
+						search: (prev) => ({
+							...prev,
+							view: nextView as 'table' | 'grid',
+						}),
+						replace: true,
+					})
+				}
+				className='w-full'
+			>
 				<TabsList className='w-fit'>
 					<TabsTrigger value='table' className='gap-2'>
 						<ListIcon className='size-4' />
@@ -310,236 +268,135 @@ function BlockTemplatesContent({ userOrgId }: { userOrgId: string }) {
 				</TabsContent>
 
 				<TabsContent value='grid' className='mt-4'>
-					<BlockTemplatesGridView
-						data={paginatedData}
-						page={page}
-						perPage={perPage}
-						total={blockTemplatesData.length}
-					/>
+					<div className='grid gap-4 lg:grid-cols-2'>
+						{paginatedData.map((template) => (
+							<Card key={template.id} className='flex flex-col'>
+								<CardHeader className='space-y-2'>
+									<div className='flex gap-3 justify-between items-start'>
+										<div>
+											<CardTitle className='text-lg'>{template.name}</CardTitle>
+											<p className='text-sm text-muted-foreground'>
+												{template.category || 'Uncategorized'}
+											</p>
+										</div>
+										<div className='flex gap-2'>
+											<Link
+												to='/$orgSlug/block-templates/edit/$blockId'
+												params={{ orgSlug, blockId: template.id }}
+											>
+												<Button size='sm' variant='outline'>
+													<PencilSimpleIcon className='mr-2 size-4' />
+													Edit
+												</Button>
+											</Link>
+										</div>
+									</div>
+									<p className='text-sm text-muted-foreground line-clamp-2'>
+										{template.description || 'No description'}
+									</p>
+								</CardHeader>
+								<CardContent className='space-y-4'>
+									<div className='grid grid-cols-2 gap-3 text-sm md:grid-cols-4'>
+										<TemplateStat label='Workouts' value={template.workouts.length} />
+										<TemplateStat
+											label='Exercises'
+											value={countTotalExercises(template)}
+										/>
+										<TemplateStat
+											label='Rest Days'
+											value={template.restDayIndexes.length}
+										/>
+										<TemplateStat label='Tags' value={template.tags.length} />
+									</div>
+									<div className='flex flex-wrap gap-2'>
+										{template.tags.length > 0 ? (
+											template.tags.map((tag) => (
+												<span
+													key={tag}
+													className='px-2 py-1 text-xs rounded-full border bg-muted'
+												>
+													{tag}
+												</span>
+											))
+										) : (
+											<span className='text-xs text-muted-foreground'>
+												No tags
+											</span>
+										)}
+									</div>
+									<div className='flex justify-between items-center pt-2 border-t text-sm text-muted-foreground'>
+										<span>{template.creatorName || 'Unknown creator'}</span>
+										<span>
+											{new Date(template.createdAt).toLocaleDateString()}
+										</span>
+									</div>
+								</CardContent>
+							</Card>
+						))}
+					</div>
 				</TabsContent>
 			</Tabs>
 		</div>
 	)
 }
 
-interface BlockTemplatesGridViewProps {
-	data: BlockTemplate[]
-	page: number
-	perPage: number
-	total: number
+function TemplateStat({
+	label,
+	value,
+}: {
+	label: string
+	value: number
+}) {
+	return (
+		<div className='p-3 rounded-lg border bg-muted/30'>
+			<p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
+				{label}
+			</p>
+			<p className='text-base font-semibold'>{value}</p>
+		</div>
+	)
 }
 
-function BlockTemplatesGridView({
-	data,
-	page,
-	perPage,
-	total,
-}: BlockTemplatesGridViewProps) {
-	const totalPages = Math.ceil(total / perPage)
+function TemplateActions({ template }: { template: UserBlockTemplate }) {
+	const { orgSlug } = route.useParams()
+	const queryClient = useQueryClient()
+
+	const deleteTemplate = useMutation(
+		orpc.userBlock.delete.mutationOptions({
+			onSuccess: () => {
+				queryClient.invalidateQueries({
+					queryKey: orpc.userBlock.getTemplatesOrg.key(),
+				})
+				toast.success('Template deleted successfully')
+			},
+			onError: (error) => {
+				toast.error(error.message || 'Failed to delete template')
+			},
+		}),
+	)
 
 	return (
-		<div className='flex flex-col gap-4'>
-			<div className='grid grid-cols-1 gap-4 lg:grid-cols-2'>
-				{data.map((blockTemplate) => {
-					const sortedWorkouts = [...blockTemplate.workouts].sort(
-						(a, b) => a.index - b.index,
-					)
-					const totalItems = sortedWorkouts.length
-
-					return (
-						<Card key={blockTemplate.id} className='flex flex-col'>
-							<CardHeader className='pb-3'>
-								<CardTitle className='text-lg'>{blockTemplate.name}</CardTitle>
-								{blockTemplate.category && (
-									<CardDescription>{blockTemplate.category}</CardDescription>
-								)}
-							</CardHeader>
-							<CardContent className='flex-1'>
-								<div className='space-y-4'>
-									{/* Stats */}
-									<div className='grid grid-cols-3 gap-2 text-center'>
-										<div className='p-2 bg-blue-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Workouts
-											</div>
-											<div className='font-semibold text-blue-600'>
-												{totalItems}
-											</div>
-										</div>
-										<div className='p-2 bg-purple-50 rounded-lg'>
-											<div className='text-xs text-muted-foreground'>
-												Total Days
-											</div>
-											<div className='font-semibold text-purple-600'>
-												{totalItems +
-													(blockTemplate.restDayIndex !== null ? 1 : 0)}
-											</div>
-										</div>
-										{blockTemplate.restDayIndex !== null ? (
-											<div className='p-2 bg-green-50 rounded-lg'>
-												<div className='text-xs text-muted-foreground'>
-													Rest Day
-												</div>
-												<div className='font-semibold text-green-600'>
-													Day {blockTemplate.restDayIndex + 1}
-												</div>
-											</div>
-										) : (
-											<div className='p-2 bg-gray-50 rounded-lg'>
-												<div className='text-xs text-muted-foreground'>
-													Rest Day
-												</div>
-												<div className='font-semibold text-gray-600'>-</div>
-											</div>
-										)}
-									</div>
-
-									{/* Schedule */}
-									<div className='space-y-3'>
-										<div className='text-sm font-medium text-muted-foreground'>
-											Schedule
-										</div>
-										<div className='overflow-y-auto space-y-2 max-h-80'>
-											{sortedWorkouts.map((item, idx) => {
-												const dayNumber = idx + 1
-												const isRestDay = blockTemplate.restDayIndex === idx
-
-												return (
-													<div key={item.id}>
-														{isRestDay && (
-															<div className='flex gap-2 items-center p-2 mb-2 bg-green-50 rounded-lg'>
-																<MoonIcon className='text-green-600 size-4' />
-																<span className='text-sm font-medium text-green-700'>
-																	REST DAY
-																</span>
-															</div>
-														)}
-														<div className='p-3 space-y-2 rounded-lg border'>
-															<div className='flex gap-2 items-center'>
-																<CalendarBlankIcon className='text-blue-500 size-4' />
-																<span className='text-sm font-medium'>
-																	Day {dayNumber}: {item.workout.name}
-																</span>
-															</div>
-
-															{/* Warmup */}
-															{item.workout.warmupGroup && (
-																<div className='pl-6 space-y-1'>
-																	<div className='flex gap-2 items-center text-sm text-orange-600'>
-																		<FireIcon className='size-3' />
-																		<span className='font-medium'>
-																			Warmup: {item.workout.warmupGroup.name}
-																		</span>
-																	</div>
-																	{item.workout.warmupGroup.warmups
-																		?.slice(0, 3)
-																		.map((warmup) => (
-																			<div
-																				key={warmup.id}
-																				className='flex gap-2 items-center pl-5 text-xs text-muted-foreground'
-																			>
-																				<PlayCircleIcon className='size-3' />
-																				<span>{warmup.name}</span>
-																			</div>
-																		))}
-																	{item.workout.warmupGroup.warmups?.length >
-																		3 && (
-																		<div className='pl-5 text-xs text-muted-foreground'>
-																			+
-																			{item.workout.warmupGroup.warmups.length -
-																				3}{' '}
-																			more
-																		</div>
-																	)}
-																</div>
-															)}
-
-															{/* Exercises */}
-															<div className='pl-6 space-y-1'>
-																{/* Combine exercises and supersets */}
-																{[
-																	...(item.workout.exercises?.map((e) => ({
-																		...e,
-																		type: 'exercise' as const,
-																	})) || []),
-																	...(item.workout.superSets?.map((s) => ({
-																		...s,
-																		type: 'superset' as const,
-																	})) || []),
-																]
-																	.sort((a, b) => a.index - b.index)
-																	.slice(0, 5)
-																	.map((exItem, exIdx) => (
-																		<div
-																			key={`${exItem.id}-${exIdx}`}
-																			className='flex gap-2 items-center text-xs'
-																		>
-																			{exItem.type === 'exercise' ? (
-																				<>
-																					<BarbellIcon className='text-blue-500 size-3' />
-																					<span className='flex-1 truncate'>
-																						{exItem.exercise.name}
-																					</span>
-																					{exItem.exercise.movement?.name && (
-																						<span className='text-muted-foreground'>
-																							({exItem.exercise.movement.name})
-																						</span>
-																					)}
-																				</>
-																			) : (
-																				<>
-																					<TargetIcon className='text-purple-500 size-3' />
-																					<span className='flex-1 font-medium truncate'>
-																						{exItem.superSet.name}
-																					</span>
-																					<span className='text-xs text-muted-foreground'>
-																						(
-																						{exItem.superSet.superSetExercises
-																							?.length || 0}{' '}
-																						exercises)
-																					</span>
-																				</>
-																			)}
-																		</div>
-																	))}
-																{item.workout.exercises?.length +
-																	item.workout.superSets?.length >
-																	5 && (
-																	<div className='pl-5 text-xs text-muted-foreground'>
-																		+
-																		{item.workout.exercises?.length +
-																			item.workout.superSets?.length -
-																			5}{' '}
-																		more
-																	</div>
-																)}
-															</div>
-														</div>
-													</div>
-												)
-											})}
-										</div>
-									</div>
-								</div>
-							</CardContent>
-						</Card>
-					)
-				})}
-			</div>
-
-			{totalPages > 1 && (
-				<div className='flex justify-between items-center px-2'>
-					<div className='text-sm text-muted-foreground'>
-						Showing {(page - 1) * perPage + 1} to{' '}
-						{Math.min(page * perPage, total)} of {total} block templates
-					</div>
-					<div className='flex gap-2 items-center'>
-						<span className='text-sm'>
-							Page {page} of {totalPages}
-						</span>
-					</div>
-				</div>
-			)}
+		<div className='flex gap-2 justify-end'>
+			<Link
+				to='/$orgSlug/block-templates/edit/$blockId'
+				params={{ orgSlug, blockId: template.id }}
+			>
+				<Button size='sm' variant='outline'>
+					<PencilSimpleIcon className='mr-2 size-4' />
+					Edit
+				</Button>
+			</Link>
+			<Button
+				size='sm'
+				variant='outline'
+				onClick={() => {
+					if (!window.confirm('Delete this block template?')) return
+					deleteTemplate.mutate({ id: template.id })
+				}}
+			>
+				<TrashIcon className='mr-2 size-4' />
+				Delete
+			</Button>
 		</div>
 	)
 }

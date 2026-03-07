@@ -10,6 +10,7 @@ import { orgRouter } from './organisation'
 import { recipeRouter } from './recipe'
 import { subscriptionRouter } from './subscription'
 import { userRouter } from './user'
+import { userBlockRouter } from './user-block'
 import { userMenuRouter } from './user-menu'
 import { warmupRouter } from './warmup'
 import { workoutRouter } from './workout'
@@ -43,6 +44,7 @@ export const appRouter = {
 		}),
 	organisation: orgRouter,
 	user: userRouter,
+	userBlock: userBlockRouter,
 	userMenu: userMenuRouter,
 	adminSetup: adminSetupRouter,
 	movement: movementRouter,

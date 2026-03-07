@@ -1,14 +1,16 @@
 import { db } from '@fit/db'
 import { user } from '@fit/db/schema/auth'
-import {
-	blockTemplate,
-	blockTemplateToWorkout,
-} from '@fit/db/schema/block-template'
 import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
 import { movement } from '@fit/db/schema/movement'
 import { organisation, plan, subscription } from '@fit/db/schema/org'
 import { recipe, recipeToIngredient } from '@fit/db/schema/recipe'
+import {
+	userBlock,
+	userExercise,
+	userWarmup,
+	userWorkout,
+} from '@fit/db/schema/user-block'
 import { warmup, warmupGroup } from '@fit/db/schema/warmup'
 import { workout, workoutToExercise } from '@fit/db/schema/workout'
 
@@ -846,7 +848,8 @@ export const adminSetupRouter = {
 		.route({
 			method: 'POST',
 			path: '/admin-setup/generate-block-templates',
-			summary: 'Generate random block templates for an org (Dictator only)',
+			summary:
+				'Generate random user block templates for an org (Dictator only)',
 			tags: ['Admin Setup'],
 		})
 		.input(
@@ -858,7 +861,8 @@ export const adminSetupRouter = {
 			const metaTags = context.session.user.metaTags?.split(',') ?? []
 			if (!metaTags.includes('dictator')) {
 				throw new ORPCError('FORBIDDEN', {
-					message: 'You do not have permission to generate block templates',
+					message:
+						'You do not have permission to generate user block templates',
 				})
 			}
 
@@ -874,6 +878,34 @@ export const adminSetupRouter = {
 
 			const orgWorkouts = await db.query.workout.findMany({
 				where: { organisationId: input.organisationId },
+				with: {
+					exercises: {
+						with: {
+							exercise: true,
+						},
+						orderBy: (link, { asc }) => [asc(link.index)],
+					},
+					superSets: {
+						with: {
+							superSet: {
+								with: {
+									superSetExercises: {
+										with: {
+											exercise: true,
+										},
+										orderBy: (link, { asc }) => [asc(link.order)],
+									},
+								},
+							},
+						},
+						orderBy: (link, { asc }) => [asc(link.index)],
+					},
+					warmupGroup: {
+						with: {
+							warmups: true,
+						},
+					},
+				},
 			})
 
 			if (orgWorkouts.length < 4) {
@@ -924,22 +956,22 @@ export const adminSetupRouter = {
 						}
 					}
 
-					// Find the first rest day index for storage
-					const firstRestDayIndex =
-						restDayIndices.length > 0 ? Math.min(...restDayIndices) : null
-
 					const category =
 						categories[Math.floor(Math.random() * categories.length)]
 
 					const [newBlockTemplate] = await tx
-						.insert(blockTemplate)
+						.insert(userBlock)
 						.values({
 							name: blockTemplateNames[i] || `Block Template ${i + 1}`,
 							description: `A ${category!.toLowerCase()} focused training block with ${workoutCount} workouts and ${restDayCount} rest day${restDayCount > 1 ? 's' : ''}`,
 							category: category,
-							restDayIndex: firstRestDayIndex,
-							creatorId: orgUser.id,
-							organisationId: input.organisationId,
+							tags: category ? category.toLowerCase() : '',
+							restDayIndexes: JSON.stringify(
+								restDayIndices.sort((a, b) => a - b),
+							),
+							userId: orgUser.id,
+							isTemplate: true,
+							isActive: false,
 						})
 						.returning()
 
@@ -949,18 +981,169 @@ export const adminSetupRouter = {
 						})
 					}
 
-					// Add workouts to block template with index
-					await tx.insert(blockTemplateToWorkout).values(
-						selectedWorkouts.map((workout, index) => ({
-							blockTemplateId: newBlockTemplate.id,
-							workoutId: workout.id,
-							index: index,
-						})),
-					)
+					let currentDayIndex = 0
+
+					for (const workoutItem of selectedWorkouts) {
+						while (restDayIndices.includes(currentDayIndex)) {
+							currentDayIndex += 1
+						}
+
+						const [newWorkout] = await tx
+							.insert(userWorkout)
+							.values({
+								userBlockId: newBlockTemplate.id,
+								sourceWorkoutId: workoutItem.id,
+								sourceWarmupGroupId: workoutItem.warmupGroup?.id ?? null,
+								dayIndex: currentDayIndex,
+								workoutIndex: 0,
+								name: workoutItem.name,
+								description: workoutItem.description,
+								category: workoutItem.category,
+							})
+							.returning()
+
+						if (!newWorkout) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: 'Failed to create generated user workout',
+							})
+						}
+
+						if (workoutItem.warmupGroup?.warmups?.length) {
+							await tx.insert(userWarmup).values(
+								workoutItem.warmupGroup.warmups.map(
+									(warmupItem, warmupIndex) => ({
+										userWorkoutId: newWorkout.id,
+										sourceWarmupId: warmupItem.id,
+										warmupIndex,
+										name: warmupItem.name,
+										description: warmupItem.description,
+										images: warmupItem.images,
+										link: warmupItem.link,
+									}),
+								),
+							)
+						}
+
+						type GeneratedExerciseSeed = {
+							sourceExerciseId: string | null
+							movementId: string | null
+							superSetGroup: string | null
+							label: string | null
+							sets: number | null
+							reps: number | null
+							repUnit: string | null
+							ormPercent: number | null
+							targetRpe: number | null
+							restTime: number | null
+							restUnit: string | null
+							tempoDown: number | null
+							tempoPause: number | null
+							tempoUp: number | null
+							notes: string | null
+						}
+
+						const orderedItems = [
+							...(workoutItem.exercises ?? [])
+								.filter(
+									(
+										link,
+									): link is typeof link & {
+										exercise: NonNullable<typeof link.exercise>
+									} => link.exercise !== null,
+								)
+								.map((link) => ({
+									index: link.index,
+									type: 'exercise' as const,
+									payload: link.exercise,
+								})),
+							...(workoutItem.superSets ?? [])
+								.filter(
+									(
+										link,
+									): link is typeof link & {
+										superSet: NonNullable<typeof link.superSet>
+									} => link.superSet !== null,
+								)
+								.map((link) => ({
+									index: link.index,
+									type: 'superset' as const,
+									payload: link.superSet,
+								})),
+						].sort((left, right) => left.index - right.index)
+
+						const generatedExercises: GeneratedExerciseSeed[] =
+							orderedItems.flatMap((item): GeneratedExerciseSeed[] => {
+								if (item.type === 'exercise') {
+									return [
+										{
+											sourceExerciseId: item.payload.id,
+											movementId: item.payload.movementId,
+											superSetGroup: null,
+											label: item.payload.name,
+											sets: item.payload.sets,
+											reps: item.payload.reps,
+											repUnit: item.payload.repUnit,
+											ormPercent: item.payload.ormPercent,
+											targetRpe: item.payload.targetRpe,
+											restTime: item.payload.restTime,
+											restUnit: item.payload.restUnit,
+											tempoDown: item.payload.tempoDown,
+											tempoPause: item.payload.tempoPause,
+											tempoUp: item.payload.tempoUp,
+											notes: item.payload.notes,
+										},
+									]
+								}
+
+								const superSetGroup = uuid()
+								return (item.payload.superSetExercises ?? []).map(
+									(memberLink) => ({
+										sourceExerciseId: memberLink.exercise?.id ?? null,
+										movementId: memberLink.exercise?.movementId ?? null,
+										superSetGroup,
+										label: memberLink.exercise?.name ?? null,
+										sets: memberLink.exercise?.sets ?? null,
+										reps: memberLink.exercise?.reps ?? null,
+										repUnit: memberLink.exercise?.repUnit ?? null,
+										ormPercent: memberLink.exercise?.ormPercent ?? null,
+										targetRpe:
+											memberLink.exercise?.targetRpe ??
+											item.payload.targetRpe ??
+											null,
+										restTime:
+											memberLink.exercise?.restTime ??
+											item.payload.restTime ??
+											null,
+										restUnit:
+											memberLink.exercise?.restUnit ??
+											item.payload.restUnit ??
+											null,
+										tempoDown: memberLink.exercise?.tempoDown ?? null,
+										tempoPause: memberLink.exercise?.tempoPause ?? null,
+										tempoUp: memberLink.exercise?.tempoUp ?? null,
+										notes:
+											memberLink.exercise?.notes ?? item.payload.notes ?? null,
+									}),
+								)
+							})
+
+						if (generatedExercises.length > 0) {
+							await tx.insert(userExercise).values(
+								generatedExercises.map((exerciseItem, exerciseIndex) => ({
+									userWorkoutId: newWorkout.id,
+									exerciseIndex,
+									superSetOrder: null,
+									...exerciseItem,
+								})),
+							)
+						}
+
+						currentDayIndex += 1
+					}
 				}
 			})
 
-			return { message: '10 block templates generated successfully' }
+			return { message: '10 user block templates generated successfully' }
 		}),
 
 	generateUserMenuTemplates: protectedProcedure

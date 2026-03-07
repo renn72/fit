@@ -5,6 +5,9 @@
 		"declarationMap": true,
 		"sourceMap": true,
 		"outDir": "dist",
-		"composite": true
-	}
+		"composite": true,
+		"rootDir": ".."
+	},
+	"include": ["src/**/*.ts", "../db/src/**/*.ts", "../env/src/**/*.ts"],
+	"exclude": ["dist", "tests", "node_modules"]
 }

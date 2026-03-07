@@ -111,7 +111,7 @@ function RouteComponent() {
 			onMutate: () => setIsGeneratingBlockTemplates(true),
 			onSettled: () => setIsGeneratingBlockTemplates(false),
 			onSuccess: () =>
-				toast.success('10 block templates generated successfully'),
+				toast.success('10 user block templates generated successfully'),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -362,10 +362,12 @@ function RouteComponent() {
 			</div>
 
 			<div className='pt-6 w-full max-w-md border-t'>
-				<h2 className='mb-4 text-xl font-semibold'>Generate Block Templates</h2>
+				<h2 className='mb-4 text-xl font-semibold'>
+					Generate User Block Templates
+				</h2>
 				<p className='mb-4 text-sm text-muted-foreground'>
-					Select an organization to generate 10 block templates with 4-5
-					workouts each and 1-2 rest days.
+					Select an organization to generate 10 reusable user block templates
+					with copied workouts, warmups, exercises, and 1-2 rest days.
 				</p>
 
 				<div className='flex flex-col gap-4'>
@@ -402,7 +404,7 @@ function RouteComponent() {
 							}
 						}}
 					>
-						Generate 10 Block Templates
+						Generate 10 User Block Templates
 					</LoadingButton>
 				</div>
 			</div>

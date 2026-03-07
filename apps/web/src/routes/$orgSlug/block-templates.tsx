@@ -30,7 +30,7 @@ export const Route = createFileRoute('/$orgSlug/block-templates')({
 		if (!userOrgId) return
 
 		await context.queryClient.prefetchQuery(
-			orpc.blockTemplate.getAllOrg.queryOptions({
+			orpc.userBlock.getTemplatesOrg.queryOptions({
 				input: { organisationId: userOrgId },
 			}),
 		)

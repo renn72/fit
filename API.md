@@ -25,9 +25,9 @@ This file summarizes the current oRPC API implementation by reading:
 - `healthCheck` (`GET /health-check`) returns `'OK'`.
 - `privateData` (`GET /private-data`) returns `{ message, user }` for authenticated users.
 - Mounted routers:
-- `organisation`, `user`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `feature`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `ai`.
+- `organisation`, `user`, `userBlock`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `feature`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `ai`.
 
-Total procedures in router files: **126**.
+Total procedures in router files: **133**.
 
 ## Cross-Cutting Patterns
 
@@ -269,6 +269,35 @@ Total procedures in router files: **126**.
 - Mutation endpoints require `itemUpdater` or `dictator`.
 - Link endpoints validate parent/child existence; superset add enforces `exercise.isSuperSet = true`.
 
+## `userBlockRouter` (`packages/api/src/routers/user-block.ts`)
+
+### Endpoints
+| Procedure | Method | Path | Summary |
+|---|---|---|---|
+| `getByUser` | `GET` | `/user-block/by-user` | Assigned blocks for one user |
+| `getTemplatesOrg` | `GET` | `/user-block/templates/org` | Template blocks for one org |
+| `get` | `GET` | `/user-block/:id` | One block with copied workouts/warmups/exercises |
+| `batchCreate` | `POST` | `/user-block/batch` | Create block/template + all nested children |
+| `batchUpdate` | `POST` | `/user-block/batch-update` | Replace all nested children + block update |
+| `update` | `POST` | `/user-block/update` | Update block metadata |
+| `delete` | `POST` | `/user-block/delete` | Delete block |
+
+### Behavior Notes
+- `user_block` is the primary storage for both templates (`isTemplate = true`) and assigned user blocks (`isTemplate = false`).
+- Nested structure is copied into child tables:
+- `user_workout`
+- `user_warmup`
+- `user_exercise`
+- Exercises retain `movementId` and expose `movementName` in nested API output, so the movement library remains the source of truth.
+- `tags` are normalized as trimmed/deduplicated CSV on write and returned as arrays.
+- `restDayIndexes` are normalized as sorted unique integer arrays, stored as JSON text, and filtered so they cannot collide with scheduled workout days.
+- `batchCreate` and `batchUpdate` sort/reindex workouts, warmups, exercises, and superset members before persisting.
+- Access model:
+- same-user access is allowed,
+- same-org visibility is allowed for reads,
+- same-org `itemUpdater` users can manage blocks for other org users,
+- `dictator` bypasses org checks.
+
 ## `blockTemplateRouter` (`packages/api/src/routers/block-template.ts`)
 
 ### Endpoints
@@ -388,7 +417,7 @@ Total procedures in router files: **126**.
 - `generateExercises` creates 10 exercise rows with random training parameters.
 - `generateWarmups` creates 5 warmup groups with 2-4 warmups each.
 - `generateWorkouts` creates 10-20 workouts with 4-8 linked exercises and optional warmup group.
-- `generateBlockTemplates` creates 10 templates with linked workouts and rest-day index.
+- `generateBlockTemplates` now seeds 10 `userBlock` templates and copies workouts, warmups, and exercises into `user_workout`, `user_warmup`, and `user_exercise`.
 - `generateUserMenuTemplates` delegates to `generateRandomUserMenuTemplatesForOrg`.
 - `generatePlans` seeds Starter/Pro/Elite/Enterprise (Enterprise hidden).
 
@@ -429,6 +458,7 @@ Total procedures in router files: **126**.
 ## Notes on API Shape and Evolution
 
 - Both `menuTemplateRouter` and `userMenuRouter` are mounted.
-- Current web flows primarily use `userMenu` for template workflows, while legacy `menuTemplate` endpoints still exist.
+- Both `blockTemplateRouter` and `userBlockRouter` are mounted.
+- Current web flows primarily use `userMenu` and `userBlock` for template workflows, while legacy `menuTemplate` and `blockTemplate` endpoints still exist.
 - Procedure path syntax is mixed (`:id` and `{id}` styles) depending on file.
 - Input contracts are primarily sourced from `packages/api/src/schemas/*` and enforced per procedure.

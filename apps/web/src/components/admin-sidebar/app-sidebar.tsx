@@ -111,6 +111,22 @@ const data = {
 				},
 			],
 		},
+		{
+			title: 'Fitness',
+			url: '#',
+			icon: <BarbellIcon />,
+			isActive: true,
+			items: [
+				{
+					title: 'User Blocks',
+					url: '/$orgSlug/user-blocks',
+				},
+				{
+					title: 'Create Block',
+					url: '/$orgSlug/user-block-create',
+				},
+			],
+		},
 	],
 }
 

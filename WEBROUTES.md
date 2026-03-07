@@ -389,11 +389,32 @@ This document summarizes the current TanStack Router setup and every route defin
 ### `/$orgSlug/block-templates`
 - File: `apps/web/src/routes/$orgSlug/block-templates.tsx`
 - Purpose:
-  - Block templates list page (table/grid)
+  - Block templates list page (table/grid) backed by `userBlock` template storage
 - Search params:
   - `view`, `page`, `perPage`, `sort`
 - Data:
-  - Prefetches `orpc.blockTemplate.getAllOrg`
+  - Prefetches `orpc.userBlock.getTemplatesOrg`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/block-templates/create`
+- File: `apps/web/src/routes/$orgSlug/block-templates_.create.tsx`
+- Purpose:
+  - Create block template using shared `UserBlockForm` in `mode='template'`
+- Data:
+  - Prefetches `orpc.userBlock.getTemplatesOrg`
+  - Prefetches `orpc.workout.getAllOrg`, `orpc.exercise.getAllOrg`, `orpc.warmup.getAllGroups`, and `orpc.movement.getAllOrg`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/block-templates/edit/$blockId`
+- File: `apps/web/src/routes/$orgSlug/block-templates_.edit.$blockId.tsx`
+- Purpose:
+  - Edit block template using shared `UserBlockForm` in `mode='template'`
+- Data:
+  - Prefetches `orpc.userBlock.get`
+  - Prefetches `orpc.userBlock.getTemplatesOrg`
+  - Prefetches `orpc.workout.getAllOrg`, `orpc.exercise.getAllOrg`, `orpc.warmup.getAllGroups`, and `orpc.movement.getAllOrg`
 - Rendering:
   - `ssr: false`
 
@@ -465,7 +486,46 @@ This document summarizes the current TanStack Router setup and every route defin
 - Rendering:
   - `ssr: false`
 
+### `/$orgSlug/user-blocks`
+- File: `apps/web/src/routes/$orgSlug/user-blocks.tsx`
+- Purpose:
+  - User block list page wrapper (passes `orgSlug` into `UserBlocksPage`)
+  - Relies on selected user context retained from parent `/$orgSlug?user=...`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/user-block-create`
+- File: `apps/web/src/routes/$orgSlug/user-block-create.tsx`
+- Purpose:
+  - User block creation and assignment flow
+  - Starts from a blank block or imports a block template into the editable form
+- Data:
+  - Prefetches `orpc.userBlock.getTemplatesOrg`
+  - Prefetches `orpc.workout.getAllOrg`, `orpc.exercise.getAllOrg`, `orpc.warmup.getAllGroups`, and `orpc.movement.getAllOrg`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/user-block/$blockId`
+- File: `apps/web/src/routes/$orgSlug/user-block.$blockId.tsx`
+- Purpose:
+  - User block detail view with schedule, workout, warmup, and exercise breakdown
+- Data:
+  - Prefetches `orpc.userBlock.get`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/user-block-edit/$blockId`
+- File: `apps/web/src/routes/$orgSlug/user-block-edit.$blockId.tsx`
+- Purpose:
+  - Edit existing user block using shared `UserBlockForm`
+- Data:
+  - Prefetches `orpc.userBlock.get`
+  - Prefetches `orpc.userBlock.getTemplatesOrg`
+  - Prefetches `orpc.workout.getAllOrg`, `orpc.exercise.getAllOrg`, `orpc.warmup.getAllGroups`, and `orpc.movement.getAllOrg`
+- Rendering:
+  - `ssr: false`
+
 ## Route Inventory Source
 
 - Generated tree used for path verification: `apps/web/src/routeTree.gen.ts`
-- Full path count in generated tree: 46 concrete file routes (plus `__root` layout)
+- Full path count in generated tree: 52 concrete file routes (plus `__root` layout)

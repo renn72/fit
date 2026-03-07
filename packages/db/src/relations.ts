@@ -6,6 +6,7 @@ import * as menuTemplate from './schema/menu-template'
 import * as movement from './schema/movement'
 import * as org from './schema/org'
 import * as recipe from './schema/recipe'
+import * as userBlock from './schema/user-block'
 import * as userMenu from './schema/user-menu'
 import * as warmup from './schema/warmup'
 import * as workout from './schema/workout'
@@ -23,6 +24,7 @@ const schema = {
 	...warmup,
 	...blockTemplate,
 	...menuTemplate,
+	...userBlock,
 	...userMenu,
 }
 
@@ -68,6 +70,10 @@ export const relations = defineRelations(schema, (r) => ({
 		workouts: r.many.workout({
 			from: r.user.id,
 			to: r.workout.creatorId,
+		}),
+		userBlocks: r.many.userBlock({
+			from: r.user.id,
+			to: r.userBlock.userId,
 		}),
 		userMenus: r.many.userMenu({
 			from: r.user.id,
@@ -165,6 +171,10 @@ export const relations = defineRelations(schema, (r) => ({
 		exercises: r.many.exercise({
 			from: r.movement.id,
 			to: r.exercise.movementId,
+		}),
+		userExercises: r.many.userExercise({
+			from: r.movement.id,
+			to: r.userExercise.movementId,
 		}),
 	},
 
@@ -454,6 +464,70 @@ export const relations = defineRelations(schema, (r) => ({
 		recipe: r.one.recipe({
 			from: r.menuTemplateToRecipe.recipeId,
 			to: r.recipe.id,
+		}),
+	},
+
+	// ***************** User Block *******************
+	userBlock: {
+		user: r.one.user({
+			from: r.userBlock.userId,
+			to: r.user.id,
+		}),
+		workouts: r.many.userWorkout({
+			from: r.userBlock.id,
+			to: r.userWorkout.userBlockId,
+		}),
+	},
+
+	// ***************** User Workout *******************
+	userWorkout: {
+		userBlock: r.one.userBlock({
+			from: r.userWorkout.userBlockId,
+			to: r.userBlock.id,
+		}),
+		sourceWorkout: r.one.workout({
+			from: r.userWorkout.sourceWorkoutId,
+			to: r.workout.id,
+		}),
+		sourceWarmupGroup: r.one.warmupGroup({
+			from: r.userWorkout.sourceWarmupGroupId,
+			to: r.warmupGroup.id,
+		}),
+		warmups: r.many.userWarmup({
+			from: r.userWorkout.id,
+			to: r.userWarmup.userWorkoutId,
+		}),
+		exercises: r.many.userExercise({
+			from: r.userWorkout.id,
+			to: r.userExercise.userWorkoutId,
+		}),
+	},
+
+	// ***************** User Warmup *******************
+	userWarmup: {
+		userWorkout: r.one.userWorkout({
+			from: r.userWarmup.userWorkoutId,
+			to: r.userWorkout.id,
+		}),
+		sourceWarmup: r.one.warmup({
+			from: r.userWarmup.sourceWarmupId,
+			to: r.warmup.id,
+		}),
+	},
+
+	// ***************** User Exercise *******************
+	userExercise: {
+		userWorkout: r.one.userWorkout({
+			from: r.userExercise.userWorkoutId,
+			to: r.userWorkout.id,
+		}),
+		sourceExercise: r.one.exercise({
+			from: r.userExercise.sourceExerciseId,
+			to: r.exercise.id,
+		}),
+		movement: r.one.movement({
+			from: r.userExercise.movementId,
+			to: r.movement.id,
 		}),
 	},
 
