@@ -8,8 +8,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
@@ -18,11 +25,18 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
 
 import {
+	DragOverlay,
 	DndContext,
 	KeyboardSensor,
 	PointerSensor,
+	closestCorners,
 	closestCenter,
 	type DragEndEvent,
+	type DragOverEvent,
+	type DragStartEvent,
+	pointerWithin,
+	useDraggable,
+	useDroppable,
 	useSensor,
 	useSensors,
 } from '@dnd-kit/core'
@@ -37,10 +51,13 @@ import { CSS } from '@dnd-kit/utilities'
 import {
 	ArrowsClockwiseIcon,
 	ArrowsOutCardinalIcon,
+	BarbellIcon,
+	DotsSixVerticalIcon,
 	FloppyDiskBackIcon,
 	FolderOpenIcon,
 	PlusIcon,
 	SparkleIcon,
+	StackPlusIcon,
 	TrashIcon,
 } from '@phosphor-icons/react'
 import { toast } from 'sonner'
@@ -97,6 +114,61 @@ interface BlockFormData {
 	restDayIndexes: number[]
 	workouts: BlockWorkoutForm[]
 }
+
+interface WorkoutLibraryItem {
+	id: string
+	name: string
+	description: string | null
+	category: string | null
+	warmupGroup?: WarmupGroupLibraryItem | null
+	exercises?: Array<{
+		index: number
+		exercise: ExerciseLibraryItem
+	}>
+	superSets?: Array<{
+		index: number
+		superSet: ExerciseLibraryItem
+	}>
+}
+
+interface WarmupGroupLibraryItem {
+	id: string
+	name: string
+	description: string | null
+	warmups?: Array<unknown>
+}
+
+interface ExerciseLibraryItem {
+	id: string
+	name: string
+	isSuperSet: boolean
+	movementId?: string | null
+	movementName?: string | null
+	superSetExercises?: Array<{
+		exercise?: ExerciseLibraryItem | null
+	}>
+	sets?: NullableNumber
+	reps?: NullableNumber
+	repUnit?: string | null
+	ormPercent?: NullableNumber
+	targetRpe?: NullableNumber
+	restTime?: NullableNumber
+	restUnit?: string | null
+	tempoDown?: NullableNumber
+	tempoPause?: NullableNumber
+	tempoUp?: NullableNumber
+	notes?: string | null
+}
+
+type ExerciseDragData =
+	| {
+			kind: 'library'
+			item: ExerciseLibraryItem
+	  }
+	| {
+			kind: 'builder'
+			item: BlockExerciseForm
+	  }
 
 interface UserBlockFormProps {
 	userOrgId: string
@@ -195,6 +267,29 @@ function deepCloneWarmup(warmup: BlockWarmupForm): BlockWarmupForm {
 	}
 }
 
+function getNextDayIndex(
+	workouts: BlockWorkoutForm[],
+	restDayIndexes: number[],
+): number {
+	return Math.max(
+		...workouts.map((workoutItem) => workoutItem.dayIndex),
+		...restDayIndexes,
+		-1,
+	) + 1
+}
+
+function getScheduledDayIndexes(
+	workouts: BlockWorkoutForm[],
+	restDayIndexes: number[],
+): number[] {
+	return Array.from(
+		new Set([
+			...workouts.map((workoutItem) => workoutItem.dayIndex),
+			...restDayIndexes,
+		]),
+	).sort((left, right) => left - right)
+}
+
 function deepCloneExercise(exercise: BlockExerciseForm): BlockExerciseForm {
 	return {
 		...exercise,
@@ -283,7 +378,7 @@ function mapExistingBlockToForm(block: any): BlockFormData {
 	}
 }
 
-function buildWarmupsFromGroup(group: any): BlockWarmupForm[] {
+function buildWarmupsFromGroup(group: WarmupGroupLibraryItem): BlockWarmupForm[] {
 	return (group.warmups ?? []).map((warmupItem: any) => ({
 		id: crypto.randomUUID(),
 		sourceWarmupId: warmupItem.id,
@@ -294,7 +389,9 @@ function buildWarmupsFromGroup(group: any): BlockWarmupForm[] {
 	})) as BlockWarmupForm[]
 }
 
-function buildExercisesFromLibrary(exerciseItem: any): BlockExerciseForm[] {
+function buildExercisesFromLibrary(
+	exerciseItem: ExerciseLibraryItem,
+): BlockExerciseForm[] {
 	if (exerciseItem.isSuperSet) {
 		const superSetGroup = crypto.randomUUID()
 		return (exerciseItem.superSetExercises ?? []).map((memberLink: any) => ({
@@ -341,7 +438,7 @@ function buildExercisesFromLibrary(exerciseItem: any): BlockExerciseForm[] {
 }
 
 function buildWorkoutFromLibrary(
-	workoutItem: any,
+	workoutItem: WorkoutLibraryItem,
 	dayIndex: number,
 ): BlockWorkoutForm {
 	const orderedItems = [
@@ -380,10 +477,12 @@ function SortableShell({
 	id,
 	children,
 	className,
+	data,
 }: {
 	id: string
 	children: React.ReactNode
 	className?: string
+	data?: Record<string, unknown>
 }) {
 	const {
 		attributes,
@@ -392,7 +491,7 @@ function SortableShell({
 		transform,
 		transition,
 		isDragging,
-	} = useSortable({ id })
+	} = useSortable({ id, data })
 
 	return (
 		<div
@@ -451,9 +550,15 @@ export function UserBlockForm({
 	const isEditMode = Boolean(blockId)
 	const isTemplateMode = mode === 'template'
 	const [selectedTemplate, setSelectedTemplate] = React.useState<any>(null)
-	const [selectedWorkoutId, setSelectedWorkoutId] = React.useState<
-		string | null
-	>(null)
+	const [selectedDayIndex, setSelectedDayIndex] = React.useState<number | null>(
+		null,
+	)
+	const [selectedWorkoutImportId, setSelectedWorkoutImportId] =
+		React.useState('')
+	const [exerciseLibraryQuery, setExerciseLibraryQuery] = React.useState('')
+	const [activeExerciseDragData, setActiveExerciseDragData] =
+		React.useState<ExerciseDragData | null>(null)
+	const lastExerciseOverIdRef = React.useRef<string | null>(null)
 	const [formData, setFormData] = React.useState<BlockFormData>(
 		createEmptyBlockForm(),
 	)
@@ -512,7 +617,12 @@ export function UserBlockForm({
 		if (!existingBlock) return
 		const nextFormData = mapExistingBlockToForm(existingBlock)
 		setFormData(nextFormData)
-		setSelectedWorkoutId(nextFormData.workouts[0]?.id ?? null)
+		setSelectedDayIndex(
+			getScheduledDayIndexes(
+				nextFormData.workouts,
+				nextFormData.restDayIndexes,
+			)[0] ?? null,
+		)
 	}, [existingBlock])
 
 	const movementOptions = React.useMemo(
@@ -598,13 +708,75 @@ export function UserBlockForm({
 	)
 
 	const blockTemplatesList = (blockTemplates ?? []) as any[]
-	const workoutsList = (workoutsData ?? []) as any[]
-	const exercisesList = (exercisesData ?? []) as any[]
-	const warmupGroupsList = (warmupGroupsData ?? []) as any[]
+	const workoutsList = (workoutsData ?? []) as WorkoutLibraryItem[]
+	const exercisesList = (exercisesData ?? []) as ExerciseLibraryItem[]
+	const warmupGroupsList = (warmupGroupsData ?? []) as WarmupGroupLibraryItem[]
+
+	const scheduledDayIndexes = React.useMemo(
+		() => getScheduledDayIndexes(formData.workouts, formData.restDayIndexes),
+		[formData.restDayIndexes, formData.workouts],
+	)
+
+	const workoutsByDayIndex = React.useMemo(
+		() =>
+			new Map(
+				formData.workouts.map((workoutItem) => [
+					workoutItem.dayIndex,
+					workoutItem,
+				]),
+			),
+		[formData.workouts],
+	)
+
+	React.useEffect(() => {
+		setSelectedDayIndex((currentDayIndex) => {
+			if (scheduledDayIndexes.length === 0) return null
+			if (
+				currentDayIndex !== null &&
+				scheduledDayIndexes.includes(currentDayIndex)
+			) {
+				return currentDayIndex
+			}
+			return scheduledDayIndexes[0] ?? null
+		})
+	}, [scheduledDayIndexes])
+
+	const activeWorkout = React.useMemo(() => {
+		if (selectedDayIndex === null) return null
+		return workoutsByDayIndex.get(selectedDayIndex) ?? null
+	}, [selectedDayIndex, workoutsByDayIndex])
+
+	const isSelectedRestDay =
+		selectedDayIndex !== null &&
+		formData.restDayIndexes.includes(selectedDayIndex) &&
+		!activeWorkout
+
+	const activeExerciseDropzoneId = activeWorkout
+		? `user-block-exercise-dropzone-${activeWorkout.id}`
+		: 'user-block-exercise-dropzone-none'
+
+	const hasUniqueWorkoutDays = React.useMemo(() => {
+		const workoutDayIndexes = formData.workouts.map(
+			(workoutItem) => workoutItem.dayIndex,
+		)
+		return new Set(workoutDayIndexes).size === workoutDayIndexes.length
+	}, [formData.workouts])
+
+	const hasWorkoutRestOverlap = React.useMemo(
+		() =>
+			formData.restDayIndexes.some((dayIndex) =>
+				formData.workouts.some(
+					(workoutItem) => workoutItem.dayIndex === dayIndex,
+				),
+			),
+		[formData.restDayIndexes, formData.workouts],
+	)
 
 	const canSave = React.useMemo(
 		() =>
 			formData.name.trim().length > 0 &&
+			hasUniqueWorkoutDays &&
+			!hasWorkoutRestOverlap &&
 			formData.workouts.every(
 				(workoutItem) =>
 					workoutItem.name.trim().length > 0 &&
@@ -612,22 +784,40 @@ export function UserBlockForm({
 						(exerciseItem) => !!exerciseItem.movementId,
 					),
 			),
-		[formData],
+		[formData, hasUniqueWorkoutDays, hasWorkoutRestOverlap],
 	)
 
-	const maxKnownDay = React.useMemo(() => {
-		const workoutDays = formData.workouts.map(
-			(workoutItem) => workoutItem.dayIndex,
-		)
-		const restDays = formData.restDayIndexes
-		return Math.max(-1, ...workoutDays, ...restDays)
-	}, [formData.restDayIndexes, formData.workouts])
+	const filteredExerciseLibraryItems = React.useMemo(() => {
+		const searchTerm = exerciseLibraryQuery.trim().toLowerCase()
+		return [...exercisesList]
+			.filter((exerciseItem) => {
+				if (!searchTerm) return true
 
-	const dayChips = React.useMemo(
-		() =>
-			Array.from({ length: Math.max(maxKnownDay + 3, 7) }, (_, index) => index),
-		[maxKnownDay],
-	)
+				const nameMatch = exerciseItem.name.toLowerCase().includes(searchTerm)
+				const movementMatch = (exerciseItem.movementName ?? '')
+					.toLowerCase()
+					.includes(searchTerm)
+				const memberMatch = (exerciseItem.superSetExercises ?? []).some(
+					(memberLink) =>
+						(memberLink.exercise?.name ?? '')
+							.toLowerCase()
+							.includes(searchTerm),
+				)
+
+				return nameMatch || movementMatch || memberMatch
+			})
+			.sort((left, right) => left.name.localeCompare(right.name))
+	}, [exerciseLibraryQuery, exercisesList])
+
+	const selectedDaySummary = React.useMemo(() => {
+		if (activeWorkout) {
+			return `Day ${activeWorkout.dayIndex + 1}: ${activeWorkout.name}`
+		}
+		if (isSelectedRestDay && selectedDayIndex !== null) {
+			return `Day ${selectedDayIndex + 1}: Rest Day`
+		}
+		return 'No day selected'
+	}, [activeWorkout, isSelectedRestDay, selectedDayIndex])
 
 	const setWorkout = React.useCallback(
 		(
@@ -644,25 +834,75 @@ export function UserBlockForm({
 		[],
 	)
 
-	const addWorkout = React.useCallback((nextWorkout?: BlockWorkoutForm) => {
-		let createdWorkoutId: string | null = nextWorkout?.id ?? null
+	const updateWorkoutDayIndex = React.useCallback((workoutId: string, day: number) => {
+		const nextDayIndex = Math.max(0, day)
+		let hasConflict = false
 		setFormData((prev) => {
-			const fallbackDay =
-				prev.workouts.length > 0
-					? Math.max(
-							...prev.workouts.map((workoutItem) => workoutItem.dayIndex),
-							...prev.restDayIndexes,
-						) + 1
-					: 0
-			const workoutItem = nextWorkout ?? createEmptyWorkout(fallbackDay)
-			createdWorkoutId = workoutItem.id
+			const currentWorkout = prev.workouts.find(
+				(workoutItem) => workoutItem.id === workoutId,
+			)
+			if (!currentWorkout || currentWorkout.dayIndex === nextDayIndex) {
+				return prev
+			}
+
+			if (
+				prev.workouts.some(
+					(workoutItem) =>
+						workoutItem.id !== workoutId &&
+						workoutItem.dayIndex === nextDayIndex,
+				)
+			) {
+				hasConflict = true
+				return prev
+			}
+
 			return {
 				...prev,
-				workouts: [...prev.workouts, workoutItem],
+				restDayIndexes: prev.restDayIndexes.filter(
+					(dayIndex) => dayIndex !== nextDayIndex,
+				),
+				workouts: prev.workouts.map((workoutItem) =>
+					workoutItem.id === workoutId
+						? { ...workoutItem, dayIndex: nextDayIndex }
+						: workoutItem,
+				),
 			}
 		})
-		setSelectedWorkoutId(createdWorkoutId)
+		if (hasConflict) {
+			toast.error('That day already has a workout. Pick an open day.')
+			return
+		}
+		setSelectedDayIndex(nextDayIndex)
 	}, [])
+
+	const addWorkout = React.useCallback(() => {
+		let createdDayIndex: number | null = null
+		setFormData((prev) => {
+			const preferredDayIndex =
+				selectedDayIndex !== null &&
+				prev.restDayIndexes.includes(selectedDayIndex) &&
+				!prev.workouts.some(
+					(workoutItem) => workoutItem.dayIndex === selectedDayIndex,
+				)
+					? selectedDayIndex
+					: null
+			const nextDayIndex =
+				preferredDayIndex ??
+				getNextDayIndex(prev.workouts, prev.restDayIndexes)
+			createdDayIndex = nextDayIndex
+
+			return {
+				...prev,
+				restDayIndexes: prev.restDayIndexes.filter(
+					(dayIndex) => dayIndex !== nextDayIndex,
+				),
+				workouts: [...prev.workouts, createEmptyWorkout(nextDayIndex)],
+			}
+		})
+		if (createdDayIndex !== null) {
+			setSelectedDayIndex(createdDayIndex)
+		}
+	}, [selectedDayIndex])
 
 	const removeWorkout = React.useCallback((workoutId: string) => {
 		setFormData((prev) => ({
@@ -671,30 +911,33 @@ export function UserBlockForm({
 				(workoutItem) => workoutItem.id !== workoutId,
 			),
 		}))
-		setSelectedWorkoutId((prev) => (prev === workoutId ? null : prev))
 	}, [])
 
 	const duplicateWorkout = React.useCallback((workoutId: string) => {
+		let createdDayIndex: number | null = null
 		setFormData((prev) => {
 			const targetIndex = prev.workouts.findIndex(
 				(workoutItem) => workoutItem.id === workoutId,
 			)
 			if (targetIndex < 0) return prev
 			const nextWorkout = deepCloneWorkout(prev.workouts[targetIndex]!)
-			nextWorkout.dayIndex =
-				Math.max(
-					...prev.workouts.map((workoutItem) => workoutItem.dayIndex),
-					...prev.restDayIndexes,
-					-1,
-				) + 1
+			nextWorkout.dayIndex = getNextDayIndex(
+				prev.workouts,
+				prev.restDayIndexes,
+			)
 			nextWorkout.name = `${nextWorkout.name} Copy`
+			createdDayIndex = nextWorkout.dayIndex
 			const workouts = [...prev.workouts]
 			workouts.splice(targetIndex + 1, 0, nextWorkout)
 			return { ...prev, workouts }
 		})
+		if (createdDayIndex !== null) {
+			setSelectedDayIndex(createdDayIndex)
+		}
 	}, [])
 
 	const toggleRestDay = React.useCallback((dayIndex: number) => {
+		let addedRestDay = false
 		setFormData((prev) => {
 			if (
 				prev.workouts.some((workoutItem) => workoutItem.dayIndex === dayIndex)
@@ -703,6 +946,7 @@ export function UserBlockForm({
 			}
 
 			const exists = prev.restDayIndexes.includes(dayIndex)
+			addedRestDay = !exists
 			return {
 				...prev,
 				restDayIndexes: normalizeRestDayIndexes(
@@ -712,7 +956,47 @@ export function UserBlockForm({
 				),
 			}
 		})
+		if (addedRestDay) {
+			setSelectedDayIndex(dayIndex)
+		}
 	}, [])
+
+	const updateRestDayIndex = React.useCallback(
+		(currentDayIndex: number, day: number) => {
+			const nextDayIndex = Math.max(0, day)
+			let hasConflict = false
+
+			setFormData((prev) => {
+				if (currentDayIndex === nextDayIndex) return prev
+				if (
+					prev.restDayIndexes.includes(nextDayIndex) ||
+					prev.workouts.some(
+						(workoutItem) => workoutItem.dayIndex === nextDayIndex,
+					)
+				) {
+					hasConflict = true
+					return prev
+				}
+
+				return {
+					...prev,
+					restDayIndexes: normalizeRestDayIndexes(
+						prev.restDayIndexes.map((dayIndex) =>
+							dayIndex === currentDayIndex ? nextDayIndex : dayIndex,
+						),
+					),
+				}
+			})
+
+			if (hasConflict) {
+				toast.error('That day is already scheduled. Pick an open day.')
+				return
+			}
+
+			setSelectedDayIndex(nextDayIndex)
+		},
+		[],
+	)
 
 	const addWarmup = React.useCallback(
 		(workoutId: string) => {
@@ -740,64 +1024,169 @@ export function UserBlockForm({
 		[setWorkout],
 	)
 
-	const importWorkout = React.useCallback(
-		(workoutItem: any) => {
-			const nextDayIndex =
-				Math.max(
-					...formData.workouts.map((entry) => entry.dayIndex),
-					...formData.restDayIndexes,
-					-1,
-				) + 1
-			const nextWorkout = buildWorkoutFromLibrary(workoutItem, nextDayIndex)
-			setFormData((prev) => ({
-				...prev,
-				workouts: [...prev.workouts, nextWorkout],
-			}))
-			setSelectedWorkoutId(nextWorkout.id)
+	const addLibraryExerciseToWorkout = React.useCallback(
+		(
+			workoutId: string,
+			exerciseItem: ExerciseLibraryItem,
+			insertIndex?: number,
+		) => {
+			setWorkout(workoutId, (workoutItem) => {
+				const nextExercises = [...workoutItem.exercises]
+				const exercisesToInsert = buildExercisesFromLibrary(exerciseItem)
+				const safeInsertIndex =
+					insertIndex === undefined ||
+					insertIndex < 0 ||
+					insertIndex > nextExercises.length
+						? nextExercises.length
+						: insertIndex
+
+				nextExercises.splice(safeInsertIndex, 0, ...exercisesToInsert)
+
+				return {
+					...workoutItem,
+					exercises: nextExercises,
+				}
+			})
 		},
-		[formData.restDayIndexes, formData.workouts],
+		[setWorkout],
 	)
 
 	const importWarmupGroup = React.useCallback(
-		(group: any) => {
-			if (!selectedWorkoutId) {
-				toast.error('Select a workout before importing warmups')
-				return
-			}
-			setWorkout(selectedWorkoutId, (workoutItem) => ({
+		(workoutId: string, group: WarmupGroupLibraryItem) => {
+			setWorkout(workoutId, (workoutItem) => ({
 				...workoutItem,
 				sourceWarmupGroupId: group.id,
 				warmups: [...workoutItem.warmups, ...buildWarmupsFromGroup(group)],
 			}))
 		},
-		[selectedWorkoutId, setWorkout],
+		[setWorkout],
 	)
 
-	const importExercise = React.useCallback(
-		(exerciseItem: any) => {
-			if (!selectedWorkoutId) {
-				toast.error('Select a workout before importing exercises')
+	const addLibraryExerciseToActiveWorkout = React.useCallback(
+		(exerciseItem: ExerciseLibraryItem) => {
+			if (!activeWorkout) {
+				toast.error('Select or create a workout day before adding exercises.')
 				return
 			}
-			setWorkout(selectedWorkoutId, (workoutItem) => ({
-				...workoutItem,
-				exercises: [
-					...workoutItem.exercises,
-					...buildExercisesFromLibrary(exerciseItem),
-				],
-			}))
+
+			addLibraryExerciseToWorkout(activeWorkout.id, exerciseItem)
 		},
-		[selectedWorkoutId, setWorkout],
+		[activeWorkout, addLibraryExerciseToWorkout],
 	)
 
-	const handleWorkoutDragEnd = React.useCallback((event: DragEndEvent) => {
-		const { active, over } = event
-		if (!over || active.id === over.id) return
-		setFormData((prev) => ({
-			...prev,
-			workouts: reorderIds(prev.workouts, String(active.id), String(over.id)),
-		}))
+	const importWorkout = React.useCallback(
+		(workoutItem: WorkoutLibraryItem) => {
+			let nextDayIndex: number | null = null
+
+			setFormData((prev) => {
+				const preferredDayIndex =
+					selectedDayIndex !== null &&
+					prev.restDayIndexes.includes(selectedDayIndex) &&
+					!prev.workouts.some(
+						(workoutEntry) => workoutEntry.dayIndex === selectedDayIndex,
+					)
+						? selectedDayIndex
+						: null
+				nextDayIndex =
+					preferredDayIndex ??
+					getNextDayIndex(prev.workouts, prev.restDayIndexes)
+
+				return {
+					...prev,
+					restDayIndexes: prev.restDayIndexes.filter(
+						(dayIndex) => dayIndex !== nextDayIndex,
+					),
+					workouts: [
+						...prev.workouts,
+						buildWorkoutFromLibrary(workoutItem, nextDayIndex),
+					],
+				}
+			})
+
+			if (nextDayIndex !== null) {
+				setSelectedDayIndex(nextDayIndex)
+			}
+			setSelectedWorkoutImportId('')
+		},
+		[selectedDayIndex],
+	)
+
+	const onExerciseDragStart = React.useCallback((event: DragStartEvent) => {
+		const dragData = event.active.data.current as ExerciseDragData | undefined
+		setActiveExerciseDragData(dragData ?? null)
+		lastExerciseOverIdRef.current = null
 	}, [])
+
+	const onExerciseDragOver = React.useCallback((event: DragOverEvent) => {
+		lastExerciseOverIdRef.current = event.over ? String(event.over.id) : null
+	}, [])
+
+	const onExerciseDragEnd = React.useCallback(
+		(event: DragEndEvent) => {
+			const dragData = event.active.data.current as ExerciseDragData | undefined
+			setActiveExerciseDragData(null)
+
+			const overId = event.over
+				? String(event.over.id)
+				: (lastExerciseOverIdRef.current ?? null)
+			lastExerciseOverIdRef.current = null
+
+			if (!dragData || !overId || !activeWorkout) return
+
+			if (dragData.kind === 'library') {
+				const insertIndex =
+					overId === activeExerciseDropzoneId
+						? activeWorkout.exercises.length
+						: activeWorkout.exercises.findIndex(
+								(exerciseItem) => exerciseItem.id === overId,
+							)
+				addLibraryExerciseToWorkout(
+					activeWorkout.id,
+					dragData.item,
+					insertIndex === -1 ? activeWorkout.exercises.length : insertIndex,
+				)
+				return
+			}
+
+			setWorkout(activeWorkout.id, (workoutItem) => {
+				if (overId === activeExerciseDropzoneId) {
+					const fromIndex = workoutItem.exercises.findIndex(
+						(exerciseItem) => exerciseItem.id === dragData.item.id,
+					)
+					if (
+						fromIndex === -1 ||
+						fromIndex === workoutItem.exercises.length - 1
+					) {
+						return workoutItem
+					}
+
+					return {
+						...workoutItem,
+						exercises: arrayMove(
+							workoutItem.exercises,
+							fromIndex,
+							workoutItem.exercises.length - 1,
+						),
+					}
+				}
+
+				return {
+					...workoutItem,
+					exercises: reorderIds(
+						workoutItem.exercises,
+						dragData.item.id,
+						overId,
+					),
+				}
+			})
+		},
+		[
+			activeExerciseDropzoneId,
+			activeWorkout,
+			addLibraryExerciseToWorkout,
+			setWorkout,
+		],
+	)
 
 	const handleTemplateSelect = React.useCallback((template: any) => {
 		setSelectedTemplate(template)
@@ -805,14 +1194,19 @@ export function UserBlockForm({
 		nextFormData.startDate = getTodayDateString()
 		nextFormData.endDate = null
 		setFormData(nextFormData)
-		setSelectedWorkoutId(nextFormData.workouts[0]?.id ?? null)
+		setSelectedDayIndex(
+			getScheduledDayIndexes(
+				nextFormData.workouts,
+				nextFormData.restDayIndexes,
+			)[0] ?? null,
+		)
 	}, [])
 
 	const handleStartBlank = React.useCallback(() => {
 		setSelectedTemplate({ id: null, isBlank: true })
 		const nextFormData = createEmptyBlockForm()
 		setFormData(nextFormData)
-		setSelectedWorkoutId(null)
+		setSelectedDayIndex(null)
 	}, [])
 
 	const handleSubmit = React.useCallback(async () => {
@@ -842,44 +1236,46 @@ export function UserBlockForm({
 					: new Date(formData.startDate),
 			endDate:
 				isTemplateMode || !formData.endDate ? null : new Date(formData.endDate),
-			workouts: formData.workouts.map((workoutItem, workoutIndex) => ({
-				dayIndex: Math.max(0, workoutItem.dayIndex),
-				workoutIndex,
-				sourceWorkoutId: workoutItem.sourceWorkoutId,
-				sourceWarmupGroupId: workoutItem.sourceWarmupGroupId,
-				name: workoutItem.name.trim(),
-				description: workoutItem.description?.trim() || null,
-				category: workoutItem.category?.trim() || null,
-				warmups: workoutItem.warmups.map((warmupItem, warmupIndex) => ({
-					warmupIndex,
-					sourceWarmupId: warmupItem.sourceWarmupId,
-					name: warmupItem.name.trim(),
-					description: warmupItem.description?.trim() || null,
-					images: warmupItem.images?.trim() || null,
-					link: warmupItem.link?.trim() || null,
+			workouts: [...formData.workouts]
+				.sort((left, right) => left.dayIndex - right.dayIndex)
+				.map((workoutItem, workoutIndex) => ({
+					dayIndex: Math.max(0, workoutItem.dayIndex),
+					workoutIndex,
+					sourceWorkoutId: workoutItem.sourceWorkoutId,
+					sourceWarmupGroupId: workoutItem.sourceWarmupGroupId,
+					name: workoutItem.name.trim(),
+					description: workoutItem.description?.trim() || null,
+					category: workoutItem.category?.trim() || null,
+					warmups: workoutItem.warmups.map((warmupItem, warmupIndex) => ({
+						warmupIndex,
+						sourceWarmupId: warmupItem.sourceWarmupId,
+						name: warmupItem.name.trim(),
+						description: warmupItem.description?.trim() || null,
+						images: warmupItem.images?.trim() || null,
+						link: warmupItem.link?.trim() || null,
+					})),
+					exercises: cleanupSupersetGroups(workoutItem.exercises).map(
+						(exerciseItem, exerciseIndex) => ({
+							exerciseIndex,
+							sourceExerciseId: exerciseItem.sourceExerciseId,
+							movementId: exerciseItem.movementId,
+							superSetGroup: exerciseItem.superSetGroup,
+							superSetOrder: null,
+							label: exerciseItem.label?.trim() || null,
+							sets: exerciseItem.sets,
+							reps: exerciseItem.reps,
+							repUnit: exerciseItem.repUnit?.trim() || null,
+							ormPercent: exerciseItem.ormPercent,
+							targetRpe: exerciseItem.targetRpe,
+							restTime: exerciseItem.restTime,
+							restUnit: exerciseItem.restUnit?.trim() || null,
+							tempoDown: exerciseItem.tempoDown,
+							tempoPause: exerciseItem.tempoPause,
+							tempoUp: exerciseItem.tempoUp,
+							notes: exerciseItem.notes?.trim() || null,
+						}),
+					),
 				})),
-				exercises: cleanupSupersetGroups(workoutItem.exercises).map(
-					(exerciseItem, exerciseIndex) => ({
-						exerciseIndex,
-						sourceExerciseId: exerciseItem.sourceExerciseId,
-						movementId: exerciseItem.movementId,
-						superSetGroup: exerciseItem.superSetGroup,
-						superSetOrder: null,
-						label: exerciseItem.label?.trim() || null,
-						sets: exerciseItem.sets,
-						reps: exerciseItem.reps,
-						repUnit: exerciseItem.repUnit?.trim() || null,
-						ormPercent: exerciseItem.ormPercent,
-						targetRpe: exerciseItem.targetRpe,
-						restTime: exerciseItem.restTime,
-						restUnit: exerciseItem.restUnit?.trim() || null,
-						tempoDown: exerciseItem.tempoDown,
-						tempoPause: exerciseItem.tempoPause,
-						tempoUp: exerciseItem.tempoUp,
-						notes: exerciseItem.notes?.trim() || null,
-					}),
-				),
-			})),
 		}
 
 		if (isEditMode) {
@@ -969,428 +1365,427 @@ export function UserBlockForm({
 		)
 	}
 
+	const renderExerciseDragOverlay = () => {
+		if (!activeExerciseDragData) return null
+		return activeExerciseDragData.kind === 'library' ? (
+			<ExerciseLibraryDragPreview item={activeExerciseDragData.item} />
+		) : (
+			<BlockExerciseDragPreview item={activeExerciseDragData.item} />
+		)
+	}
+
 	return (
-		<div className='grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_360px]'>
-			<div className='space-y-6'>
-				<div className='flex flex-wrap gap-3 justify-between items-center'>
-					<div>
-						<h1 className='text-2xl font-semibold tracking-tight'>
-							{isTemplateMode
-								? isEditMode
-									? 'Edit Block Template'
-									: 'Create Block Template'
-								: isEditMode
-									? 'Edit User Block'
-									: 'Create User Block'}
-						</h1>
-						<p className='text-sm text-muted-foreground'>
-							Import workouts, warmups, and exercises, then refine the schedule
-							in place.
-						</p>
-					</div>
-					<div className='flex gap-2'>
-						<Button
-							variant='outline'
-							onClick={() =>
-								navigate({
-									to: backTarget.to,
-									params: { orgSlug },
-									search: backTarget.search,
-								})
-							}
-						>
-							Back
-						</Button>
-						<Button
-							onClick={() => void handleSubmit()}
-							disabled={
-								!canSave ||
-								batchCreateBlock.isPending ||
-								batchUpdateBlock.isPending
-							}
-						>
-							<FloppyDiskBackIcon className='mr-2 size-4' />
-							{batchCreateBlock.isPending || batchUpdateBlock.isPending
-								? 'Saving...'
-								: 'Save Block'}
-						</Button>
-					</div>
-				</div>
-
-				<Card>
-					<CardHeader>
-						<CardTitle>Block Details</CardTitle>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						<div className='grid gap-4 md:grid-cols-2'>
-							<div className='space-y-2'>
-								<Label htmlFor='block-name'>Name</Label>
-								<Input
-									id='block-name'
-									value={formData.name}
-									onChange={(event) =>
-										setFormData((prev) => ({
-											...prev,
-											name: event.target.value,
-										}))
-									}
-									placeholder='e.g. 6 Week Hypertrophy Block'
-								/>
-							</div>
-							<div className='space-y-2'>
-								<Label htmlFor='block-category'>Category</Label>
-								<Input
-									id='block-category'
-									value={formData.category ?? ''}
-									onChange={(event) =>
-										setFormData((prev) => ({
-											...prev,
-											category: event.target.value || null,
-										}))
-									}
-									placeholder='e.g. Strength'
-								/>
-							</div>
-						</div>
-
-						<div className='space-y-2'>
-							<Label htmlFor='block-description'>Description</Label>
-							<Textarea
-								id='block-description'
-								value={formData.description ?? ''}
-								onChange={(event) =>
-									setFormData((prev) => ({
-										...prev,
-										description: event.target.value || null,
-									}))
-								}
-								placeholder='Add intent, focus, and coaching notes for this block.'
-								className='min-h-28'
-							/>
-						</div>
-
-						<div className='space-y-2'>
-							<Label>Tags</Label>
-							<TagsInput
-								value={formData.tags}
-								onValueChange={(nextTags) =>
-									setFormData((prev) => ({
-										...prev,
-										tags: normalizeTags(nextTags),
-									}))
-								}
-								placeholder='Add tags...'
-							/>
-						</div>
-
-						{!isTemplateMode && (
-							<div className='grid gap-4 md:grid-cols-2'>
-								<div className='space-y-2'>
-									<Label htmlFor='block-start-date'>Start Date</Label>
-									<Input
-										id='block-start-date'
-										type='date'
-										value={formData.startDate ?? ''}
-										onChange={(event) =>
-											setFormData((prev) => ({
-												...prev,
-												startDate: event.target.value || null,
-											}))
-										}
-									/>
-								</div>
-								<div className='space-y-2'>
-									<Label htmlFor='block-end-date'>End Date</Label>
-									<Input
-										id='block-end-date'
-										type='date'
-										value={formData.endDate ?? ''}
-										onChange={(event) =>
-											setFormData((prev) => ({
-												...prev,
-												endDate: event.target.value || null,
-											}))
-										}
-									/>
-								</div>
-							</div>
-						)}
-
-						<div className='space-y-3'>
-							<div className='flex flex-wrap gap-2 justify-between items-center'>
-								<div>
-									<Label>Rest Days</Label>
-									<p className='text-xs text-muted-foreground'>
-										Workout days are locked. Toggle open days as rest days.
-									</p>
-								</div>
-								<Button
-									type='button'
-									variant='outline'
-									size='sm'
-									onClick={() =>
-										toggleRestDay(
-											Math.max(
-												...formData.workouts.map(
-													(workoutItem) => workoutItem.dayIndex,
-												),
-												...formData.restDayIndexes,
-												-1,
-											) + 1,
-										)
-									}
-								>
-									<PlusIcon className='mr-2 size-4' />
-									Add Rest Day
-								</Button>
-							</div>
-							<div className='flex flex-wrap gap-2'>
-								{dayChips.map((dayIndex) => {
-									const hasWorkout = formData.workouts.some(
-										(workoutItem) => workoutItem.dayIndex === dayIndex,
-									)
-									const isRestDay = formData.restDayIndexes.includes(dayIndex)
-									return (
-										<Button
-											key={dayIndex}
-											type='button'
-											size='sm'
-											variant={isRestDay ? 'default' : 'outline'}
-											disabled={hasWorkout}
-											onClick={() => toggleRestDay(dayIndex)}
-										>
-											Day {dayIndex + 1}
-											{hasWorkout ? ' • Workout' : isRestDay ? ' • Rest' : ''}
-										</Button>
-									)
-								})}
-							</div>
-						</div>
-					</CardContent>
-				</Card>
-
-				<Card>
-					<CardHeader className='flex flex-row gap-3 justify-between items-center'>
+		<DndContext
+			sensors={sensors}
+			collisionDetection={(args) => {
+				const pointerCollisions = pointerWithin(args)
+				if (pointerCollisions.length > 0) return pointerCollisions
+				return closestCorners(args)
+			}}
+			onDragStart={onExerciseDragStart}
+			onDragOver={onExerciseDragOver}
+			onDragEnd={onExerciseDragEnd}
+		>
+			<div className='grid gap-6 p-6 xl:grid-cols-[minmax(0,1fr)_360px]'>
+				<div className='space-y-6'>
+					<div className='flex flex-wrap gap-3 justify-between items-center'>
 						<div>
-							<CardTitle>Workout Schedule</CardTitle>
+							<h1 className='text-2xl font-semibold tracking-tight'>
+								{isTemplateMode
+									? isEditMode
+										? 'Edit Block Template'
+										: 'Create Block Template'
+									: isEditMode
+										? 'Edit User Block'
+										: 'Create User Block'}
+							</h1>
 							<p className='text-sm text-muted-foreground'>
-								Drag workouts to reorder the build. Day numbers stay editable.
+								Navigate day by day, import full workouts and warmups from
+								selects, then drag exercises into the active workout.
 							</p>
 						</div>
 						<div className='flex gap-2'>
 							<Button
-								type='button'
 								variant='outline'
-								size='sm'
-								onClick={() => addWorkout()}
+								onClick={() =>
+									navigate({
+										to: backTarget.to,
+										params: { orgSlug },
+										search: backTarget.search,
+									})
+								}
 							>
-								<PlusIcon className='mr-2 size-4' />
-								Add Workout
+								Back
+							</Button>
+							<Button
+								onClick={() => void handleSubmit()}
+								disabled={
+									!canSave ||
+									batchCreateBlock.isPending ||
+									batchUpdateBlock.isPending
+								}
+							>
+								<FloppyDiskBackIcon className='mr-2 size-4' />
+								{batchCreateBlock.isPending || batchUpdateBlock.isPending
+									? 'Saving...'
+									: 'Save Block'}
 							</Button>
 						</div>
-					</CardHeader>
-					<CardContent className='space-y-4'>
-						{formData.workouts.length === 0 ? (
-							<div className='py-12 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
-								No workouts in this block yet. Import one from the library or
-								add a blank workout.
+					</div>
+
+					<Card>
+						<CardHeader>
+							<CardTitle>Block Details</CardTitle>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							<div className='grid gap-4 md:grid-cols-2'>
+								<div className='space-y-2'>
+									<Label htmlFor='block-name'>Name</Label>
+									<Input
+										id='block-name'
+										value={formData.name}
+										onChange={(event) =>
+											setFormData((prev) => ({
+												...prev,
+												name: event.target.value,
+											}))
+										}
+										placeholder='e.g. 6 Week Hypertrophy Block'
+									/>
+								</div>
+								<div className='space-y-2'>
+									<Label htmlFor='block-category'>Category</Label>
+									<Input
+										id='block-category'
+										value={formData.category ?? ''}
+										onChange={(event) =>
+											setFormData((prev) => ({
+												...prev,
+												category: event.target.value || null,
+											}))
+										}
+										placeholder='e.g. Strength'
+									/>
+								</div>
 							</div>
-						) : (
-							<DndContext
-								sensors={sensors}
-								collisionDetection={closestCenter}
-								onDragEnd={handleWorkoutDragEnd}
-							>
-								<SortableContext
-									items={formData.workouts.map((workoutItem) => workoutItem.id)}
-									strategy={verticalListSortingStrategy}
-								>
-									<div className='space-y-4'>
-										{formData.workouts.map((workoutItem, index) => (
-											<SortableShell key={workoutItem.id} id={workoutItem.id}>
-												<WorkoutEditorCard
-													workout={workoutItem}
-													workoutIndex={index}
-													movementOptions={movementOptions}
-													selected={selectedWorkoutId === workoutItem.id}
-													onSelect={() => setSelectedWorkoutId(workoutItem.id)}
-													onChange={(nextWorkout) =>
-														setWorkout(workoutItem.id, () => nextWorkout)
-													}
-													onDuplicate={() => duplicateWorkout(workoutItem.id)}
-													onRemove={() => removeWorkout(workoutItem.id)}
-													onAddWarmup={() => addWarmup(workoutItem.id)}
-													onAddExercise={() => addExercise(workoutItem.id)}
-													sensors={sensors}
-												/>
-											</SortableShell>
-										))}
-									</div>
-								</SortableContext>
-							</DndContext>
-						)}
-					</CardContent>
-				</Card>
-			</div>
 
-			<div className='space-y-4'>
-				<Card>
-					<CardHeader>
-						<CardTitle>Import Library</CardTitle>
+							<div className='space-y-2'>
+								<Label htmlFor='block-description'>Description</Label>
+								<Textarea
+									id='block-description'
+									value={formData.description ?? ''}
+									onChange={(event) =>
+										setFormData((prev) => ({
+											...prev,
+											description: event.target.value || null,
+										}))
+									}
+									placeholder='Add intent, focus, and coaching notes for this block.'
+									className='min-h-28'
+								/>
+							</div>
+
+							<div className='space-y-2'>
+								<Label>Tags</Label>
+								<TagsInput
+									value={formData.tags}
+									onValueChange={(nextTags) =>
+										setFormData((prev) => ({
+											...prev,
+											tags: normalizeTags(nextTags),
+										}))
+									}
+									placeholder='Add tags...'
+								/>
+							</div>
+
+							{!isTemplateMode && (
+								<div className='grid gap-4 md:grid-cols-2'>
+									<div className='space-y-2'>
+										<Label htmlFor='block-start-date'>Start Date</Label>
+										<Input
+											id='block-start-date'
+											type='date'
+											value={formData.startDate ?? ''}
+											onChange={(event) =>
+												setFormData((prev) => ({
+													...prev,
+													startDate: event.target.value || null,
+												}))
+											}
+										/>
+									</div>
+									<div className='space-y-2'>
+										<Label htmlFor='block-end-date'>End Date</Label>
+										<Input
+											id='block-end-date'
+											type='date'
+											value={formData.endDate ?? ''}
+											onChange={(event) =>
+												setFormData((prev) => ({
+													...prev,
+													endDate: event.target.value || null,
+												}))
+											}
+										/>
+									</div>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					<Card>
+						<CardHeader className='space-y-4'>
+							<div>
+								<CardTitle>Day Planner</CardTitle>
+								<p className='text-sm text-muted-foreground'>
+									Move between scheduled days with tabs. Workout and rest days
+									each get their own editor.
+								</p>
+							</div>
+
+							<div className='flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between'>
+								<div className='flex flex-col gap-3 sm:flex-row sm:items-end'>
+									<div className='space-y-2 min-w-0 sm:min-w-[280px]'>
+										<Label>Import Workout</Label>
+										<Select
+											value={selectedWorkoutImportId}
+											onValueChange={(value) =>
+												setSelectedWorkoutImportId(value ?? '')
+											}
+										>
+											<SelectTrigger className='w-full'>
+												<SelectValue placeholder='Select a workout to import' />
+											</SelectTrigger>
+											<SelectContent>
+												{workoutsList.map((workoutItem) => (
+													<SelectItem
+														key={workoutItem.id}
+														value={workoutItem.id}
+													>
+														{workoutItem.name}
+													</SelectItem>
+												))}
+											</SelectContent>
+										</Select>
+									</div>
+									<Button
+										type='button'
+										variant='outline'
+										onClick={() => {
+											const workoutItem = workoutsList.find(
+												(entry) => entry.id === selectedWorkoutImportId,
+											)
+											if (!workoutItem) return
+											importWorkout(workoutItem)
+										}}
+										disabled={!selectedWorkoutImportId}
+									>
+										<FolderOpenIcon className='mr-2 size-4' />
+										Import Workout
+									</Button>
+								</div>
+
+								<div className='flex flex-wrap gap-2'>
+									<Button
+										type='button'
+										variant='outline'
+										onClick={addWorkout}
+									>
+										<PlusIcon className='mr-2 size-4' />
+										Add Workout
+									</Button>
+									<Button
+										type='button'
+										variant='outline'
+										onClick={() =>
+											toggleRestDay(
+												getNextDayIndex(
+													formData.workouts,
+													formData.restDayIndexes,
+												),
+											)
+										}
+									>
+										<PlusIcon className='mr-2 size-4' />
+										Add Rest Day
+									</Button>
+								</div>
+							</div>
+						</CardHeader>
+						<CardContent className='space-y-4'>
+							{scheduledDayIndexes.length === 0 ? (
+								<div className='py-12 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
+									No scheduled days yet. Add a blank workout, import a workout,
+									or create a rest day to start the block.
+								</div>
+							) : (
+								<>
+									<Tabs
+										value={selectedDayIndex === null ? '' : String(selectedDayIndex)}
+										onValueChange={(value) => {
+											if (!value) return
+											setSelectedDayIndex(Number(value))
+										}}
+									>
+										<div className='overflow-x-auto pb-2'>
+											<TabsList className='justify-start p-1 w-max min-w-full h-auto rounded-xl bg-muted/40'>
+												{scheduledDayIndexes.map((dayIndex) => {
+													const workoutItem = workoutsByDayIndex.get(dayIndex)
+													const isRestDay =
+														formData.restDayIndexes.includes(dayIndex) &&
+														!workoutItem
+
+													return (
+														<TabsTrigger
+															key={dayIndex}
+															value={String(dayIndex)}
+															className='flex flex-col gap-1 items-start py-2 px-3 min-w-32 h-auto text-left'
+														>
+															<span className='text-[11px] uppercase tracking-wide text-muted-foreground'>
+																Day {dayIndex + 1}
+															</span>
+															<span className='text-sm font-medium truncate max-w-full'>
+																{workoutItem?.name ??
+																	(isRestDay ? 'Rest Day' : 'Open')}
+															</span>
+														</TabsTrigger>
+													)
+												})}
+											</TabsList>
+										</div>
+									</Tabs>
+
+									{activeWorkout ? (
+										<WorkoutEditorCard
+											key={activeWorkout.id}
+											workout={activeWorkout}
+											movementOptions={movementOptions}
+											warmupGroups={warmupGroupsList}
+											exerciseDropzoneId={activeExerciseDropzoneId}
+											onChange={(nextWorkout) =>
+												setWorkout(activeWorkout.id, () => nextWorkout)
+											}
+											onChangeDay={(dayIndex) =>
+												updateWorkoutDayIndex(activeWorkout.id, dayIndex)
+											}
+											onDuplicate={() => duplicateWorkout(activeWorkout.id)}
+											onRemove={() => removeWorkout(activeWorkout.id)}
+											onImportWarmupGroup={(group) =>
+												importWarmupGroup(activeWorkout.id, group)
+											}
+											onAddWarmup={() => addWarmup(activeWorkout.id)}
+											onAddExercise={() => addExercise(activeWorkout.id)}
+											sensors={sensors}
+										/>
+									) : isSelectedRestDay && selectedDayIndex !== null ? (
+										<RestDayEditorCard
+											dayIndex={selectedDayIndex}
+											onChangeDay={(dayIndex) =>
+												updateRestDayIndex(selectedDayIndex, dayIndex)
+											}
+											onConvertToWorkout={addWorkout}
+											onRemove={() => toggleRestDay(selectedDayIndex)}
+										/>
+									) : (
+										<div className='py-10 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
+											Select a day tab to continue.
+										</div>
+									)}
+								</>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+
+				<Card className='overflow-hidden xl:sticky xl:top-4 h-fit'>
+					<CardHeader className='space-y-3'>
+						<div>
+							<CardTitle>Exercise Library</CardTitle>
+							<p className='text-sm text-muted-foreground'>
+								Drag exercises or supersets into the active workout. Workout and
+								warmup imports now live in the planner selects.
+							</p>
+						</div>
+						<div className='space-y-1 text-sm text-muted-foreground'>
+							<p>
+								Selected day:{' '}
+								<span className='font-medium text-foreground'>
+									{selectedDaySummary}
+								</span>
+							</p>
+							<p>
+								{activeWorkout
+									? `Drop into ${activeWorkout.name} or use the add button.`
+									: 'Select or create a workout day before dragging exercises.'}
+							</p>
+						</div>
+						<Input
+							value={exerciseLibraryQuery}
+							onChange={(event) => setExerciseLibraryQuery(event.target.value)}
+							placeholder='Search exercises or supersets...'
+						/>
 					</CardHeader>
-					<CardContent className='space-y-3 text-sm text-muted-foreground'>
-						<p>
-							Selected workout:{' '}
-							<span className='font-medium text-foreground'>
-								{formData.workouts.find(
-									(workoutItem) => workoutItem.id === selectedWorkoutId,
-								)?.name || 'None'}
-							</span>
-						</p>
-						<p>
-							Import full workouts into the block, or import warmups and
-							exercises into the currently selected workout.
-						</p>
-					</CardContent>
-				</Card>
-
-				<Card className='overflow-hidden'>
-					<CardContent className='p-0'>
-						<Tabs defaultValue='workouts'>
-							<TabsList className='grid grid-cols-3 rounded-none border-b'>
-								<TabsTrigger value='workouts'>Workouts</TabsTrigger>
-								<TabsTrigger value='exercises'>Exercises</TabsTrigger>
-								<TabsTrigger value='warmups'>Warmups</TabsTrigger>
-							</TabsList>
-							<TabsContent value='workouts' className='m-0'>
-								<ScrollArea className='h-[520px] p-4'>
-									<div className='space-y-3'>
-										{workoutsList.map((workoutItem) => (
-											<Card key={workoutItem.id} className='border-border/70'>
-												<CardContent className='space-y-3 p-4'>
-													<div className='flex gap-3 justify-between items-start'>
-														<div className='min-w-0'>
-															<p className='font-medium'>{workoutItem.name}</p>
-															<p className='text-xs text-muted-foreground'>
-																{workoutItem.exercises?.length || 0} items
-																{workoutItem.warmupGroup
-																	? ` • ${workoutItem.warmupGroup.warmups?.length || 0} warmups`
-																	: ''}
-															</p>
-														</div>
-														<Button
-															size='sm'
-															onClick={() => importWorkout(workoutItem)}
-														>
-															<FolderOpenIcon className='mr-2 size-4' />
-															Import
-														</Button>
-													</div>
-													<p className='text-xs text-muted-foreground line-clamp-2'>
-														{workoutItem.description || 'No description'}
-													</p>
-												</CardContent>
-											</Card>
-										))}
-									</div>
-								</ScrollArea>
-							</TabsContent>
-							<TabsContent value='exercises' className='m-0'>
-								<ScrollArea className='h-[520px] p-4'>
-									<div className='space-y-3'>
-										{exercisesList.map((exerciseItem) => (
-											<Card key={exerciseItem.id} className='border-border/70'>
-												<CardContent className='space-y-3 p-4'>
-													<div className='flex gap-3 justify-between items-start'>
-														<div className='min-w-0'>
-															<p className='font-medium'>{exerciseItem.name}</p>
-															<p className='text-xs text-muted-foreground'>
-																{exerciseItem.isSuperSet
-																	? `${exerciseItem.superSetExercises?.length || 0} exercise superset`
-																	: exerciseItem.movementName || 'No movement'}
-															</p>
-														</div>
-														<Button
-															size='sm'
-															disabled={!selectedWorkoutId}
-															onClick={() => importExercise(exerciseItem)}
-														>
-															<FolderOpenIcon className='mr-2 size-4' />
-															Import
-														</Button>
-													</div>
-												</CardContent>
-											</Card>
-										))}
-									</div>
-								</ScrollArea>
-							</TabsContent>
-							<TabsContent value='warmups' className='m-0'>
-								<ScrollArea className='h-[520px] p-4'>
-									<div className='space-y-3'>
-										{warmupGroupsList.map((group) => (
-											<Card key={group.id} className='border-border/70'>
-												<CardContent className='space-y-3 p-4'>
-													<div className='flex gap-3 justify-between items-start'>
-														<div className='min-w-0'>
-															<p className='font-medium'>{group.name}</p>
-															<p className='text-xs text-muted-foreground'>
-																{group.warmups?.length || 0} warmups
-															</p>
-														</div>
-														<Button
-															size='sm'
-															disabled={!selectedWorkoutId}
-															onClick={() => importWarmupGroup(group)}
-														>
-															<FolderOpenIcon className='mr-2 size-4' />
-															Import
-														</Button>
-													</div>
-													<p className='text-xs text-muted-foreground line-clamp-2'>
-														{group.description || 'No description'}
-													</p>
-												</CardContent>
-											</Card>
-										))}
-									</div>
-								</ScrollArea>
-							</TabsContent>
-						</Tabs>
+					<CardContent className='pt-0'>
+						<ScrollArea className='h-[560px] pr-4'>
+							<div className='space-y-2 pb-4'>
+								{filteredExerciseLibraryItems.length === 0 ? (
+									<p className='py-8 text-sm text-center text-muted-foreground'>
+										No exercises or supersets match your search.
+									</p>
+								) : (
+									filteredExerciseLibraryItems.map((exerciseItem) => (
+										<ExerciseLibraryDraggableItem
+											key={exerciseItem.id}
+											item={exerciseItem}
+											disabled={!activeWorkout}
+											onAdd={() =>
+												addLibraryExerciseToActiveWorkout(exerciseItem)
+											}
+										/>
+									))
+								)}
+							</div>
+						</ScrollArea>
 					</CardContent>
 				</Card>
 			</div>
-		</div>
+
+			<DragOverlay>{renderExerciseDragOverlay()}</DragOverlay>
+		</DndContext>
 	)
 }
 
 function WorkoutEditorCard({
 	workout,
-	workoutIndex,
 	movementOptions,
-	selected,
-	onSelect,
+	warmupGroups,
+	exerciseDropzoneId,
 	onChange,
+	onChangeDay,
 	onDuplicate,
 	onRemove,
+	onImportWarmupGroup,
 	onAddWarmup,
 	onAddExercise,
 	sensors,
 }: {
 	workout: BlockWorkoutForm
-	workoutIndex: number
 	movementOptions: Array<{ value: string; label: string }>
-	selected: boolean
-	onSelect: () => void
+	warmupGroups: WarmupGroupLibraryItem[]
+	exerciseDropzoneId: string
 	onChange: (workout: BlockWorkoutForm) => void
+	onChangeDay: (dayIndex: number) => void
 	onDuplicate: () => void
 	onRemove: () => void
+	onImportWarmupGroup: (group: WarmupGroupLibraryItem) => void
 	onAddWarmup: () => void
 	onAddExercise: () => void
 	sensors: ReturnType<typeof useSensors>
 }) {
 	const warmupIds = workout.warmups.map((warmupItem) => warmupItem.id)
 	const exerciseIds = workout.exercises.map((exerciseItem) => exerciseItem.id)
+	const [selectedWarmupGroupId, setSelectedWarmupGroupId] = React.useState('')
 	const superSetGroups = Array.from(
 		new Set(
 			workout.exercises
@@ -1398,6 +1793,14 @@ function WorkoutEditorCard({
 				.filter(Boolean),
 		),
 	)
+	const { setNodeRef: setExerciseDropzoneRef, isOver: isExerciseDropOver } =
+		useDroppable({
+			id: exerciseDropzoneId,
+		})
+
+	React.useEffect(() => {
+		setSelectedWarmupGroupId('')
+	}, [workout.id])
 
 	const updateWarmups = React.useCallback(
 		(updater: (warmups: BlockWarmupForm[]) => BlockWarmupForm[]) => {
@@ -1420,19 +1823,11 @@ function WorkoutEditorCard({
 	)
 
 	return (
-		<Card
-			className={cn(
-				'border-border/70 transition-colors',
-				selected && 'border-primary/60 shadow-sm',
-			)}
-			onClick={onSelect}
-		>
+		<Card className='border-border/70'>
 			<CardHeader className='space-y-4'>
 				<div className='flex flex-wrap gap-3 justify-between items-start'>
 					<div className='space-y-1'>
-						<CardTitle className='text-lg'>
-							Workout {workoutIndex + 1}
-						</CardTitle>
+						<CardTitle className='text-lg'>Day {workout.dayIndex + 1}</CardTitle>
 						<p className='text-sm text-muted-foreground'>
 							{workout.exercises.length} exercises • {workout.warmups.length}{' '}
 							warmups
@@ -1471,10 +1866,7 @@ function WorkoutEditorCard({
 							min='1'
 							value={workout.dayIndex + 1}
 							onChange={(event) =>
-								onChange({
-									...workout,
-									dayIndex: Math.max(0, Number(event.target.value || 1) - 1),
-								})
+								onChangeDay(Math.max(0, Number(event.target.value || 1) - 1))
 							}
 						/>
 					</div>
@@ -1525,27 +1917,65 @@ function WorkoutEditorCard({
 
 			<CardContent className='space-y-6'>
 				<div className='space-y-3'>
-					<div className='flex flex-wrap gap-2 justify-between items-center'>
+					<div className='flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between'>
 						<div>
 							<h3 className='font-medium'>Warmups</h3>
 							<p className='text-sm text-muted-foreground'>
-								Drag to reorder and edit each warmup in place.
+								Import a warmup group with the select or edit warmups in place.
 							</p>
 						</div>
-						<Button
-							type='button'
-							size='sm'
-							variant='outline'
-							onClick={onAddWarmup}
-						>
-							<PlusIcon className='mr-2 size-4' />
-							Add Warmup
-						</Button>
+						<div className='flex flex-col gap-3 sm:flex-row sm:items-end'>
+							<div className='space-y-2 min-w-0 sm:min-w-[260px]'>
+								<Label>Import Warmup Group</Label>
+								<Select
+									value={selectedWarmupGroupId}
+									onValueChange={(value) =>
+										setSelectedWarmupGroupId(value ?? '')
+									}
+								>
+									<SelectTrigger className='w-full'>
+										<SelectValue placeholder='Select a warmup group' />
+									</SelectTrigger>
+									<SelectContent>
+										{warmupGroups.map((group) => (
+											<SelectItem key={group.id} value={group.id}>
+												{group.name}
+											</SelectItem>
+										))}
+									</SelectContent>
+								</Select>
+							</div>
+							<Button
+								type='button'
+								variant='outline'
+								onClick={() => {
+									const group = warmupGroups.find(
+										(entry) => entry.id === selectedWarmupGroupId,
+									)
+									if (!group) return
+									onImportWarmupGroup(group)
+									setSelectedWarmupGroupId('')
+								}}
+								disabled={!selectedWarmupGroupId}
+							>
+								<FolderOpenIcon className='mr-2 size-4' />
+								Import Warmup Group
+							</Button>
+							<Button
+								type='button'
+								size='sm'
+								variant='outline'
+								onClick={onAddWarmup}
+							>
+								<PlusIcon className='mr-2 size-4' />
+								Add Warmup
+							</Button>
+						</div>
 					</div>
 
 					{workout.warmups.length === 0 ? (
 						<div className='py-4 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
-							No warmups yet.
+							No warmups yet. Import a warmup group or add one manually.
 						</div>
 					) : (
 						<DndContext
@@ -1653,8 +2083,8 @@ function WorkoutEditorCard({
 						<div>
 							<h3 className='font-medium'>Exercises</h3>
 							<p className='text-sm text-muted-foreground'>
-								Each exercise must point at a movement. Use "Pair with previous"
-								to build supersets.
+								Each exercise must point at a movement. Drag in from the
+								exercise library or use "Pair with previous" to build supersets.
 							</p>
 						</div>
 						<Button
@@ -1668,26 +2098,22 @@ function WorkoutEditorCard({
 						</Button>
 					</div>
 
-					{workout.exercises.length === 0 ? (
-						<div className='py-4 text-sm text-center rounded-lg border border-dashed text-muted-foreground'>
-							No exercises yet.
-						</div>
-					) : (
-						<DndContext
-							sensors={sensors}
-							collisionDetection={closestCenter}
-							onDragEnd={(event) => {
-								const { active, over } = event
-								if (!over || active.id === over.id) return
-								updateExercises((exercises) =>
-									reorderIds(exercises, String(active.id), String(over.id)),
-								)
-							}}
+					<div
+						ref={setExerciseDropzoneRef}
+						className={cn(
+							'rounded-xl border p-3 transition-colors',
+							isExerciseDropOver && 'border-primary bg-primary/5',
+						)}
+					>
+						<SortableContext
+							items={exerciseIds}
+							strategy={verticalListSortingStrategy}
 						>
-							<SortableContext
-								items={exerciseIds}
-								strategy={verticalListSortingStrategy}
-							>
+							{workout.exercises.length === 0 ? (
+								<div className='py-8 text-sm text-center text-muted-foreground'>
+									Drop exercises here from the library or add one manually.
+								</div>
+							) : (
 								<div className='space-y-3'>
 									{workout.exercises.map((exerciseItem, exerciseIndex) => {
 										const previousExercise =
@@ -1698,7 +2124,14 @@ function WorkoutEditorCard({
 											: null
 
 										return (
-											<SortableShell key={exerciseItem.id} id={exerciseItem.id}>
+											<SortableShell
+												key={exerciseItem.id}
+												id={exerciseItem.id}
+												data={{
+													kind: 'builder',
+													item: exerciseItem,
+												} satisfies ExerciseDragData}
+											>
 												<Card
 													className={cn(
 														'border-border/60',
@@ -2001,9 +2434,66 @@ function WorkoutEditorCard({
 										)
 									})}
 								</div>
-							</SortableContext>
-						</DndContext>
-					)}
+							)}
+						</SortableContext>
+					</div>
+				</div>
+			</CardContent>
+		</Card>
+	)
+}
+
+function RestDayEditorCard({
+	dayIndex,
+	onChangeDay,
+	onConvertToWorkout,
+	onRemove,
+}: {
+	dayIndex: number
+	onChangeDay: (dayIndex: number) => void
+	onConvertToWorkout: () => void
+	onRemove: () => void
+}) {
+	return (
+		<Card className='border-border/70 border-dashed'>
+			<CardHeader className='space-y-3'>
+				<div className='flex flex-wrap gap-3 justify-between items-start'>
+					<div className='space-y-1'>
+						<CardTitle className='text-lg'>Rest Day</CardTitle>
+						<p className='text-sm text-muted-foreground'>
+							Keep this day open, move it to another slot, or turn it into a
+							workout.
+						</p>
+					</div>
+					<div className='flex gap-2'>
+						<Button type='button' variant='outline' size='sm' onClick={onConvertToWorkout}>
+							<PlusIcon className='mr-2 size-4' />
+							Convert To Workout
+						</Button>
+						<Button type='button' variant='outline' size='sm' onClick={onRemove}>
+							<TrashIcon className='mr-2 size-4' />
+							Remove Rest Day
+						</Button>
+					</div>
+				</div>
+			</CardHeader>
+			<CardContent className='space-y-4'>
+				<div className='grid gap-4 md:grid-cols-[120px_minmax(0,1fr)]'>
+					<div className='space-y-2'>
+						<Label>Day</Label>
+						<Input
+							type='number'
+							min='1'
+							value={dayIndex + 1}
+							onChange={(event) =>
+								onChangeDay(Math.max(0, Number(event.target.value || 1) - 1))
+							}
+						/>
+					</div>
+					<div className='flex items-center px-4 py-3 text-sm rounded-lg border border-dashed text-muted-foreground bg-muted/20'>
+						This day has no workout scheduled. Import a workout from the planner
+						select or convert it into a blank workout.
+					</div>
 				</div>
 			</CardContent>
 		</Card>
@@ -2029,4 +2519,161 @@ function LabeledNumberInput({
 			/>
 		</div>
 	)
+}
+
+function ExerciseLibraryDraggableItem({
+	item,
+	disabled,
+	onAdd,
+}: {
+	item: ExerciseLibraryItem
+	disabled: boolean
+	onAdd: () => void
+}) {
+	const { attributes, listeners, setNodeRef, transform, isDragging } =
+		useDraggable({
+			id: `user-block-library-exercise-${item.id}`,
+			disabled,
+			data: {
+				kind: 'library',
+				item,
+			} satisfies ExerciseDragData,
+		})
+
+	return (
+		<div
+			ref={setNodeRef}
+			style={{ transform: CSS.Translate.toString(transform) }}
+			className={cn(
+				'flex gap-3 items-start p-3 rounded-lg border bg-background transition-opacity',
+				isDragging && 'opacity-60',
+				disabled && 'opacity-60',
+			)}
+		>
+			<button
+				type='button'
+				className='mt-0.5 cursor-grab text-muted-foreground hover:text-foreground disabled:cursor-not-allowed'
+				disabled={disabled}
+				{...attributes}
+				{...listeners}
+			>
+				<DotsSixVerticalIcon className='size-4' />
+			</button>
+
+			<div className='pt-0.5'>
+				{item.isSuperSet ? (
+					<StackPlusIcon className='text-amber-600 size-4' />
+				) : (
+					<BarbellIcon className='text-orange-600 size-4' />
+				)}
+			</div>
+
+			<div className='min-w-0 flex-1 space-y-1'>
+				<div className='flex flex-wrap gap-2 items-center'>
+					<p className='text-sm font-medium truncate'>{item.name}</p>
+					{item.isSuperSet ? (
+						<span className='px-1.5 py-0.5 text-[10px] rounded-full border bg-muted text-muted-foreground'>
+							Superset
+						</span>
+					) : null}
+				</div>
+				<p className='text-xs text-muted-foreground'>
+					{formatExerciseLibrarySummary(item)}
+				</p>
+			</div>
+
+			<Button
+				type='button'
+				variant='ghost'
+				size='icon'
+				className='w-8 h-8'
+				disabled={disabled}
+				onClick={onAdd}
+			>
+				<PlusIcon className='size-4' />
+			</Button>
+		</div>
+	)
+}
+
+function ExerciseLibraryDragPreview({ item }: { item: ExerciseLibraryItem }) {
+	return (
+		<div className='p-3 rounded-lg border shadow-lg w-[320px] bg-background'>
+			<div className='flex gap-3 items-start'>
+				<div className='pt-0.5'>
+					{item.isSuperSet ? (
+						<StackPlusIcon className='text-amber-600 size-4' />
+					) : (
+						<BarbellIcon className='text-orange-600 size-4' />
+					)}
+				</div>
+				<div className='min-w-0 flex-1'>
+					<p className='font-medium truncate'>{item.name}</p>
+					<p className='text-xs text-muted-foreground'>
+						{formatExerciseLibrarySummary(item)}
+					</p>
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function BlockExerciseDragPreview({ item }: { item: BlockExerciseForm }) {
+	return (
+		<div className='p-3 rounded-lg border shadow-lg w-[320px] bg-background'>
+			<div className='flex gap-3 items-start'>
+				<BarbellIcon className='text-orange-600 mt-0.5 size-4' />
+				<div className='min-w-0 flex-1'>
+					<p className='font-medium truncate'>
+						{item.label?.trim() || 'Exercise'}
+					</p>
+					<p className='text-xs text-muted-foreground'>
+						{formatBlockExerciseSummary(item)}
+					</p>
+				</div>
+			</div>
+		</div>
+	)
+}
+
+function formatExerciseLibrarySummary(item: ExerciseLibraryItem): string {
+	if (item.isSuperSet) {
+		return `${item.superSetExercises?.length ?? 0} exercise superset`
+	}
+
+	const details: string[] = []
+	if (item.movementName) details.push(item.movementName)
+	if (
+		(item.sets !== null && item.sets !== undefined) ||
+		(item.reps !== null && item.reps !== undefined)
+	) {
+		const sets =
+			item.sets === null || item.sets === undefined ? '?' : String(item.sets)
+		const reps =
+			item.reps === null || item.reps === undefined ? '?' : String(item.reps)
+		details.push(`${sets} x ${reps}${item.repUnit ? ` ${item.repUnit}` : ''}`)
+	}
+	if (item.targetRpe !== null && item.targetRpe !== undefined) {
+		details.push(`RPE ${item.targetRpe}`)
+	}
+	if (item.restTime !== null && item.restTime !== undefined) {
+		details.push(`Rest ${item.restTime}${item.restUnit ? ` ${item.restUnit}` : ''}`)
+	}
+
+	return details.join(' • ') || 'No movement details'
+}
+
+function formatBlockExerciseSummary(item: BlockExerciseForm): string {
+	const details: string[] = []
+	if (item.sets !== null || item.reps !== null) {
+		const sets = item.sets === null ? '?' : String(item.sets)
+		const reps = item.reps === null ? '?' : String(item.reps)
+		details.push(`${sets} x ${reps}${item.repUnit ? ` ${item.repUnit}` : ''}`)
+	}
+	if (item.targetRpe !== null) details.push(`RPE ${item.targetRpe}`)
+	if (item.restTime !== null) {
+		details.push(`Rest ${item.restTime}${item.restUnit ? ` ${item.restUnit}` : ''}`)
+	}
+	if (item.superSetGroup) details.push('Superset')
+	return details.join(' • ') || 'No programmed details'
 }
