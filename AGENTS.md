@@ -22,3 +22,4 @@ Documentation upkeep rules:
 - Keep `SOUL.md` condensed and stable. Historical detail belongs in `SESSION_LOG.md`.
 - After finishing an update git add and commit with a relevant message
 - start each session on a new worktree
+hi
