@@ -33,6 +33,10 @@ import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
+import {
+	formatIngredientPrecision,
+	roundToIngredientPrecision,
+} from '@/utils/ingredient-precision'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
@@ -95,6 +99,7 @@ interface IngredientOption {
 	carbohydrate: number
 	serveSize: number
 	serveUnit: string
+	precision: number
 }
 
 interface RecipeFormValues {
@@ -236,7 +241,10 @@ export function RecipeForm({
 			ingredients: (existingRecipe.ingredients ?? []).map((item) => ({
 				id: item.id,
 				ingredientId: item.ingredientId,
-				amount: roundOneDecimal(item.amount),
+				amount: roundToIngredientPrecision(
+					item.amount,
+					item.ingredient?.precision,
+				),
 				unit: item.unit,
 				altIngredientId: item.altIngredientId ?? '',
 			})),
@@ -284,7 +292,9 @@ export function RecipeForm({
 		onSubmit: async ({ value }) => {
 			const normalizedInputName = normalizeName(value.name)
 			const recipesInOrg =
-				orgRecipes ?? (await queryClient.ensureQueryData(recipesQueryOptions))
+				orgRecipes ??
+				(await queryClient.ensureQueryData(recipesQueryOptions)) ??
+				[]
 
 			const duplicateRecipe = recipesInOrg.some(
 				(item) =>
@@ -293,7 +303,9 @@ export function RecipeForm({
 			)
 
 			if (duplicateRecipe) {
-				toast.error('A recipe with this name already exists in your organisation.')
+				toast.error(
+					'A recipe with this name already exists in your organisation.',
+				)
 				return
 			}
 
@@ -317,7 +329,10 @@ export function RecipeForm({
 					isBaseIngredient:
 						ingredientMap.get(item.ingredientId)?.isBase ?? false,
 					altIngredientId: item.altIngredientId || null,
-					amount: roundOneDecimal(item.amount),
+					amount: roundToIngredientPrecision(
+						item.amount,
+						ingredientMap.get(item.ingredientId)?.precision,
+					),
 					unit: item.unit.trim(),
 				})),
 			}
@@ -409,7 +424,10 @@ export function RecipeForm({
 			const newIngredient: RecipeFormIngredient = {
 				id: crypto.randomUUID(),
 				ingredientId,
-				amount: roundOneDecimal(ingredient.serveSize || 100),
+				amount: roundToIngredientPrecision(
+					ingredient.serveSize || 100,
+					ingredient.precision,
+				),
 				unit: ingredient.serveUnit || 'g',
 				altIngredientId: '',
 			}
@@ -439,12 +457,39 @@ export function RecipeForm({
 			const currentIngredients = form.getFieldValue('ingredients')
 			form.setFieldValue(
 				'ingredients',
-				currentIngredients.map((item) =>
-					item.id === id ? { ...item, [field]: value } : item,
-				),
+				currentIngredients.map((item) => {
+					if (item.id !== id) return item
+
+					if (field === 'ingredientId' && typeof value === 'string') {
+						const nextIngredient = ingredientMap.get(value)
+						return {
+							...item,
+							ingredientId: value,
+							amount: roundToIngredientPrecision(
+								item.amount > 0
+									? item.amount
+									: (nextIngredient?.serveSize ?? item.amount),
+								nextIngredient?.precision,
+							),
+							unit: nextIngredient?.serveUnit ?? item.unit,
+						}
+					}
+
+					if (field === 'amount' && typeof value === 'number') {
+						return {
+							...item,
+							amount: roundToIngredientPrecision(
+								value,
+								ingredientMap.get(item.ingredientId)?.precision,
+							),
+						}
+					}
+
+					return { ...item, [field]: value }
+				}),
 			)
 		},
-		[form],
+		[form, ingredientMap],
 	)
 
 	const removeIngredient = React.useCallback(
@@ -1054,6 +1099,7 @@ function SortableIngredientRow({
 	const selected = ingredientMap.get(item.ingredientId)
 	const ratio =
 		selected && selected.serveSize > 0 ? item.amount / selected.serveSize : 0
+	const amountStep = formatIngredientPrecision(selected?.precision)
 	const calories = selected ? roundOneDecimal(selected.calories * ratio) : 0
 	const protein = selected ? roundOneDecimal(selected.protein * ratio) : 0
 	const carbs = selected ? roundOneDecimal(selected.carbohydrate * ratio) : 0
@@ -1066,7 +1112,10 @@ function SortableIngredientRow({
 		? (initialItem?.altIngredientId ?? '') !== item.altIngredientId
 		: false
 	const isAmountEdited = isEditMode
-		? roundOneDecimal(initialItem?.amount ?? 0) !== roundOneDecimal(item.amount)
+		? roundToIngredientPrecision(
+				initialItem?.amount ?? 0,
+				selected?.precision,
+			) !== roundToIngredientPrecision(item.amount, selected?.precision)
 		: false
 	const isUnitEdited = isEditMode
 		? normalizeText(initialItem?.unit ?? '') !== normalizeText(item.unit)
@@ -1107,13 +1156,9 @@ function SortableIngredientRow({
 							<VirtualizedCombobox
 								options={ingredientOptions}
 								selectedOption={item.ingredientId}
-								onSelectOption={(value) => {
-									const ingredient = allIngredients.find((i) => i.id === value)
+								onSelectOption={(value) =>
 									onUpdateField(item.id, 'ingredientId', value)
-									if (ingredient) {
-										onUpdateField(item.id, 'unit', ingredient.serveUnit)
-									}
-								}}
+								}
 								searchPlaceholder='Search ingredients...'
 								width='100%'
 								height='240px'
@@ -1155,7 +1200,7 @@ function SortableIngredientRow({
 					<Label>Amount</Label>
 					<Input
 						type='number'
-						step='0.1'
+						step={amountStep}
 						value={item.amount}
 						onChange={(event) =>
 							onUpdateField(
@@ -1189,7 +1234,13 @@ function SortableIngredientRow({
 				<div>
 					Base serve: {selected?.serveSize ?? 0} {selected?.serveUnit ?? ''}
 				</div>
-				<div>{selected?.category ? `Category: ${selected.category}` : ''}</div>
+				<div>
+					{selected
+						? `Step: ${formatIngredientPrecision(selected.precision)}${
+								selected.category ? ` • ${selected.category}` : ''
+							}`
+						: ''}
+				</div>
 			</div>
 		</div>
 	)

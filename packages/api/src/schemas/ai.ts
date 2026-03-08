@@ -43,6 +43,7 @@ export const AiUserMenuFormIngredientInput = z
 		ingredientName: z.string(),
 		serveSize: z.number().nonnegative(),
 		serveUnit: z.string(),
+		precision: z.number().positive().default(0.1),
 		calories: z.number().nonnegative(),
 		protein: z.number().nonnegative(),
 		fat: z.number().nonnegative(),

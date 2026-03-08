@@ -16,6 +16,11 @@ import { Label } from '@/components/ui/label'
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar'
 import { Spinner } from '@/components/ui/spinner'
 import { Textarea } from '@/components/ui/textarea'
+import {
+	DEFAULT_INGREDIENT_PRECISION,
+	normalizeIngredientPrecision,
+	roundToIngredientPrecision,
+} from '@/utils/ingredient-precision'
 import { orpc } from '@/utils/orpc'
 import {
 	balanceRecipe,
@@ -461,6 +466,7 @@ export function UserMenuForm({
 										ingredientName: 'Unknown',
 										serveSize: ing.serveSize,
 										serveUnit: ing.serveUnit,
+										precision: DEFAULT_INGREDIENT_PRECISION,
 										calories: 0,
 										protein: 0,
 										fat: 0,
@@ -468,14 +474,19 @@ export function UserMenuForm({
 									}
 								}
 
-								const ratio = ing.serveSize / baseIng.serveSize
+								const normalizedServeSize = roundToIngredientPrecision(
+									ing.serveSize,
+									baseIng.precision,
+								)
+								const ratio = normalizedServeSize / baseIng.serveSize
 								return {
 									id: crypto.randomUUID(),
 									recipeToIngredientId: '',
 									ingredientId: ing.ingredientId,
 									ingredientName: baseIng.name,
-									serveSize: ing.serveSize,
+									serveSize: normalizedServeSize,
 									serveUnit: ing.serveUnit,
+									precision: normalizeIngredientPrecision(baseIng.precision),
 									calories: baseIng.calories * ratio,
 									protein: baseIng.protein * ratio,
 									fat: baseIng.fat * ratio,
@@ -557,6 +568,13 @@ export function UserMenuForm({
 		orpc.ingredient.getAllOrg.queryOptions({
 			input: { organisationId: userOrgId },
 		}),
+	)
+	const ingredientReferenceMap = React.useMemo(
+		() =>
+			new Map(
+				(ingredients ?? []).map((ingredient) => [ingredient.id, ingredient]),
+			),
+		[ingredients],
 	)
 
 	const { data: aiAccess } = useQuery(
@@ -725,8 +743,12 @@ export function UserMenuForm({
 						recipeToIngredientId: ing.id,
 						ingredientId: ing.ingredientId,
 						ingredientName: 'Unknown',
-						serveSize: Math.round(ing.amount * 10) / 10,
+						serveSize: roundToIngredientPrecision(
+							ing.amount,
+							DEFAULT_INGREDIENT_PRECISION,
+						),
 						serveUnit: ing.unit,
+						precision: DEFAULT_INGREDIENT_PRECISION,
 						calories: 0,
 						protein: 0,
 						fat: 0,
@@ -736,7 +758,8 @@ export function UserMenuForm({
 
 				const multiplier =
 					ingredientData.serveSize > 0
-						? ing.amount / ingredientData.serveSize
+						? roundToIngredientPrecision(ing.amount, ingredientData.precision) /
+							ingredientData.serveSize
 						: 1
 
 				return {
@@ -744,8 +767,12 @@ export function UserMenuForm({
 					recipeToIngredientId: ing.id,
 					ingredientId: ing.ingredientId,
 					ingredientName: ingredientData.name,
-					serveSize: Math.round(ing.amount * 10) / 10,
+					serveSize: roundToIngredientPrecision(
+						ing.amount,
+						ingredientData.precision,
+					),
 					serveUnit: ing.unit,
+					precision: normalizeIngredientPrecision(ingredientData.precision),
 					calories: ingredientData.calories * multiplier,
 					protein: ingredientData.protein * multiplier,
 					fat: ingredientData.fat * multiplier,
@@ -817,8 +844,12 @@ export function UserMenuForm({
 							recipeToIngredientId: '',
 							ingredientId: ing.ingredientId,
 							ingredientName: 'Unknown',
-							serveSize: Math.round(ing.serveSize * 10) / 10,
+							serveSize: roundToIngredientPrecision(
+								ing.serveSize,
+								DEFAULT_INGREDIENT_PRECISION,
+							),
 							serveUnit: ing.serveUnit,
+							precision: DEFAULT_INGREDIENT_PRECISION,
 							calories: 0,
 							protein: 0,
 							fat: 0,
@@ -826,9 +857,13 @@ export function UserMenuForm({
 						}
 					}
 
+					const normalizedServeSize = roundToIngredientPrecision(
+						ing.serveSize,
+						ingredientData.precision,
+					)
 					const multiplier =
 						ingredientData.serveSize > 0
-							? ing.serveSize / ingredientData.serveSize
+							? normalizedServeSize / ingredientData.serveSize
 							: 1
 
 					return {
@@ -836,8 +871,9 @@ export function UserMenuForm({
 						recipeToIngredientId: '',
 						ingredientId: ing.ingredientId,
 						ingredientName: ingredientData.name,
-						serveSize: Math.round(ing.serveSize * 10) / 10,
+						serveSize: normalizedServeSize,
 						serveUnit: ing.serveUnit,
+						precision: normalizeIngredientPrecision(ingredientData.precision),
 						calories: ingredientData.calories * multiplier,
 						protein: ingredientData.protein * multiplier,
 						fat: ingredientData.fat * multiplier,
@@ -1306,6 +1342,62 @@ export function UserMenuForm({
 		})
 	}
 
+	const getMealIngredientPrecision = React.useCallback(
+		(ingredient: Pick<MealIngredient, 'ingredientId' | 'precision'>) =>
+			normalizeIngredientPrecision(
+				ingredientReferenceMap.get(ingredient.ingredientId)?.precision ??
+					ingredient.precision,
+			),
+		[ingredientReferenceMap],
+	)
+
+	const recalculateMealIngredient = React.useCallback(
+		(
+			ingredient: MealIngredient,
+			requestedServeSize: number,
+		): MealIngredient => {
+			const precision = getMealIngredientPrecision(ingredient)
+			const nextServeSize = roundToIngredientPrecision(
+				Math.max(0, requestedServeSize),
+				precision,
+			)
+			const referenceIngredient = ingredientReferenceMap.get(
+				ingredient.ingredientId,
+			)
+
+			if (referenceIngredient && referenceIngredient.serveSize > 0) {
+				const ratio = nextServeSize / referenceIngredient.serveSize
+				return {
+					...ingredient,
+					ingredientName: referenceIngredient.name,
+					serveUnit: referenceIngredient.serveUnit,
+					precision,
+					serveSize: nextServeSize,
+					calories: roundToOneDecimal(referenceIngredient.calories * ratio),
+					protein: roundToOneDecimal(referenceIngredient.protein * ratio),
+					fat: roundToOneDecimal(referenceIngredient.fat * ratio),
+					carbohydrate: roundToOneDecimal(
+						referenceIngredient.carbohydrate * ratio,
+					),
+				}
+			}
+
+			const ratio =
+				ingredient.serveSize > 0 ? nextServeSize / ingredient.serveSize : 0
+
+			return {
+				...ingredient,
+				precision,
+				serveSize: nextServeSize,
+				calories: roundToOneDecimal(ingredient.calories * ratio),
+				protein: roundToOneDecimal(ingredient.protein * ratio),
+				fat: roundToOneDecimal(ingredient.fat * ratio),
+				carbohydrate: roundToOneDecimal(ingredient.carbohydrate * ratio),
+			}
+		},
+		[getMealIngredientPrecision, ingredientReferenceMap],
+	)
+
 	const updateIngredientServeSize = (
 		mealIndex: number,
 		recipeIndex: number,
@@ -1321,22 +1413,11 @@ export function UserMenuForm({
 		const ingredient = recipe.ingredients[ingredientIndex]
 		if (!ingredient) return
 
-		// Round serveSize to 0.1 precision
-		const roundedServeSize = Math.round(serveSize * 10) / 10
-
-		// Calculate the ratio of new serveSize to old serveSize
-		const ratio =
-			ingredient.serveSize > 0 ? roundedServeSize / ingredient.serveSize : 1
-
 		const newIngredients = [...recipe.ingredients]
-		newIngredients[ingredientIndex] = {
-			...ingredient,
-			serveSize: roundedServeSize,
-			calories: ingredient.calories * ratio,
-			protein: ingredient.protein * ratio,
-			fat: ingredient.fat * ratio,
-			carbohydrate: ingredient.carbohydrate * ratio,
-		}
+		newIngredients[ingredientIndex] = recalculateMealIngredient(
+			ingredient,
+			serveSize,
+		)
 
 		// Recalculate recipe totals
 		const newRecipeCalories = newIngredients.reduce(
@@ -1412,8 +1493,12 @@ export function UserMenuForm({
 			recipeToIngredientId: '',
 			ingredientId: ingredient.id,
 			ingredientName: ingredient.name,
-			serveSize: Math.round((ingredient.serveSize || 100) * 10) / 10,
+			serveSize: roundToIngredientPrecision(
+				ingredient.serveSize || 100,
+				ingredient.precision,
+			),
 			serveUnit: ingredient.serveUnit || 'g',
+			precision: normalizeIngredientPrecision(ingredient.precision),
 			calories: ingredient.calories || 0,
 			protein: ingredient.protein || 0,
 			fat: ingredient.fat || 0,
@@ -1481,22 +1566,30 @@ export function UserMenuForm({
 
 			const scaleFactor = meal.targetCalories! / recipe.calories
 
-			const updatedIngredients = recipe.ingredients.map((ing) => ({
-				...ing,
-				serveSize: Math.round(ing.serveSize * scaleFactor * 10) / 10,
-				calories: ing.calories * scaleFactor,
-				protein: ing.protein * scaleFactor,
-				fat: ing.fat * scaleFactor,
-				carbohydrate: ing.carbohydrate * scaleFactor,
-			}))
+			const updatedIngredients = recipe.ingredients.map((ing) =>
+				recalculateMealIngredient(ing, ing.serveSize * scaleFactor),
+			)
+			const totalCalories = updatedIngredients.reduce(
+				(sum, ing) => sum + ing.calories,
+				0,
+			)
+			const totalProtein = updatedIngredients.reduce(
+				(sum, ing) => sum + ing.protein,
+				0,
+			)
+			const totalFat = updatedIngredients.reduce((sum, ing) => sum + ing.fat, 0)
+			const totalCarbohydrate = updatedIngredients.reduce(
+				(sum, ing) => sum + ing.carbohydrate,
+				0,
+			)
 
 			return {
 				...recipe,
 				ingredients: updatedIngredients,
-				calories: recipe.calories * scaleFactor,
-				protein: recipe.protein * scaleFactor,
-				fat: recipe.fat * scaleFactor,
-				carbohydrate: recipe.carbohydrate * scaleFactor,
+				calories: totalCalories,
+				protein: totalProtein,
+				fat: totalFat,
+				carbohydrate: totalCarbohydrate,
 			}
 		})
 
@@ -1594,6 +1687,10 @@ export function UserMenuForm({
 					caloriesPerGram,
 					remainingProtein,
 					remainingCalories,
+					[
+						getMealIngredientPrecision(proteinIngredient),
+						getMealIngredientPrecision(calorieIngredient),
+					],
 				)
 
 				// Check if solution is valid
@@ -1606,35 +1703,17 @@ export function UserMenuForm({
 				const newIngredients = [...recipe.ingredients]
 
 				// Update protein-focused ingredient
-				const updatedProteinIng = { ...proteinIngredient }
-				updatedProteinIng.serveSize = Math.round(solution[0] * 10) / 10
-				updatedProteinIng.calories =
-					(proteinIngredient.calories / proteinIngredient.serveSize) *
-					solution[0]
-				updatedProteinIng.protein =
-					(proteinIngredient.protein / proteinIngredient.serveSize) *
-					solution[0]
-				updatedProteinIng.fat =
-					(proteinIngredient.fat / proteinIngredient.serveSize) * solution[0]
-				updatedProteinIng.carbohydrate =
-					(proteinIngredient.carbohydrate / proteinIngredient.serveSize) *
-					solution[0]
+				const updatedProteinIng = recalculateMealIngredient(
+					proteinIngredient,
+					solution[0],
+				)
 				newIngredients[proteinIndex] = updatedProteinIng
 
 				// Update calorie-focused ingredient
-				const updatedCalorieIng = { ...calorieIngredient }
-				updatedCalorieIng.serveSize = Math.round(solution[1] * 10) / 10
-				updatedCalorieIng.calories =
-					(calorieIngredient.calories / calorieIngredient.serveSize) *
-					solution[1]
-				updatedCalorieIng.protein =
-					(calorieIngredient.protein / calorieIngredient.serveSize) *
-					solution[1]
-				updatedCalorieIng.fat =
-					(calorieIngredient.fat / calorieIngredient.serveSize) * solution[1]
-				updatedCalorieIng.carbohydrate =
-					(calorieIngredient.carbohydrate / calorieIngredient.serveSize) *
-					solution[1]
+				const updatedCalorieIng = recalculateMealIngredient(
+					calorieIngredient,
+					solution[1],
+				)
 				newIngredients[calorieIndex] = updatedCalorieIng
 
 				// Recalculate total recipe nutrition
@@ -1764,15 +1843,15 @@ export function UserMenuForm({
 		<SidebarProvider defaultOpen={false}>
 			<div className='w-full min-h-svh'>
 				<div className='flex flex-col gap-6 justify-center w-full'>
-						{!isEditMode && !selectedTemplate ? (
-							<div className='flex flex-col gap-6 justify-center p-8 w-full'>
-								<div className='flex justify-between items-center'>
-									<h1 className='text-2xl font-bold'>
-										{isTemplateMode ? 'Create Menu Template' : 'Create User Menu'}
-									</h1>
-									<DocsLink doc={docsLinkTarget} label={docsLinkLabel} />
-								</div>
-								<Card>
+					{!isEditMode && !selectedTemplate ? (
+						<div className='flex flex-col gap-6 justify-center p-8 w-full'>
+							<div className='flex justify-between items-center'>
+								<h1 className='text-2xl font-bold'>
+									{isTemplateMode ? 'Create Menu Template' : 'Create User Menu'}
+								</h1>
+								<DocsLink doc={docsLinkTarget} label={docsLinkLabel} />
+							</div>
+							<Card>
 								<CardHeader>
 									<CardTitle>Select Menu Template</CardTitle>
 									<CardDescription>
@@ -1843,29 +1922,26 @@ export function UserMenuForm({
 						>
 							<div className='flex gap-0 items-start w-full'>
 								<div className='relative flex flex-col flex-1 min-w-0'>
-										<form
+									<form
 										onSubmit={(event) => {
 											event.preventDefault()
 											event.stopPropagation()
 											form.handleSubmit()
 										}}
-											className='flex flex-col gap-6 p-8 min-w-0'
-										>
-											<div className='flex justify-between items-center'>
-												<h1 className='text-2xl font-bold'>{formHeading}</h1>
-												<div className='flex gap-2 items-center'>
-													<DocsLink
-														doc={docsLinkTarget}
-														label={docsLinkLabel}
-													/>
-													<SidebarTrigger size='default'>
-														<Button render={<div />} className='cursor-pointer'>
-															Recipes
-															<SidebarIcon />
-														</Button>
-													</SidebarTrigger>
-												</div>
+										className='flex flex-col gap-6 p-8 min-w-0'
+									>
+										<div className='flex justify-between items-center'>
+											<h1 className='text-2xl font-bold'>{formHeading}</h1>
+											<div className='flex gap-2 items-center'>
+												<DocsLink doc={docsLinkTarget} label={docsLinkLabel} />
+												<SidebarTrigger size='default'>
+													<Button render={<div />} className='cursor-pointer'>
+														Recipes
+														<SidebarIcon />
+													</Button>
+												</SidebarTrigger>
 											</div>
+										</div>
 										{!isEditMode && !isTemplateMode && (
 											<Button
 												type='button'

@@ -5,6 +5,10 @@ import { getAiFeatureAccessForOrganisation } from './feature'
 
 import { randomUUID } from 'node:crypto'
 import { ORPCError } from '@orpc/server'
+import {
+	normalizeIngredientPrecision,
+	roundToIngredientPrecision,
+} from '../lib/ingredient-precision'
 import { protectedProcedure } from '../index'
 import {
 	AiRecipeFormStateInput,
@@ -36,6 +40,7 @@ type IngredientForAiContext = {
 	isBase: boolean
 	serveSize: number
 	serveUnit: string
+	precision: number
 	calories: number
 	protein: number
 	fat: number
@@ -192,6 +197,7 @@ async function getIngredientsForAiContext(
 			isBase: false,
 			serveSize: roundOneDecimal(item.serveSize),
 			serveUnit: item.serveUnit,
+			precision: normalizeIngredientPrecision(item.precision),
 			calories: roundOneDecimal(item.calories),
 			protein: roundOneDecimal(item.protein),
 			fat: roundOneDecimal(item.fat),
@@ -204,6 +210,7 @@ async function getIngredientsForAiContext(
 			isBase: true,
 			serveSize: roundOneDecimal(item.serveSize),
 			serveUnit: item.serveUnit,
+			precision: normalizeIngredientPrecision(item.precision),
 			calories: roundOneDecimal(item.calories),
 			protein: roundOneDecimal(item.protein),
 			fat: roundOneDecimal(item.fat),
@@ -280,7 +287,10 @@ function calculateIngredientMacrosFromServeSize(
 	ingredient: IngredientForAiContext,
 	serveSize: number,
 ) {
-	const normalizedServeSize = roundOneDecimal(Math.max(0, serveSize))
+	const normalizedServeSize = roundToIngredientPrecision(
+		Math.max(0, serveSize),
+		ingredient.precision,
+	)
 	const ratio =
 		ingredient.serveSize > 0 ? normalizedServeSize / ingredient.serveSize : 0
 
@@ -356,6 +366,7 @@ function buildUserMenuIngredientMacroContext(
 								name: referenceIngredient.name,
 								serveSize: referenceIngredient.serveSize,
 								serveUnit: referenceIngredient.serveUnit,
+								precision: referenceIngredient.precision,
 								calories: referenceIngredient.calories,
 								protein: referenceIngredient.protein,
 								fat: referenceIngredient.fat,
@@ -469,7 +480,7 @@ function normalizeAndValidateAiRecipeForm(
 		usedIds.add(uniqueId)
 
 		const unit = item.unit.trim() || ingredient.serveUnit
-		const amount = roundOneDecimal(item.amount)
+		const amount = roundToIngredientPrecision(item.amount, ingredient.precision)
 
 		if (amount <= 0) {
 			throw new ORPCError('INTERNAL_SERVER_ERROR', {
@@ -565,6 +576,9 @@ function normalizeAndValidateAiUserMenuForm(
 								ingredientName: item.ingredientName,
 								serveSize: item.amount,
 								serveUnit: item.unit,
+								precision:
+									availableIngredientMap.get(item.ingredientId)?.precision ??
+									0.1,
 								calories: item.calories,
 								protein: item.protein,
 								fat: item.fat,
@@ -600,6 +614,7 @@ function normalizeAndValidateAiUserMenuForm(
 						ingredientName: ingredient.name,
 						serveSize: calculatedMacros.serveSize,
 						serveUnit: ingredientItem.serveUnit.trim() || ingredient.serveUnit,
+						precision: ingredient.precision,
 						calories: calculatedMacros.calories,
 						protein: calculatedMacros.protein,
 						fat: calculatedMacros.fat,
@@ -755,6 +770,7 @@ function normalizeAndValidateAiUserMenuFormFast(
 							serveUnit:
 								currentIngredient.serveUnit.trim() ||
 								ingredientReference.serveUnit,
+							precision: ingredientReference.precision,
 							calories: calculatedMacros.calories,
 							protein: calculatedMacros.protein,
 							fat: calculatedMacros.fat,
@@ -933,7 +949,7 @@ ${JSON.stringify(schemaExample)}
 Rules:
 - Use only ingredientId values from the provided ingredient list.
 - altIngredientId must be '' or one of the provided ingredient ids.
-- amount must be a positive number.
+- amount must be a positive number aligned to the ingredient's precision.
 - Keep fields as plain strings/arrays. Do not return null/undefined.
 - Preserve existing ingredient row ids when you can; create ids for new rows.
 - Keep the output directly usable for UI form state.
@@ -1044,6 +1060,7 @@ Rules:
 										ingredientName: 'string',
 										serveSize: 100,
 										serveUnit: 'g',
+										precision: 0.1,
 										calories: 120,
 										protein: 20,
 										fat: 3,
@@ -1070,6 +1087,7 @@ Rules:
 	- Recipe macros must come from ingredient ratios against each ingredient's reference serve size:
 	  ratio = ingredientServeSize / referenceIngredientServeSize
 	  macro = referenceMacro * ratio
+	- ingredient precision is read-only and serveSize must align to it.
 	- Keep output directly usable for UI form state.
 	- Keep fields plain JSON types. Do not return undefined.
 	- startDate and endDate must be YYYY-MM-DD strings or null.

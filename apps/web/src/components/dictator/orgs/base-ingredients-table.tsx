@@ -119,6 +119,18 @@ export function BaseIngredientsTable() {
 				},
 			},
 			{
+				id: 'precision',
+				accessorKey: 'precision',
+				header: 'Precision',
+				filterFn,
+				meta: {
+					label: 'Precision',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
 				id: 'publicFoodKey',
 				accessorKey: 'publicFoodKey',
 				header: 'Public Key',

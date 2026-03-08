@@ -1,4 +1,5 @@
 import { inv, matrix, multiply } from 'mathjs'
+import { roundToIngredientPrecision } from '@/utils/ingredient-precision'
 
 /**
  * Solves for ingredient quantities to meet calorie and protein targets best with 2 ingredients.
@@ -14,9 +15,13 @@ export function balanceRecipe(
 	caloriesPerGram: number[],
 	targetProtein: number,
 	targetCalories: number,
+	precisions: number[],
 ): number[] {
 	// Validate input lengths
-	if (proteinPerGram.length !== caloriesPerGram.length) {
+	if (
+		proteinPerGram.length !== caloriesPerGram.length ||
+		proteinPerGram.length !== precisions.length
+	) {
 		throw new Error('Protein and calorie arrays must have the same length.')
 	}
 
@@ -28,8 +33,59 @@ export function balanceRecipe(
 
 	// Solve using the inverse of the coefficients matrix
 	try {
-		const solution = multiply(inv(coefficients), constants)
-		return solution.toArray() as number[]
+		const exactSolution = multiply(
+			inv(coefficients),
+			constants,
+		).toArray() as number[]
+		const [exactA = 0, exactB = 0] = exactSolution
+		const [precisionA, precisionB] = precisions
+		const candidateAValues = new Set<number>()
+		const candidateBValues = new Set<number>()
+
+		const addCandidates = (
+			values: Set<number>,
+			center: number,
+			precision: number,
+		) => {
+			const roundedCenter = roundToIngredientPrecision(center, precision)
+			for (let offset = -10; offset <= 10; offset++) {
+				values.add(
+					roundToIngredientPrecision(
+						roundedCenter + offset * precision,
+						precision,
+					),
+				)
+			}
+		}
+
+		addCandidates(candidateAValues, exactA, precisionA)
+		addCandidates(candidateBValues, exactB, precisionB)
+
+		let bestSolution: number[] | null = null
+		let bestError = Number.POSITIVE_INFINITY
+
+		for (const amountA of candidateAValues) {
+			for (const amountB of candidateBValues) {
+				if (amountA < 0 || amountB < 0) continue
+
+				const protein =
+					proteinPerGram[0] * amountA + proteinPerGram[1] * amountB
+				const calories =
+					caloriesPerGram[0] * amountA + caloriesPerGram[1] * amountB
+				const proteinError = protein - targetProtein
+				const calorieError = calories - targetCalories
+				const normalizedError =
+					(proteinError / Math.max(targetProtein, 1)) ** 2 +
+					(calorieError / Math.max(targetCalories, 1)) ** 2
+
+				if (normalizedError < bestError) {
+					bestError = normalizedError
+					bestSolution = [amountA, amountB]
+				}
+			}
+		}
+
+		return bestSolution ?? exactSolution
 	} catch (error) {
 		throw new Error('Unable to solve the system. Ensure the inputs are valid.')
 	}

@@ -26,6 +26,7 @@ export const IngredientCreateInput = z.object({
 	carbohydrate: z.number().min(0),
 	serveSize: z.number().min(0),
 	serveUnit: z.string().min(1),
+	precision: z.number().positive().default(0.1),
 	baseId: z.string().optional().nullable(),
 })
 
@@ -39,6 +40,7 @@ export const IngredientUpdateInput = z.object({
 	carbohydrate: z.number().min(0),
 	serveSize: z.number().min(0),
 	serveUnit: z.string().min(1),
+	precision: z.number().positive().default(0.1),
 })
 
 export const IngredientDeleteInput = z.object({

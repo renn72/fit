@@ -53,6 +53,7 @@ function EditIngredientPage() {
 		carbohydrate: ingredient.carbohydrate,
 		serveSize: ingredient.serveSize,
 		serveUnit: ingredient.serveUnit,
+		precision: ingredient.precision,
 	}
 
 	return (

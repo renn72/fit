@@ -3,6 +3,7 @@ import { ingredient } from '@fit/db/schema/ingredient'
 
 import { ORPCError } from '@orpc/server'
 import { eq } from 'drizzle-orm'
+import { normalizeIngredientPrecision } from '../lib/ingredient-precision'
 import { protectedProcedure } from '../index'
 import {
 	IngredientCreateInput,
@@ -85,6 +86,7 @@ export const ingredientRouter = {
 					protein: Math.round(input.protein * 10) / 10,
 					fat: Math.round(input.fat * 10) / 10,
 					carbohydrate: Math.round(input.carbohydrate * 10) / 10,
+					precision: normalizeIngredientPrecision(input.precision),
 					creatorId: context.session.user.id,
 					organisationId: context.session.user.organisationId,
 				})
@@ -256,6 +258,7 @@ export const ingredientRouter = {
 						carbohydrate: Math.round(input.carbohydrate * 10) / 10,
 						serveSize: input.serveSize,
 						serveUnit: input.serveUnit,
+						precision: normalizeIngredientPrecision(input.precision),
 					})
 					.where(eq(ingredient.id, input.id))
 					.returning()
@@ -282,6 +285,7 @@ export const ingredientRouter = {
 						carbohydrate: Math.round(input.carbohydrate * 10) / 10,
 						serveSize: input.serveSize,
 						serveUnit: input.serveUnit,
+						precision: normalizeIngredientPrecision(input.precision),
 						baseId: baseIng.id,
 						organisationId,
 						creatorId: context.session.user.id,

@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
+import { formatIngredientPrecision } from '@/utils/ingredient-precision'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 import { getRouteApi, Link } from '@tanstack/react-router'
@@ -33,6 +34,7 @@ interface Ingredient {
 	carbohydrate: number
 	serveSize: number
 	serveUnit: string
+	precision: number
 	createdAt: Date
 	isBase: boolean
 	isOverwriteBase: boolean
@@ -165,6 +167,19 @@ const columns = [
 		meta: {
 			label: 'Unit',
 			variant: 'text',
+		},
+	}),
+	columnHelper.accessor('precision', {
+		header: ({ column }) => (
+			<DataTableColumnHeader column={column} label='Precision' />
+		),
+		meta: {
+			label: 'Precision',
+			variant: 'number',
+		},
+		cell: ({ row }) => {
+			const value = row.getValue('precision') as number
+			return formatIngredientPrecision(value)
 		},
 	}),
 	columnHelper.accessor('creatorName', {
@@ -434,6 +449,10 @@ function IngredientsGridView({
 											<span className='text-muted-foreground'>
 												per {ingredient.serveSize} {ingredient.serveUnit}
 											</span>
+										</div>
+										<div className='mt-1 text-muted-foreground'>
+											Precision:{' '}
+											{formatIngredientPrecision(ingredient.precision)}
 										</div>
 									</div>
 								</ScrollArea>

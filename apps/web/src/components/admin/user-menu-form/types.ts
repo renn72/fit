@@ -5,6 +5,7 @@ export interface MealIngredient {
 	ingredientName: string
 	serveSize: number
 	serveUnit: string
+	precision: number
 	calories: number
 	protein: number
 	fat: number

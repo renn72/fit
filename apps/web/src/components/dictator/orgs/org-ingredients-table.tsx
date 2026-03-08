@@ -138,6 +138,18 @@ export function OrgIngredientsTable() {
 				},
 			},
 			{
+				id: 'precision',
+				accessorKey: 'precision',
+				header: 'Precision',
+				filterFn,
+				meta: {
+					label: 'Precision',
+					cell: {
+						variant: 'short-text',
+					},
+				},
+			},
+			{
 				id: 'isOverwrite',
 				accessorFn: (row: any) => !!row.baseId,
 				header: 'Overwrite',

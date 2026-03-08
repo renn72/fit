@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
+import { formatIngredientPrecision } from '@/utils/ingredient-precision'
 
 import { getSourceRecipeTotals } from './nutrition-utils'
 import type { MealRecipe } from './types'
@@ -207,7 +208,11 @@ function RecipeCard({
 	return (
 		<div
 			className={`rounded-md border ${
-				isDragSource ? 'ring-2 ring-primary' : isEdited ? 'ring-2 ring-primary/50' : ''
+				isDragSource
+					? 'ring-2 ring-primary'
+					: isEdited
+						? 'ring-2 ring-primary/50'
+						: ''
 			}`}
 		>
 			<div
@@ -336,13 +341,19 @@ function RecipeCard({
 													size='sm'
 													className='p-0 w-5 h-7'
 													onClick={() =>
-														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, -1)
+														onAdjustIngredient(
+															mealIdx,
+															recipeIdx,
+															ingIdx,
+															-ingredient.precision,
+														)
 													}
 												>
 													-
 												</Button>
 												<Input
 													type='number'
+													step={formatIngredientPrecision(ingredient.precision)}
 													value={ingredient.serveSize}
 													onChange={(e) =>
 														onUpdateIngredient(
@@ -371,7 +382,12 @@ function RecipeCard({
 													size='sm'
 													className='p-0 w-5 h-7'
 													onClick={() =>
-														onAdjustIngredient(mealIdx, recipeIdx, ingIdx, 1)
+														onAdjustIngredient(
+															mealIdx,
+															recipeIdx,
+															ingIdx,
+															ingredient.precision,
+														)
 													}
 												>
 													+

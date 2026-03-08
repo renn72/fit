@@ -1,0 +1,1 @@
+ALTER TABLE `ingredient` ADD `precision` real DEFAULT 0.1 NOT NULL;

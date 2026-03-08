@@ -21,6 +21,7 @@ export const ingredient = s.sqliteTable(
 		carbohydrate: s.real('carbohydrate').notNull(),
 		serveSize: s.real('serve_size').notNull(),
 		serveUnit: s.text('serve_unit').notNull(),
+		precision: s.real('precision').notNull().default(0.1),
 		isBase: s.integer('is_base', { mode: 'boolean' }).notNull().default(false),
 		isUserCreated: s
 			.integer('is_user_created', { mode: 'boolean' })

@@ -10,6 +10,10 @@ import {
 } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { TagsInput } from '@/components/ui-extended/tags-input'
+import {
+	formatIngredientPrecision,
+	normalizeIngredientPrecision,
+} from '@/utils/ingredient-precision'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'
@@ -27,6 +31,7 @@ const ingredientFormSchema = z.object({
 	carbohydrate: z.number().min(0),
 	serveSize: z.number().min(0),
 	serveUnit: z.string().min(1, 'Unit is required'),
+	precision: z.number().positive('Precision must be greater than 0'),
 })
 
 const CATEGORY_OPTIONS = ['High Protien', 'Keto', 'New', 'Plain']
@@ -41,6 +46,7 @@ export interface IngredientFormIngredient {
 	carbohydrate: number
 	serveSize: number
 	serveUnit: string
+	precision: number
 }
 
 export interface IngredientFormProps {
@@ -132,6 +138,7 @@ export function IngredientForm({
 			carbohydrate: roundOneDecimal(ingredient?.carbohydrate ?? 0),
 			serveSize: ingredient?.serveSize ?? 100,
 			serveUnit: ingredient?.serveUnit ?? 'g',
+			precision: normalizeIngredientPrecision(ingredient?.precision),
 		},
 		validators: {
 			onSubmit: ingredientFormSchema,
@@ -140,7 +147,8 @@ export function IngredientForm({
 			const normalizedInputName = normalizeName(value.name)
 			const ingredientsInOrg =
 				orgIngredients ??
-				(await queryClient.ensureQueryData(ingredientsQueryOptions))
+				(await queryClient.ensureQueryData(ingredientsQueryOptions)) ??
+				[]
 
 			const duplicateIngredient = ingredientsInOrg.some(
 				(item) =>
@@ -164,6 +172,7 @@ export function IngredientForm({
 				carbohydrate: roundOneDecimal(value.carbohydrate),
 				serveSize: value.serveSize,
 				serveUnit: value.serveUnit,
+				precision: normalizeIngredientPrecision(value.precision),
 			}
 
 			if (isEditMode) {
@@ -333,6 +342,29 @@ export function IngredientForm({
 						)}
 					</form.Field>
 				</div>
+
+				<form.Field name='precision'>
+					{(field) => (
+						<Field data-invalid={field.state.meta.errors.length > 0}>
+							<FieldLabel htmlFor={field.name}>Precision</FieldLabel>
+							<Input
+								id={field.name}
+								name={field.name}
+								type='number'
+								step='any'
+								value={field.state.value}
+								onBlur={field.handleBlur}
+								onChange={(e) => field.handleChange(Number(e.target.value))}
+								placeholder={formatIngredientPrecision(0.1)}
+							/>
+							<p className='text-xs text-muted-foreground'>
+								Amount changes will move in steps of{' '}
+								{formatIngredientPrecision(field.state.value || 0.1)}.
+							</p>
+							<FieldError errors={field.state.meta.errors} />
+						</Field>
+					)}
+				</form.Field>
 			</FieldGroup>
 
 			<div className='flex justify-end pt-4'>

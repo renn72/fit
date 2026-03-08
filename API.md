@@ -168,10 +168,11 @@ Total procedures in router files: **133**.
 ### Behavior Notes
 - `create`/`update`/`delete` require `itemUpdater` or `dictator`.
 - `create` and `update` round macros to 1 decimal (`calories`, `protein`, `fat`, `carbohydrate`).
+- `create` and `update` accept ingredient `precision`; it is normalized server-side and defaults to `0.1`.
 - `getAllOrg` merges:
 - org ingredients where `isUserCreated = false`,
 - base ingredients where `isBase = true` and `isUserCreated = false` not overridden by org,
-- adds `creatorName`, `isBase`, `isOverwriteBase`.
+- adds `creatorName`, `isBase`, `isOverwriteBase`, and ingredient `precision`.
 - `update` applies same override strategy as movements (update org row else clone base as org override).
 - `delete`:
 - dictators can delete any existing ingredient,
@@ -449,6 +450,7 @@ Total procedures in router files: **133**.
 - enforces allowed ingredient/recipe ids,
 - normalizes dates to `YYYY-MM-DD|null`,
 - de-duplicates IDs and tags,
+- snaps ingredient amounts to ingredient precision,
 - recalculates nutrition macros from serve-size ratios,
 - rounds numeric values to 1 decimal.
 - `updateUserMenuForm` has two modes:
