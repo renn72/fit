@@ -7,7 +7,7 @@ Read this alongside:
 - `ARCHITECTURE.md` for the current repo map
 - `API.md` for router and contract summaries
 - `WEBROUTES.md` for the current route map
-- `SESSION_LOG.md` for recent changes and milestones
+- `SESSION_LOG_fit.md` for recent changes and milestones
 
 ## Mission
 
