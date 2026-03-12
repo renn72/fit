@@ -75,6 +75,7 @@ export async function setup() {
 
 	// Import schema modules
 	const schema = await import('@fit/db/schema/auth')
+	const dailyLogSchema = await import('@fit/db/schema/daily-log')
 	const orgSchema = await import('@fit/db/schema/org')
 	const exerciseSchema = await import('@fit/db/schema/exercise')
 	const movementSchema = await import('@fit/db/schema/movement')
@@ -87,6 +88,7 @@ export async function setup() {
 
 	const fullSchema = {
 		...schema,
+		...dailyLogSchema,
 		...orgSchema,
 		...exerciseSchema,
 		...movementSchema,

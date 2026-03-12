@@ -1,5 +1,6 @@
 import * as auth from './schema/auth'
 import * as blockTemplate from './schema/block-template'
+import * as dailyLog from './schema/daily-log'
 import * as exercise from './schema/exercise'
 import * as ingredient from './schema/ingredient'
 import * as menuTemplate from './schema/menu-template'
@@ -16,6 +17,7 @@ import { defineRelations } from 'drizzle-orm'
 const schema = {
 	...org,
 	...auth,
+	...dailyLog,
 	...movement,
 	...ingredient,
 	...recipe,
@@ -78,6 +80,10 @@ export const relations = defineRelations(schema, (r) => ({
 		userMenus: r.many.userMenu({
 			from: r.user.id,
 			to: r.userMenu.userId,
+		}),
+		dailyLogs: r.many.dailyLog({
+			from: r.user.id,
+			to: r.dailyLog.userId,
 		}),
 	},
 
@@ -147,6 +153,10 @@ export const relations = defineRelations(schema, (r) => ({
 		workouts: r.many.workout({
 			from: r.organisation.id,
 			to: r.workout.organisationId,
+		}),
+		dailyLogs: r.many.dailyLog({
+			from: r.organisation.id,
+			to: r.dailyLog.organisationId,
 		}),
 	},
 
@@ -548,6 +558,42 @@ export const relations = defineRelations(schema, (r) => ({
 		ingredients: r.many.userIngredient({
 			from: r.userMenu.id,
 			to: r.userIngredient.userMenuId,
+		}),
+	},
+
+	// ***************** Daily Log *******************
+	dailyLog: {
+		user: r.one.user({
+			from: r.dailyLog.userId,
+			to: r.user.id,
+		}),
+		organisation: r.one.organisation({
+			from: r.dailyLog.organisationId,
+			to: r.organisation.id,
+		}),
+		weights: r.many.dailyLogWeight({
+			from: r.dailyLog.id,
+			to: r.dailyLogWeight.dailyLogId,
+		}),
+		stats: r.many.dailyLogStat({
+			from: r.dailyLog.id,
+			to: r.dailyLogStat.dailyLogId,
+		}),
+	},
+
+	// ***************** Daily Log Weight *******************
+	dailyLogWeight: {
+		dailyLog: r.one.dailyLog({
+			from: r.dailyLogWeight.dailyLogId,
+			to: r.dailyLog.id,
+		}),
+	},
+
+	// ***************** Daily Log Stat *******************
+	dailyLogStat: {
+		dailyLog: r.one.dailyLog({
+			from: r.dailyLogStat.dailyLogId,
+			to: r.dailyLog.id,
 		}),
 	},
 

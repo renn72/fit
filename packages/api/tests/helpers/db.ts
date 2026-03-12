@@ -60,6 +60,7 @@ export async function initTestDB(): Promise<ReturnType<typeof drizzle>> {
 
 	// Import schema modules using relative paths
 	const schema = await import('../../../db/src/schema/auth')
+	const dailyLogSchema = await import('../../../db/src/schema/daily-log')
 	const orgSchema = await import('../../../db/src/schema/org')
 	const exerciseSchema = await import('../../../db/src/schema/exercise')
 	const movementSchema = await import('../../../db/src/schema/movement')
@@ -76,6 +77,7 @@ export async function initTestDB(): Promise<ReturnType<typeof drizzle>> {
 
 	const fullSchema = {
 		...schema,
+		...dailyLogSchema,
 		...orgSchema,
 		...exerciseSchema,
 		...movementSchema,
