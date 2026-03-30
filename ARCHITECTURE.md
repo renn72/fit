@@ -6,7 +6,7 @@
 | Last Updated | 2026-03-30 |
 | Status | Current |
 
-FIT is a `pnpm` + Turborepo monorepo for a multi-tenant coaching platform. The operational center of the system is `apps/server`: both clients talk to it, it owns auth and DB access, and the shared packages under `packages/` define the contract, persistence, and environment boundaries.
+FIT is a `pnpm` + Turborepo monorepo for a multi-tenant coaching platform. The operational center of the system is `apps/server`: all browser and mobile clients talk to it, it owns auth and DB access, and the shared packages under `packages/` define the contract, persistence, and environment boundaries.
 
 Read this with:
 
@@ -23,17 +23,18 @@ Read this with:
                  | Astro/Starlight|  | Astro site        |
                  +----------------+  +-------------------+
 
- Browser admin users                         Mobile users
-        |                                         |
-        v                                         v
- +-------------------+                   +-------------------+
- | apps/web          |                   | apps/native       |
- | React + TanStack  |                   | Expo Router       |
- | Router + Query    |                   | + Query           |
- +---------+---------+                   +---------+---------+
-           \                                       /
-            \                                     /
-             v                                   v
+ Admin browsers   Nutrition browsers   Training browsers   Mobile users
+        |                 |                    |                  |
+        v                 v                    v                  v
+ +-------------------+  +--------------------+  +--------------------+  +-------------------+
+ | apps/web          |  | apps/nutrition-web |  | apps/training-web  |  | apps/native       |
+ | Admin UI          |  | Client nutrition   |  | Client training    |  | Expo Router       |
+ | Router + Query    |  | Router + Query     |  | Router + Query     |  | + Query           |
+ +---------+---------+  +---------+----------+  +---------+----------+  +---------+---------+
+           \                  |                       |                    /
+            \                 |                       |                   /
+             \                |                       |                  /
+              v               v                       v                 v
               +---------------------------------+
               | apps/server                     |
               | Fastify host + oRPC + OpenAPI   |
@@ -71,7 +72,9 @@ Read this with:
 ```text
 fit-mono/
   apps/
-    web/          Main browser admin/product app
+    web/          Admin browser app
+    nutrition-web/ Client-only nutrition browser app
+    training-web/ Client-only training browser app
     server/       Runtime boundary for auth, RPC, OpenAPI, DB access
     native/       Expo mobile client shell
     docs/         Starlight docs site
@@ -97,11 +100,25 @@ fit-mono/
 ### Deployable apps
 
 - `apps/web`
-  - The primary product UI.
+  - The primary admin/product-management UI.
   - Stack: React 19, Vite, TanStack Router, TanStack Query, TanStack Start, Tailwind, oRPC client.
   - Main source: `apps/web/src/routes`, `apps/web/src/components`, `apps/web/src/utils`.
   - Consumes shared primitives and theme CSS from `@fit/components`.
-  - It is the most complete client in the repo.
+  - It is the most complete admin client in the repo.
+
+- `apps/nutrition-web`
+  - Client-facing nutrition app.
+  - Stack: React 19, Vite, TanStack Router, TanStack Query, Tailwind, oRPC client.
+  - Main source: `apps/nutrition-web/src/routes`, `apps/nutrition-web/src/components`, `apps/nutrition-web/src/lib`.
+  - Client-only runtime: no TanStack Start, no SSR entrypoints.
+  - Reuses shared shadcn/Base UI primitives and theme CSS from `@fit/components`.
+
+- `apps/training-web`
+  - Client-facing training app.
+  - Stack: React 19, Vite, TanStack Router, TanStack Query, Tailwind, oRPC client.
+  - Main source: `apps/training-web/src/routes`, `apps/training-web/src/components`, `apps/training-web/src/lib`.
+  - Client-only runtime: no TanStack Start, no SSR entrypoints.
+  - Reuses shared shadcn/Base UI primitives and theme CSS from `@fit/components`.
 
 - `apps/server`
   - The trust boundary.
@@ -185,13 +202,15 @@ fit-mono/
    - `protectedProcedure` with auth enforcement and timing logging
 5. Clients consume auth differently:
    - `apps/web/src/lib/auth-client.ts` uses `better-auth/react`
+   - `apps/nutrition-web/src/lib/auth-client.ts` uses `better-auth/react`
+   - `apps/training-web/src/lib/auth-client.ts` uses `better-auth/react`
    - `apps/native/lib/auth-client.ts` uses `@better-auth/expo/client`
 
 ### 2. Typed RPC flow
 
 1. `packages/api/src/routers/index.ts` builds `appRouter`.
 2. `apps/server/src/index.ts` mounts `RPCHandler(appRouter)` under `/rpc`.
-3. `apps/web/src/utils/orpc.ts` and `apps/native/utils/orpc.ts` build typed oRPC clients.
+3. `apps/web/src/utils/orpc.ts`, `apps/nutrition-web/src/lib/orpc.ts`, `apps/training-web/src/lib/orpc.ts`, and `apps/native/utils/orpc.ts` build typed oRPC clients.
 4. Both clients wrap the oRPC client with TanStack Query helpers.
 5. Route loaders and components call `orpc.<domain>.<procedure>.queryOptions()` or mutation helpers directly.
 
@@ -303,11 +322,11 @@ Effective AI access is the intersection of:
 
 The `feature` router computes the final effective result, and the `ai` router enforces it.
 
-## Web App Architecture
+## Browser App Architecture
 
-`apps/web` is the main client and the best place to understand the active product surface.
+`apps/web` remains the main admin client. `apps/nutrition-web` and `apps/training-web` are lighter client-only Vite apps that reuse the same auth, router, query, and shared component patterns for end users.
 
-### Bootstrap and routing
+### Admin web app bootstrap and routing
 
 - `apps/web/src/router.tsx` creates the TanStack Router instance.
 - `apps/web/src/routes/__root.tsx`:
@@ -554,6 +573,7 @@ Current visible coverage is router-oriented and includes an exercise router suit
 Current practical state:
 
 - `apps/web` has Testing Library dependencies in `package.json`, but no committed broad component test suite surfaced in this scan
+- `apps/nutrition-web` and `apps/training-web` are new client-facing shells without dedicated test suites yet
 - `apps/native` does not currently show a parallel test harness
 
 ## How To Navigate This Repo
@@ -563,6 +583,8 @@ If you need to find something quickly:
 - Web route ownership: `apps/web/src/routes`
 - Web feature implementation: `apps/web/src/components/admin/<domain>`
 - Web app shell and typed clients: `apps/web/src/router.tsx`, `apps/web/src/utils/orpc.ts`
+- Nutrition client routes/components: `apps/nutrition-web/src/routes`, `apps/nutrition-web/src/components`, `apps/nutrition-web/src/lib`
+- Training client routes/components: `apps/training-web/src/routes`, `apps/training-web/src/components`, `apps/training-web/src/lib`
 - Mobile shell and API/auth wiring: `apps/native/app`, `apps/native/lib`, `apps/native/utils`
 - Server entrypoint and transport wiring: `apps/server/src/index.ts`
 - Auth/session enrichment: `packages/auth/src/index.ts`
@@ -601,6 +623,8 @@ These exist in the repo but should not be treated as architecture-defining sourc
 - `.expo/`
 - `.astro/`
 - `apps/web/src/routeTree.gen.ts`
+- `apps/nutrition-web/src/routeTree.gen.ts`
+- `apps/training-web/src/routeTree.gen.ts`
 - `packages/data/free-exercise-db/dist/`
 - `db/main.db`
 
@@ -613,6 +637,7 @@ These exist in the repo but should not be treated as architecture-defining sourc
   The current web `/block-templates*` screens use the `userBlock` template path.
 - `daily_log*` tables exist only in the DB layer as of this scan. No current API router, web route, or native surface references them.
 - `apps/native` is structurally real but product-light compared with `apps/web`.
+- `apps/nutrition-web` and `apps/training-web` are client-only starter surfaces; they share auth/oRPC/UI wiring with `apps/web` but do not yet expose the full admin domain breadth.
 - `apps/docs` is focused on user-menu guidance, not full platform documentation.
 
 ## Bottom Line

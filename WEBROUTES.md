@@ -1,6 +1,11 @@
-# Web App Route Summary (`apps/web/src/routes`)
+# Web Route Summary
 
-This document summarizes the current TanStack Router setup and every route defined in the web app.
+This document summarizes the TanStack Router setups across FIT browser apps:
+- `apps/web` for the admin/product-management surface
+- `apps/nutrition-web` for the client-facing nutrition surface
+- `apps/training-web` for the client-facing training surface
+
+The admin app breakdown comes first, followed by the two client-only Vite apps.
 
 ## Router Bootstrap
 
@@ -534,7 +539,135 @@ This document summarizes the current TanStack Router setup and every route defin
 - Rendering:
   - `ssr: false`
 
-## Route Inventory Source
+## Nutrition Web App (`apps/nutrition-web/src/routes`)
 
-- Generated tree used for path verification: `apps/web/src/routeTree.gen.ts`
-- Full path count in generated tree: 52 concrete file routes (plus `__root` layout)
+### Router Bootstrap
+
+- File: `apps/nutrition-web/src/router.tsx`
+- Creates a client-only TanStack Router with:
+  - `routeTree` from `apps/nutrition-web/src/routeTree.gen.ts`
+  - Router context: `{ orpc, queryClient }`
+  - `scrollRestoration: true`
+  - inline pending and not-found fallbacks
+  - global React Query provider wrapper (`QueryClientProvider`)
+- No TanStack Start or server entrypoints are used in this app.
+
+### Root Route
+
+#### `__root` (layout root)
+- File: `apps/nutrition-web/src/routes/__root.tsx`
+- Purpose:
+  - Theme provider, tooltip/toast shell, and `Outlet`
+- Data/guards:
+  - `beforeLoad` ensures the shared session query is cached and exposes `session` in route context
+
+### Top-Level Routes
+
+#### `/`
+- File: `apps/nutrition-web/src/routes/index.tsx`
+- Purpose:
+  - Public landing page for the nutrition client app
+  - Shows connection status and CTA into auth or the app shell
+- Data:
+  - Uses `orpc.healthCheck` query in component
+
+#### `/auth`
+- File: `apps/nutrition-web/src/routes/auth.tsx`
+- Purpose:
+  - Sign-in / sign-up entrypoint for nutrition clients
+- Data/guards:
+  - Redirects authenticated users to `/app`
+
+#### `/app` (layout route)
+- File: `apps/nutrition-web/src/routes/app.tsx`
+- Purpose:
+  - Protected client shell with header, nav, and dashboard overview on the exact `/app` path
+- Data/guards:
+  - Redirects unauthenticated users to `/auth`
+  - Reuses root `session` context for the shell and sign-out flow
+
+#### `/app/menu`
+- File: `apps/nutrition-web/src/routes/app/menu.tsx`
+- Purpose:
+  - Weekly menu view with per-day meal groupings
+
+#### `/app/recipes`
+- File: `apps/nutrition-web/src/routes/app/recipes.tsx`
+- Purpose:
+  - Client-facing recipe library and macro summary view
+
+#### `/app/check-in`
+- File: `apps/nutrition-web/src/routes/app/check-in.tsx`
+- Purpose:
+  - Weekly adherence and coach-feedback summary
+
+## Training Web App (`apps/training-web/src/routes`)
+
+### Router Bootstrap
+
+- File: `apps/training-web/src/router.tsx`
+- Creates a client-only TanStack Router with:
+  - `routeTree` from `apps/training-web/src/routeTree.gen.ts`
+  - Router context: `{ orpc, queryClient }`
+  - `scrollRestoration: true`
+  - inline pending and not-found fallbacks
+  - global React Query provider wrapper (`QueryClientProvider`)
+- No TanStack Start or server entrypoints are used in this app.
+
+### Root Route
+
+#### `__root` (layout root)
+- File: `apps/training-web/src/routes/__root.tsx`
+- Purpose:
+  - Theme provider, tooltip/toast shell, and `Outlet`
+- Data/guards:
+  - `beforeLoad` ensures the shared session query is cached and exposes `session` in route context
+
+### Top-Level Routes
+
+#### `/`
+- File: `apps/training-web/src/routes/index.tsx`
+- Purpose:
+  - Public landing page for the training client app
+  - Shows connection status and CTA into auth or the app shell
+- Data:
+  - Uses `orpc.healthCheck` query in component
+
+#### `/auth`
+- File: `apps/training-web/src/routes/auth.tsx`
+- Purpose:
+  - Sign-in / sign-up entrypoint for training clients
+- Data/guards:
+  - Redirects authenticated users to `/app`
+
+#### `/app` (layout route)
+- File: `apps/training-web/src/routes/app.tsx`
+- Purpose:
+  - Protected client shell with header, nav, and dashboard overview on the exact `/app` path
+- Data/guards:
+  - Redirects unauthenticated users to `/auth`
+  - Reuses root `session` context for the shell and sign-out flow
+
+#### `/app/plan`
+- File: `apps/training-web/src/routes/app/plan.tsx`
+- Purpose:
+  - Current block overview with per-day training blocks
+
+#### `/app/sessions`
+- File: `apps/training-web/src/routes/app/sessions.tsx`
+- Purpose:
+  - Upcoming-session view with timing and coaching notes
+
+#### `/app/recovery`
+- File: `apps/training-web/src/routes/app/recovery.tsx`
+- Purpose:
+  - Recovery and readiness summary for training clients
+
+## Route Inventory Sources
+
+- Admin generated tree used for path verification: `apps/web/src/routeTree.gen.ts`
+- Admin full path count in generated tree: 52 concrete file routes (plus `__root` layout)
+- Nutrition generated tree used for path verification: `apps/nutrition-web/src/routeTree.gen.ts`
+- Nutrition full path count in generated tree: 6 concrete file routes (plus `__root` layout)
+- Training generated tree used for path verification: `apps/training-web/src/routeTree.gen.ts`
+- Training full path count in generated tree: 6 concrete file routes (plus `__root` layout)

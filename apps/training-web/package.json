@@ -1,0 +1,40 @@
+{
+	"name": "training-web",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"build": "vite build",
+		"serve": "vite preview",
+		"dev": "vite dev",
+		"check-types": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@fit/api": "workspace:*",
+		"@fit/auth": "workspace:*",
+		"@fit/components": "workspace:*",
+		"@fit/env": "workspace:*",
+		"@orpc/client": "catalog:",
+		"@orpc/server": "catalog:",
+		"@orpc/tanstack-query": "catalog:",
+		"@tailwindcss/vite": "^4.1.18",
+		"@tanstack/react-query": "catalog:",
+		"@tanstack/react-router": "^1.159.5",
+		"@tanstack/router-plugin": "^1.159.5",
+		"better-auth": "catalog:",
+		"lucide-react": "^0.564.0",
+		"react": "19.2.3",
+		"react-dom": "19.2.3",
+		"sonner": "^2.0.7",
+		"vite-tsconfig-paths": "^5.1.4",
+		"zod": "catalog:"
+	},
+	"devDependencies": {
+		"@fit/config": "workspace:*",
+		"@types/node": "catalog:",
+		"@types/react": "19.2.7",
+		"@types/react-dom": "19.2.3",
+		"@vitejs/plugin-react": "^4.3.4",
+		"typescript": "catalog:",
+		"vite": "^7.3.1"
+	}
+}

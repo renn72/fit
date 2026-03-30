@@ -1,0 +1,44 @@
+:root {
+	--background: oklch(0.978 0.008 255);
+	--foreground: oklch(0.22 0.03 258);
+	--card: oklch(0.992 0.004 255);
+	--card-foreground: oklch(0.22 0.03 258);
+	--popover: oklch(0.992 0.004 255);
+	--popover-foreground: oklch(0.22 0.03 258);
+	--primary: oklch(0.64 0.19 32);
+	--primary-foreground: oklch(0.985 0.008 92);
+	--secondary: oklch(0.93 0.016 240);
+	--secondary-foreground: oklch(0.28 0.04 252);
+	--muted: oklch(0.95 0.008 244);
+	--muted-foreground: oklch(0.47 0.05 248);
+	--accent: oklch(0.72 0.09 242);
+	--accent-foreground: oklch(0.97 0.01 245);
+	--border: oklch(0.88 0.015 246);
+	--input: oklch(0.89 0.014 246);
+	--ring: oklch(0.64 0.19 32);
+	--sidebar: oklch(0.982 0.006 250);
+	--sidebar-foreground: oklch(0.22 0.03 258);
+	--sidebar-primary: oklch(0.64 0.19 32);
+	--sidebar-primary-foreground: oklch(0.985 0.008 92);
+	--sidebar-accent: oklch(0.72 0.09 242);
+	--sidebar-accent-foreground: oklch(0.97 0.01 245);
+	--sidebar-border: oklch(0.88 0.015 246);
+	--sidebar-ring: oklch(0.64 0.19 32);
+}
+
+body {
+	min-height: 100vh;
+	background-image:
+		radial-gradient(
+			circle at top left,
+			oklch(0.79 0.08 236 / 0.34),
+			transparent 28%
+		),
+		radial-gradient(
+			circle at top right,
+			oklch(0.76 0.14 34 / 0.3),
+			transparent 26%
+		),
+		linear-gradient(180deg, oklch(0.995 0.004 255), oklch(0.972 0.01 244));
+	background-attachment: fixed;
+}
