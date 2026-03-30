@@ -2,10 +2,10 @@
 
 import * as React from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Badge } from '@fit/components/ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
+import { Label } from '@fit/components/ui/label'
+import { Switch } from '@fit/components/ui/switch'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
 

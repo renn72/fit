@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback, AvatarImage } from '@fit/components/ui/avatar'
 import {
 	Command,
 	CommandEmpty,
@@ -10,17 +10,17 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from '@/components/ui/command'
+} from '@fit/components/ui/command'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@fit/components/ui/popover'
 import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import { CaretUpDownIcon, CheckIcon, UserIcon } from '@phosphor-icons/react'
 

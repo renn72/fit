@@ -1,10 +1,10 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import {
 	Sidebar,
 	SidebarContent,
@@ -12,7 +12,7 @@ import {
 	SidebarHeader,
 	SidebarInput,
 	SidebarRail,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import { getSourceRecipeTotals } from './nutrition-utils'
 import type { Meal } from './types'

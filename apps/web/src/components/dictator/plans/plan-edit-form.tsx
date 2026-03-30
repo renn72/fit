@@ -1,16 +1,16 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@fit/components/ui/button'
+import { Checkbox } from '@fit/components/ui/checkbox'
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
+import { Textarea } from '@fit/components/ui/textarea'
 import { orpc } from '@/utils/orpc'
 
 import { useForm } from '@tanstack/react-form'

@@ -3,9 +3,9 @@
 import * as React from 'react'
 
 import { DataTableRangeFilter } from '@/components/data-table/data-table-range-filter'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
+import { Calendar } from '@fit/components/ui/calendar'
 import {
 	Command,
 	CommandEmpty,
@@ -13,7 +13,7 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from '@/components/ui/command'
+} from '@fit/components/ui/command'
 import {
 	Faceted,
 	FacetedBadgeList,
@@ -24,27 +24,27 @@ import {
 	FacetedItem,
 	FacetedList,
 	FacetedTrigger,
-} from '@/components/ui/faceted'
-import { Input } from '@/components/ui/input'
+} from '@fit/components/ui/faceted'
+import { Input } from '@fit/components/ui/input'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@fit/components/ui/popover'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@fit/components/ui/select'
 import {
 	Sortable,
 	SortableContent,
 	SortableItem,
 	SortableItemHandle,
 	SortableOverlay,
-} from '@/components/ui/sortable'
+} from '@fit/components/ui/sortable'
 import { dataTableConfig } from '@/config/data-table'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { getDefaultFilterOperator, getFilterOperators } from '@/lib/data-table'

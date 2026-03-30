@@ -11,10 +11,10 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@fit/components/ui/alert-dialog'
 import { DocsLink } from '@/components/docs-link'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -22,13 +22,13 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from '@/components/ui/card'
+} from '@fit/components/ui/card'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import { orpc } from '@/utils/orpc'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

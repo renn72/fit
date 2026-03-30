@@ -18,6 +18,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@fit/api": "workspace:*",
     "@fit/auth": "workspace:*",
+    "@fit/components": "workspace:*",
     "@fit/env": "workspace:*",
     "@fontsource-variable/figtree": "^5.2.10",
     "@fontsource-variable/outfit": "^5.2.8",

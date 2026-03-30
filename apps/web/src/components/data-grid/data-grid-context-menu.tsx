@@ -8,7 +8,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import { useAsRef } from '@/hooks/use-as-ref'
 import { parseCellKey } from '@/lib/data-grid'
 import type { CellUpdate, ContextMenuState } from '@/types/data-grid'

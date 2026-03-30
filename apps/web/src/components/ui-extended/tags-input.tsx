@@ -9,14 +9,14 @@ import {
 	ComboboxInput,
 	ComboboxItem,
 	ComboboxList,
-} from '@/components/ui/combobox'
+} from '@fit/components/ui/combobox'
 import {
 	TagsInputClear,
 	TagsInputInput,
 	TagsInputItem,
 	TagsInputList,
 	TagsInput as TagsInputRoot,
-} from '@/components/ui/tags-input'
+} from '@fit/components/ui/tags-input'
 
 import { ArrowsClockwiseIcon } from '@phosphor-icons/react'
 

@@ -3,10 +3,10 @@
 import * as React from 'react'
 
 import { DataGridCellWrapper } from '@/components/data-grid/data-grid-cell-wrapper'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
+import { Calendar } from '@fit/components/ui/calendar'
+import { Checkbox } from '@fit/components/ui/checkbox'
 import {
 	Command,
 	CommandEmpty,
@@ -15,21 +15,21 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from '@/components/ui/command'
+} from '@fit/components/ui/command'
 import {
 	Popover,
 	PopoverTrigger as PopoverAnchor,
 	PopoverContent,
-} from '@/components/ui/popover'
+} from '@fit/components/ui/popover'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/select'
+import { Skeleton } from '@fit/components/ui/skeleton'
+import { Textarea } from '@fit/components/ui/textarea'
 import { useBadgeOverflow } from '@/hooks/use-badge-overflow'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import {

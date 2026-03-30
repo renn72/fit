@@ -9,12 +9,12 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipTrigger,
-} from '@/components/ui/tooltip'
+} from '@fit/components/ui/tooltip'
 import { getColumnVariant } from '@/lib/data-grid'
 import { cn } from '@/lib/utils'
 

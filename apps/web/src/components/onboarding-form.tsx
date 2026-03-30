@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 
 import { Loader } from '@/components/loader'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
 import {
 	Card,
 	CardContent,
@@ -10,32 +10,32 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from '@/components/ui/card'
+} from '@fit/components/ui/card'
 import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from '@fit/components/ui/collapsible'
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
 import {
 	InputGroup,
 	InputGroupAddon,
 	InputGroupText,
-} from '@/components/ui/input-group'
+} from '@fit/components/ui/input-group'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@fit/components/ui/select'
 import { LoadingButton } from '@/components/ui-extended/loading-button'
 import { refreshSessionInRouter } from '@/lib/auth-session'
 import { cn } from '@/lib/utils'

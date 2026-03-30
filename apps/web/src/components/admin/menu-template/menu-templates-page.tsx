@@ -11,23 +11,23 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
+} from '@fit/components/ui/alert-dialog'
 import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
 import { DocsLink } from '@/components/docs-link'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@fit/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
+import { Checkbox } from '@fit/components/ui/checkbox'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from '@fit/components/ui/dropdown-menu'
+import { ScrollArea } from '@fit/components/ui/scroll-area'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@fit/components/ui/tabs'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 

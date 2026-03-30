@@ -11,15 +11,15 @@ import {
 	AlertDialogFooter,
 	AlertDialogHeader,
 	AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import { Button } from '@/components/ui/button'
+} from '@fit/components/ui/alert-dialog'
+import { Button } from '@fit/components/ui/button'
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from '@/components/ui/card'
+} from '@fit/components/ui/card'
 import { orpc } from '@/utils/orpc'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'

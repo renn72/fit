@@ -1,5 +1,5 @@
 import { ExerciseForm } from '@/components/admin/exercise/exercise-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'

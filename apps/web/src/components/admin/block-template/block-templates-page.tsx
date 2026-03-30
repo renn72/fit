@@ -6,9 +6,9 @@ import { DataTable } from '@/components/data-table/data-table'
 import { DataTableAdvancedToolbar } from '@/components/data-table/data-table-advanced-toolbar'
 import { DataTableColumnHeader } from '@/components/data-table/data-table-column-header'
 import { DataTableFilterList } from '@/components/data-table/data-table-filter-list'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Button } from '@fit/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
+import { Checkbox } from '@fit/components/ui/checkbox'
 import { useDataTable } from '@/hooks/use-data-table'
 import { orpc } from '@/utils/orpc'
 
@@ -25,7 +25,7 @@ import {
 import _ from 'lodash'
 import { toast } from 'sonner'
 
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@fit/components/ui/tabs'
 
 interface UserBlockTemplate {
 	id: string

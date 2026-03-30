@@ -2,7 +2,7 @@ import {
 	WarmupGroupForm,
 	type WarmupGroupFormGroup,
 } from '@/components/admin/warmup/warmup-group-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'

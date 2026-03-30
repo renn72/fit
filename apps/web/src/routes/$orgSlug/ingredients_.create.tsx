@@ -1,6 +1,6 @@
 import { DocsLink } from '@/components/docs-link'
 import { IngredientForm } from '@/components/admin/ingredient/ingredient-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 

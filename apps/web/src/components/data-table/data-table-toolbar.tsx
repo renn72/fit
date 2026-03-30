@@ -6,8 +6,8 @@ import { DataTableDateFilter } from '@/components/data-table/data-table-date-fil
 import { DataTableFacetedFilter } from '@/components/data-table/data-table-faceted-filter'
 import { DataTableSliderFilter } from '@/components/data-table/data-table-slider-filter'
 import { DataTableViewOptions } from '@/components/data-table/data-table-view-options'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@fit/components/ui/button'
+import { Input } from '@fit/components/ui/input'
 import { cn } from '@/lib/utils'
 
 import type { Column, Table } from '@tanstack/react-table'

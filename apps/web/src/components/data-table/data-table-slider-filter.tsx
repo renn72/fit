@@ -2,16 +2,16 @@
 
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Button } from '@fit/components/ui/button'
+import { Input } from '@fit/components/ui/input'
+import { Label } from '@fit/components/ui/label'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
-import { Separator } from '@/components/ui/separator'
-import { Slider } from '@/components/ui/slider'
+} from '@fit/components/ui/popover'
+import { Separator } from '@fit/components/ui/separator'
+import { Slider } from '@fit/components/ui/slider'
 import { cn } from '@/lib/utils'
 
 import type { Column } from '@tanstack/react-table'

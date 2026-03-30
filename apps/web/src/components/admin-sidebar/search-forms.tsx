@@ -1,5 +1,5 @@
-import { Label } from '@/components/ui/label'
-import { SidebarInput } from '@/components/ui/sidebar'
+import { Label } from '@fit/components/ui/label'
+import { SidebarInput } from '@fit/components/ui/sidebar'
 
 import { Search } from 'lucide-react'
 

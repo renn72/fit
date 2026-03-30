@@ -1,5 +1,5 @@
 import { MovementForm } from '@/components/admin/movement/movement-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 

@@ -6,7 +6,7 @@ import {
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -15,7 +15,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	useSidebar,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import {
 	DotsThreeOutlineIcon,

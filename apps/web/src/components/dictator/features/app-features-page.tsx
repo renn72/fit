@@ -2,9 +2,9 @@
 
 import * as React from 'react'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
+import { Label } from '@fit/components/ui/label'
+import { Switch } from '@fit/components/ui/switch'
 import { LoadingButton } from '@/components/ui-extended/loading-button'
 import { orpc } from '@/utils/orpc'
 

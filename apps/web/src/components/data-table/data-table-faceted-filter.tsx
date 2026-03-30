@@ -3,8 +3,8 @@
 import * as React from 'react'
 
 import type { Option } from '@/components/data-table/data-table'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
 import {
 	Command,
 	CommandEmpty,
@@ -13,13 +13,13 @@ import {
 	CommandItem,
 	CommandList,
 	CommandSeparator,
-} from '@/components/ui/command'
+} from '@fit/components/ui/command'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
-import { Separator } from '@/components/ui/separator'
+} from '@fit/components/ui/popover'
+import { Separator } from '@fit/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 import type { Column } from '@tanstack/react-table'

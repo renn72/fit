@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
+import { Button } from '@fit/components/ui/button'
+import { Input } from '@fit/components/ui/input'
 import { useAsRef } from '@/hooks/use-as-ref'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import type { SearchState } from '@/types/data-grid'

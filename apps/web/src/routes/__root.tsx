@@ -1,6 +1,6 @@
 import { ThemeProvider, useTheme } from '@/components/theme-provider'
-import { Toaster } from '@/components/ui/sonner'
-import { TooltipProvider } from '@/components/ui/tooltip'
+import { Toaster } from '@fit/components/ui/sonner'
+import { TooltipProvider } from '@fit/components/ui/tooltip'
 import { getUserQuery } from '@/functions/get-user'
 import type { orpc } from '@/utils/orpc'
 
@@ -15,7 +15,7 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
-import appCss from '../index.css?url'
+import appCss from '@fit/components/styles.css?url'
 export interface RouterAppContext {
 	orpc: typeof orpc
 	queryClient: QueryClient

@@ -1,0 +1,13 @@
+{
+	"extends": "@fit/config/tsconfig.base.json",
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"compilerOptions": {
+		"baseUrl": ".",
+		"jsx": "react-jsx",
+		"lib": ["ES2022", "DOM", "DOM.Iterable"],
+		"noEmit": true,
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	}
+}

@@ -3,8 +3,8 @@
 import * as React from 'react'
 
 import { DataTableRangeFilter } from '@/components/data-table/data-table-range-filter'
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { Button } from '@fit/components/ui/button'
+import { Calendar } from '@fit/components/ui/calendar'
 import {
 	Command,
 	CommandEmpty,
@@ -12,20 +12,20 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from '@/components/ui/command'
-import { Input } from '@/components/ui/input'
+} from '@fit/components/ui/command'
+import { Input } from '@fit/components/ui/input'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@fit/components/ui/popover'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@fit/components/ui/select'
 import { useDebouncedCallback } from '@/hooks/use-debounced-callback'
 import { getDefaultFilterOperator, getFilterOperators } from '@/lib/data-table'
 import { formatDate } from '@/lib/format'

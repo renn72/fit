@@ -3,7 +3,7 @@ import {
 	type IngredientFormIngredient,
 } from '@/components/admin/ingredient/ingredient-form'
 import { DocsLink } from '@/components/docs-link'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'

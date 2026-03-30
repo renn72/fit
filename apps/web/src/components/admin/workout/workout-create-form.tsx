@@ -2,18 +2,18 @@
 
 import * as React from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
 import {
 	Field,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
+import { ScrollArea } from '@fit/components/ui/scroll-area'
+import { Textarea } from '@fit/components/ui/textarea'
 import { orpc } from '@/utils/orpc'
 
 import { useForm, useStore } from '@tanstack/react-form'

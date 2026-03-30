@@ -1,15 +1,15 @@
 'use client'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
+import { Textarea } from '@fit/components/ui/textarea'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { orpc } from '@/utils/orpc'
 

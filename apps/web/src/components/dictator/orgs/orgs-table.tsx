@@ -10,7 +10,7 @@ import { getDataGridSelectColumn } from '@/components/data-grid/data-grid-select
 import { DataGridSortMenu } from '@/components/data-grid/data-grid-sort-menu'
 import { DataGridViewMenu } from '@/components/data-grid/data-grid-view-menu'
 import { OrgRowActions } from '@/components/dictator/orgs/org-row-actions'
-import { Badge } from '@/components/ui/badge'
+import { Badge } from '@fit/components/ui/badge'
 import { useDataGrid } from '@/hooks/use-data-grid'
 import { getFilterFn } from '@/lib/data-grid-filters'
 import { orpc } from '@/utils/orpc'

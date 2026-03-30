@@ -79,6 +79,7 @@ fit-mono/
   packages/
     api/          Shared oRPC router tree and Zod contracts
     auth/         Better Auth configuration and email hooks
+    components/   Shared web UI primitives, theme CSS, and shadcn config
     db/           Drizzle client, schema modules, relations, migrations
     env/          Typed env validation per runtime
     config/       Shared TS config base
@@ -99,6 +100,7 @@ fit-mono/
   - The primary product UI.
   - Stack: React 19, Vite, TanStack Router, TanStack Query, TanStack Start, Tailwind, oRPC client.
   - Main source: `apps/web/src/routes`, `apps/web/src/components`, `apps/web/src/utils`.
+  - Consumes shared primitives and theme CSS from `@fit/components`.
   - It is the most complete client in the repo.
 
 - `apps/server`
@@ -135,6 +137,10 @@ fit-mono/
 - `packages/auth`
   - Better Auth setup, Drizzle adapter wiring, email verification hooks, and custom session enrichment.
   - Adds org and metatag context to the session user object.
+
+- `packages/components`
+  - Shared web UI package for shadcn/Base UI primitives, shared theme CSS, and package-local `components.json`.
+  - Source lives in `src/components/ui`, with shared styling in `src/styles.css`.
 
 - `packages/db`
   - Drizzle client creation, schema modules, relation graph, and generated migrations.

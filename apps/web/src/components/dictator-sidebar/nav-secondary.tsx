@@ -6,7 +6,7 @@ import {
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import { Link } from '@tanstack/react-router'
 

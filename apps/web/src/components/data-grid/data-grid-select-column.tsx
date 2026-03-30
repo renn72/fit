@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Checkbox } from '@/components/ui/checkbox'
+import { Checkbox } from '@fit/components/ui/checkbox'
 import { cn } from '@/lib/utils'
 
 import type {

@@ -12,7 +12,7 @@ import {
 	SidebarFooter,
 	SidebarMenu,
 	SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 import { orpc } from '@/utils/orpc'
 
 import { useQuery } from '@tanstack/react-query'

@@ -10,7 +10,7 @@ import {
 	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuItem,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import {
 	DatabaseIcon,

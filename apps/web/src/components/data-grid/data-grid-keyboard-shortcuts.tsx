@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Dialog,
 	DialogClose,
@@ -10,10 +10,10 @@ import {
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Kbd, KbdGroup } from '@/components/ui/kbd'
-import { Separator } from '@/components/ui/separator'
+} from '@fit/components/ui/dialog'
+import { Input } from '@fit/components/ui/input'
+import { Kbd, KbdGroup } from '@fit/components/ui/kbd'
+import { Separator } from '@fit/components/ui/separator'
 
 import { useDirection } from '@radix-ui/react-direction'
 import { SearchIcon, XIcon } from 'lucide-react'

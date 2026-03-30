@@ -1,7 +1,7 @@
 import { AppSidebar } from '@/components/admin-sidebar/app-sidebar'
 import { SidebarHeader } from '@/components/admin-sidebar/sidebar-header'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { ScrollArea } from '@fit/components/ui/scroll-area'
+import { SidebarInset, SidebarProvider } from '@fit/components/ui/sidebar'
 
 import {
 	createFileRoute,

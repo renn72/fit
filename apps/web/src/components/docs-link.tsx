@@ -1,4 +1,4 @@
-import { buttonVariants } from '@/components/ui/button'
+import { buttonVariants } from '@fit/components/ui/button'
 import { cn } from '@/lib/utils'
 import { getDocsUrl, type DocsPathKey } from '@/utils/docs'
 

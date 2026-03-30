@@ -1,5 +1,5 @@
-import { Button, type ButtonProps } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
+import { Button, type ButtonProps } from '@fit/components/ui/button'
+import { Spinner } from '@fit/components/ui/spinner'
 
 export interface LoadingButtonProps extends ButtonProps {
 	loading?: boolean

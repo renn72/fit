@@ -1,11 +1,11 @@
 import { useTheme } from '@/components/theme-provider'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 
 import { Moon, Sun } from 'lucide-react'
 

@@ -2,8 +2,8 @@
 
 import * as React from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
 import {
 	Command,
 	CommandEmpty,
@@ -11,26 +11,26 @@ import {
 	CommandInput,
 	CommandItem,
 	CommandList,
-} from '@/components/ui/command'
+} from '@fit/components/ui/command'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
+} from '@fit/components/ui/popover'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@fit/components/ui/select'
 import {
 	Sortable,
 	SortableContent,
 	SortableItem,
 	SortableItemHandle,
 	SortableOverlay,
-} from '@/components/ui/sortable'
+} from '@fit/components/ui/sortable'
 import { cn } from '@/lib/utils'
 
 import type { ColumnSort, SortDirection, Table } from '@tanstack/react-table'

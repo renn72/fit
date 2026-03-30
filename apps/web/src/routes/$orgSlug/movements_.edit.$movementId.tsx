@@ -2,7 +2,7 @@ import {
 	MovementForm,
 	type MovementFormMovement,
 } from '@/components/admin/movement/movement-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'

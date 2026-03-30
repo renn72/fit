@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 
 import type { MacroTotals, Meal } from './types'
 

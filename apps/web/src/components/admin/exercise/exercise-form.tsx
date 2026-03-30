@@ -2,18 +2,18 @@
 
 import * as React from 'react'
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { Badge } from '@fit/components/ui/badge'
+import { Button } from '@fit/components/ui/button'
 import {
 	Field,
 	FieldDescription,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
+import { Switch } from '@fit/components/ui/switch'
+import { Textarea } from '@fit/components/ui/textarea'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'
 

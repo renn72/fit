@@ -3,7 +3,7 @@
 import { useState } from 'react'
 
 import { PlanCreateForm } from '@/components/dictator/plans/plan-create-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Dialog,
 	DialogContent,
@@ -11,7 +11,7 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@fit/components/ui/dialog'
 
 import { PlusIcon } from '@phosphor-icons/react'
 

@@ -1,5 +1,5 @@
 import { WarmupGroupForm } from '@/components/admin/warmup/warmup-group-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 

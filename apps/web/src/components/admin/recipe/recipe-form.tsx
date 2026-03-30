@@ -3,22 +3,22 @@
 import * as React from 'react'
 
 import { DocsLink } from '@/components/docs-link'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from '@/components/ui/card'
+} from '@fit/components/ui/card'
 import {
 	Field,
 	FieldError,
 	FieldGroup,
 	FieldLabel,
-} from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+} from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
+import { Label } from '@fit/components/ui/label'
 import {
 	Sidebar,
 	SidebarContent,
@@ -28,9 +28,9 @@ import {
 	SidebarProvider,
 	SidebarRail,
 	SidebarTrigger,
-} from '@/components/ui/sidebar'
-import { Spinner } from '@/components/ui/spinner'
-import { Textarea } from '@/components/ui/textarea'
+} from '@fit/components/ui/sidebar'
+import { Spinner } from '@fit/components/ui/spinner'
+import { Textarea } from '@fit/components/ui/textarea'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import {

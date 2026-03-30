@@ -1,6 +1,6 @@
 import { DictatorSidebar } from '@/components/dictator-sidebar/app-sidebar'
 import { DictatorSidebarHeader } from '@/components/dictator-sidebar/sidebar-header'
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar'
+import { SidebarInset, SidebarProvider } from '@fit/components/ui/sidebar'
 
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router'
 

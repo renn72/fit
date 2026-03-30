@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Dialog,
 	DialogContent,
@@ -11,22 +11,22 @@ import {
 	DialogHeader,
 	DialogTitle,
 	DialogTrigger,
-} from '@/components/ui/dialog'
+} from '@fit/components/ui/dialog'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { Field, FieldGroup, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
+} from '@fit/components/ui/dropdown-menu'
+import { Field, FieldGroup, FieldLabel } from '@fit/components/ui/field'
+import { Input } from '@fit/components/ui/input'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
+} from '@fit/components/ui/select'
 import { LoadingButton } from '@/components/ui-extended/loading-button'
 import { orpc } from '@/utils/orpc'
 

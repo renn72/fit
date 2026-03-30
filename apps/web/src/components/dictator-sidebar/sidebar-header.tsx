@@ -6,10 +6,10 @@ import {
 	BreadcrumbList,
 	BreadcrumbPage,
 	BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb'
-import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
-import { useSidebar } from '@/components/ui/sidebar'
+} from '@fit/components/ui/breadcrumb'
+import { Button } from '@fit/components/ui/button'
+import { Separator } from '@fit/components/ui/separator'
+import { useSidebar } from '@fit/components/ui/sidebar'
 import { UserMenu } from '@/components/user-menu'
 
 import { SidebarIcon } from 'lucide-react'

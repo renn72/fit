@@ -8,13 +8,13 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import { authClient } from '@/lib/auth-client'
 import { clearSessionInRouter } from '@/lib/auth-session'
 
 import { Link, useRouter } from '@tanstack/react-router'
 
-import { Button } from './ui/button'
+import { Button } from '/components/ui/button'
 
 // @ts-ignore TODO: fix any
 export function UserMenu({ session }: { session?: any }) {

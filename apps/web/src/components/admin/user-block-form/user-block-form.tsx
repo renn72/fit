@@ -3,20 +3,20 @@
 import * as React from 'react'
 
 import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Button } from '@fit/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@fit/components/ui/card'
+import { Input } from '@fit/components/ui/input'
+import { Label } from '@fit/components/ui/label'
+import { ScrollArea } from '@fit/components/ui/scroll-area'
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+} from '@fit/components/ui/select'
+import { Textarea } from '@fit/components/ui/textarea'
+import { Tabs, TabsList, TabsTrigger } from '@fit/components/ui/tabs'
 import { TagsInput } from '@/components/ui-extended/tags-input'
 import { VirtualizedCombobox } from '@/components/ui-extended/vitrualilzed-combobox'
 import { orpc } from '@/utils/orpc'

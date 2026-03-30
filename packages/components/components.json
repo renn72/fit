@@ -1,0 +1,28 @@
+{
+	"$schema": "https://ui.shadcn.com/schema.json",
+	"style": "base-nova",
+	"rsc": false,
+	"tsx": true,
+	"tailwind": {
+		"config": "",
+		"css": "src/styles.css",
+		"baseColor": "stone",
+		"cssVariables": true,
+		"prefix": ""
+	},
+	"iconLibrary": "phosphor",
+	"rtl": false,
+	"menuColor": "default",
+	"menuAccent": "bold",
+	"aliases": {
+		"components": "@/components",
+		"utils": "@/lib/utils",
+		"ui": "@/components/ui",
+		"lib": "@/lib",
+		"hooks": "@/hooks"
+	},
+	"registries": {
+		"@kibo-ui": "https://www.kibo-ui.com/r/{name}.json",
+		"@diceui": "https://diceui.com/r/{name}.json"
+	}
+}

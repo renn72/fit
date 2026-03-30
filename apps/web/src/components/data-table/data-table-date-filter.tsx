@@ -2,14 +2,14 @@
 
 import * as React from 'react'
 
-import { Button } from '@/components/ui/button'
-import { Calendar } from '@/components/ui/calendar'
+import { Button } from '@fit/components/ui/button'
+import { Calendar } from '@fit/components/ui/calendar'
 import {
 	Popover,
 	PopoverContent,
 	PopoverTrigger,
-} from '@/components/ui/popover'
-import { Separator } from '@/components/ui/separator'
+} from '@fit/components/ui/popover'
+import { Separator } from '@fit/components/ui/separator'
 import { formatDate } from '@/lib/format'
 
 import type { Column } from '@tanstack/react-table'

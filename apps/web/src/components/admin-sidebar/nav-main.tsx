@@ -4,7 +4,7 @@ import {
 	Collapsible,
 	CollapsibleContent,
 	CollapsibleTrigger,
-} from '@/components/ui/collapsible'
+} from '@fit/components/ui/collapsible'
 import {
 	SidebarGroup,
 	SidebarGroupLabel,
@@ -15,7 +15,7 @@ import {
 	SidebarMenuSub,
 	SidebarMenuSubButton,
 	SidebarMenuSubItem,
-} from '@/components/ui/sidebar'
+} from '@fit/components/ui/sidebar'
 
 import { getRouteApi, Link } from '@tanstack/react-router'
 

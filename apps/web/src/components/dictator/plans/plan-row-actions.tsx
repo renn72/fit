@@ -3,20 +3,20 @@
 import { useState } from 'react'
 
 import { PlanEditForm } from '@/components/dictator/plans/plan-edit-form'
-import { Button } from '@/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from '@/components/ui/dialog'
+} from '@fit/components/ui/dialog'
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
+} from '@fit/components/ui/dropdown-menu'
 import { orpc } from '@/utils/orpc'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
