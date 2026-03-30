@@ -15,38 +15,18 @@ import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
 
-export function OrgExercisesTable() {
-	const { data: rawExercises } = useSuspenseQuery(
-		orpc.exercise.getAll.queryOptions({ input: {} }),
+export function BaseMovementsTable() {
+	const { data: movements } = useSuspenseQuery(
+		orpc.movement.getAllBase.queryOptions({ input: {} }),
 	)
-
-	const exercises = React.useMemo(() => {
-		return rawExercises.map((e) => ({
-			...e,
-			name: e.name.replace(/^Overwrite: /, ''),
-		}))
-	}, [rawExercises])
 
 	const dataHeight =
 		typeof window !== 'undefined' ? window.innerHeight - 138 : 600
 
 	const columns = React.useMemo(() => {
 		const filterFn = getFilterFn<any>()
-
 		return [
 			getDataGridSelectColumn<any>(),
-			{
-				id: 'createdAt',
-				accessorKey: 'createdAt',
-				header: 'Created At',
-				filterFn,
-				meta: {
-					label: 'Created At',
-					cell: {
-						variant: 'date',
-					},
-				},
-			},
 			{
 				id: 'name',
 				accessorKey: 'name',
@@ -131,59 +111,11 @@ export function OrgExercisesTable() {
 					},
 				},
 			},
-			{
-				id: 'secondaryMuscles',
-				accessorKey: 'secondaryMuscles',
-				header: 'Secondary Muscles',
-				filterFn,
-				meta: {
-					label: 'Secondary Muscles',
-					cell: {
-						variant: 'short-text',
-					},
-				},
-			},
-			{
-				id: 'isOverwrite',
-				accessorFn: (row: any) => !!row.baseId,
-				header: 'Overwrite',
-				filterFn,
-				meta: {
-					label: 'Is Overwrite',
-					cell: {
-						variant: 'checkbox',
-					},
-				},
-			},
-			{
-				id: 'creatorName',
-				accessorKey: 'creatorName',
-				header: 'Creator',
-				filterFn,
-				meta: {
-					label: 'Creator',
-					cell: {
-						variant: 'short-text',
-					},
-				},
-			},
-			{
-				id: 'organisationSlug',
-				accessorKey: 'organisationSlug',
-				header: 'Org Slug',
-				filterFn,
-				meta: {
-					label: 'Org Slug',
-					cell: {
-						variant: 'short-text',
-					},
-				},
-			},
 		]
 	}, [])
 
 	const { table, ...dataGridProps } = useDataGrid({
-		data: exercises,
+		data: movements,
 		// @ts-ignore TODO: fix types
 		columns,
 		getRowId: (row) => row.id,
@@ -193,7 +125,7 @@ export function OrgExercisesTable() {
 	return (
 		<div className='flex flex-col gap-4 h-full'>
 			<div className='flex justify-between items-center'>
-				<h1 className='text-2xl font-bold'>Org Exercises</h1>
+				<h1 className='text-2xl font-bold'>Base Movements</h1>
 				<div className='flex gap-2 items-center'>
 					<DataGridFilterMenu table={table} />
 					<DataGridSortMenu table={table} />

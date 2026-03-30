@@ -19,6 +19,8 @@ import {
 	SidebarMenuSubItem,
 } from '@/components/ui/sidebar'
 
+import { Link } from '@tanstack/react-router'
+
 import { CaretRightIcon } from '@phosphor-icons/react'
 
 export function NavMain({
@@ -26,7 +28,7 @@ export function NavMain({
 }: {
 	items: {
 		title: string
-		url: string
+		url?: string
 		icon: React.ReactNode
 		isActive?: boolean
 		items?: {
@@ -52,7 +54,7 @@ function NavMainItem({
 }: {
 	item: {
 		title: string
-		url: string
+		url?: string
 		icon: React.ReactNode
 		isActive?: boolean
 		items?: {
@@ -69,7 +71,10 @@ function NavMainItem({
 			onOpenChange={setIsOpen}
 			render={<SidebarMenuItem />}
 		>
-			<SidebarMenuButton tooltip={item.title} render={<a href={item.url} />}>
+			<SidebarMenuButton
+				tooltip={item.title}
+				render={item.url ? <Link to={item.url} /> : undefined}
+			>
 				{item.icon}
 				<span>{item.title}</span>
 			</SidebarMenuButton>
@@ -86,7 +91,7 @@ function NavMainItem({
 						<SidebarMenuSub>
 							{item.items?.map((subItem) => (
 								<SidebarMenuSubItem key={subItem.title}>
-									<SidebarMenuSubButton render={<a href={subItem.url} />}>
+									<SidebarMenuSubButton render={<Link to={subItem.url} />}>
 										<span>{subItem.title}</span>
 									</SidebarMenuSubButton>
 								</SidebarMenuSubItem>

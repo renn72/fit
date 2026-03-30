@@ -151,7 +151,7 @@ function RouteComponent() {
 				<LoadingButton
 					loading={isMutatingExercises}
 					className='w-full cursor-pointer'
-					onMouseDown={() => importExercises.mutate({})}
+					onClick={() => importExercises.mutate({})}
 				>
 					Import Exercises
 				</LoadingButton>
@@ -159,7 +159,7 @@ function RouteComponent() {
 				<LoadingButton
 					loading={isMutatingIngredients}
 					className='w-full cursor-pointer'
-					onMouseDown={() => importBaseIngredients.mutate({})}
+					onClick={() => importBaseIngredients.mutate({})}
 				>
 					Import Base Ingredients
 				</LoadingButton>
@@ -168,7 +168,7 @@ function RouteComponent() {
 					variant='secondary'
 					loading={isGeneratingData}
 					className='w-full cursor-pointer'
-					onMouseDown={() => generateDummyData.mutate({})}
+					onClick={() => generateDummyData.mutate({})}
 				>
 					Generate Org Dummy Data
 				</LoadingButton>
@@ -177,7 +177,7 @@ function RouteComponent() {
 					variant='outline'
 					loading={isGeneratingPlans}
 					className='w-full cursor-pointer'
-					onMouseDown={() => generatePlans.mutate({})}
+					onClick={() => generatePlans.mutate({})}
 				>
 					Generate 4 Plans
 				</LoadingButton>
@@ -215,7 +215,7 @@ function RouteComponent() {
 						loading={isGeneratingRecipes}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateRecipes.mutate({ organisationId: selectedOrgId })
 							}
@@ -261,7 +261,7 @@ function RouteComponent() {
 						loading={isGeneratingExercises}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateExercises.mutate({ organisationId: selectedOrgId })
 							}
@@ -304,7 +304,7 @@ function RouteComponent() {
 						loading={isGeneratingWarmups}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateWarmups.mutate({ organisationId: selectedOrgId })
 							}
@@ -350,7 +350,7 @@ function RouteComponent() {
 						loading={isGeneratingWorkouts}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateWorkouts.mutate({ organisationId: selectedOrgId })
 							}
@@ -398,7 +398,7 @@ function RouteComponent() {
 						loading={isGeneratingBlockTemplates}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateBlockTemplates.mutate({ organisationId: selectedOrgId })
 							}
@@ -441,7 +441,7 @@ function RouteComponent() {
 						loading={isGeneratingUsers}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateUsers.mutate({ organisationId: selectedOrgId })
 							}
@@ -489,7 +489,7 @@ function RouteComponent() {
 						loading={isGeneratingMenuTemplates}
 						disabled={!selectedOrgId}
 						className='w-full cursor-pointer'
-						onMouseDown={() => {
+						onClick={() => {
 							if (selectedOrgId) {
 								generateUserMenuTemplates.mutate({
 									organisationId: selectedOrgId,

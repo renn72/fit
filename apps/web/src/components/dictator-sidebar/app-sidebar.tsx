@@ -15,8 +15,6 @@ import {
 import {
 	DatabaseIcon,
 	GearIcon,
-	LifebuoyIcon,
-	PaperPlaneTiltIcon,
 	RobotIcon,
 } from '@phosphor-icons/react'
 
@@ -29,7 +27,6 @@ const data = {
 	navMain: [
 		{
 			title: 'System',
-			url: '#',
 			icon: <GearIcon weight='duotone' />,
 			isActive: true,
 			items: [
@@ -61,7 +58,6 @@ const data = {
 		},
 		{
 			title: 'Base Data',
-			url: '#',
 			icon: <DatabaseIcon weight='duotone' />,
 			items: [
 				{
@@ -76,7 +72,6 @@ const data = {
 		},
 		{
 			title: 'Org Data',
-			url: '#',
 			icon: <RobotIcon weight='duotone' />,
 			items: [
 				{
@@ -94,18 +89,7 @@ const data = {
 			],
 		},
 	],
-	navSecondary: [
-		{
-			title: 'Support',
-			url: '#',
-			icon: <LifebuoyIcon />,
-		},
-		{
-			title: 'Feedback',
-			url: '#',
-			icon: <PaperPlaneTiltIcon />,
-		},
-	],
+	navSecondary: [],
 }
 
 export function DictatorSidebar({
@@ -125,7 +109,9 @@ export function DictatorSidebar({
 			</SidebarHeader>
 			<SidebarContent>
 				<NavMain items={data.navMain} />
-				<NavSecondary items={data.navSecondary} className='mt-auto' />
+				{data.navSecondary.length > 0 ? (
+					<NavSecondary items={data.navSecondary} className='mt-auto' />
+				) : null}
 			</SidebarContent>
 			<SidebarFooter />
 		</Sidebar>

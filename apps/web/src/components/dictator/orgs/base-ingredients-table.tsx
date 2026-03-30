@@ -9,14 +9,11 @@ import { DataGridRowHeightMenu } from '@/components/data-grid/data-grid-row-heig
 import { getDataGridSelectColumn } from '@/components/data-grid/data-grid-select-column'
 import { DataGridSortMenu } from '@/components/data-grid/data-grid-sort-menu'
 import { DataGridViewMenu } from '@/components/data-grid/data-grid-view-menu'
-import { Button } from '@/components/ui/button'
 import { useDataGrid } from '@/hooks/use-data-grid'
 import { getFilterFn } from '@/lib/data-grid-filters'
 import { orpc } from '@/utils/orpc'
 
 import { useSuspenseQuery } from '@tanstack/react-query'
-
-import { PlusIcon } from '@phosphor-icons/react'
 
 export function BaseIngredientsTable() {
 	const { data: ingredients } = useSuspenseQuery(
@@ -162,9 +159,6 @@ export function BaseIngredientsTable() {
 					<DataGridSortMenu table={table} />
 					<DataGridRowHeightMenu table={table} />
 					<DataGridViewMenu table={table} />
-					<Button size='sm' className='gap-2'>
-						<PlusIcon /> Add Ingredient
-					</Button>
 				</div>
 			</div>
 			<div className='overflow-hidden flex-1 rounded-md border'>

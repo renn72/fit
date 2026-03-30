@@ -146,9 +146,9 @@ This document summarizes the current TanStack Router setup and every route defin
 ### `/dictator/org-movements`
 - File: `apps/web/src/routes/dictator/org-movements.tsx`
 - Purpose:
-  - Org-created movement/exercise records overview
+  - Org-created movement records overview
 - Data:
-  - Prefetches `orpc.exercise.getAll`
+  - Prefetches `orpc.movement.getAll`
 - Rendering:
   - `ssr: false`
 
@@ -175,7 +175,7 @@ This document summarizes the current TanStack Router setup and every route defin
 - Purpose:
   - Global/base movement library table
 - Data:
-  - Prefetches `orpc.exercise.getAll`
+  - Prefetches `orpc.movement.getAllBase`
 - Rendering:
   - `ssr: false`
 

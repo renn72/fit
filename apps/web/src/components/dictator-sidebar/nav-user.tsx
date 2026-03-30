@@ -21,7 +21,6 @@ import {
 	BellIcon,
 	CaretUpDownIcon,
 	CheckCircleIcon,
-	CreditCardIcon,
 	SignOutIcon,
 	SparkleIcon,
 } from '@phosphor-icons/react'
