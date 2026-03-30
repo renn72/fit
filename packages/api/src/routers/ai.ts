@@ -5,11 +5,11 @@ import { getAiFeatureAccessForOrganisation } from './feature'
 
 import { randomUUID } from 'node:crypto'
 import { ORPCError } from '@orpc/server'
+import { protectedProcedure } from '../index'
 import {
 	normalizeIngredientPrecision,
 	roundToIngredientPrecision,
 } from '../lib/ingredient-precision'
-import { protectedProcedure } from '../index'
 import {
 	AiRecipeFormStateInput,
 	AiRecipeUpdateInput,
