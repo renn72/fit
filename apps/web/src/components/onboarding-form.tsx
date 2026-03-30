@@ -37,12 +37,13 @@ import {
 	SelectValue,
 } from '@/components/ui/select'
 import { LoadingButton } from '@/components/ui-extended/loading-button'
+import { refreshSessionInRouter } from '@/lib/auth-session'
 import { cn } from '@/lib/utils'
 import { orpc } from '@/utils/orpc'
 
 import { useForm, useStore } from '@tanstack/react-form'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useNavigate } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 
 import { Check, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
@@ -108,7 +109,7 @@ export function OnboardingForm() {
 		'monthly',
 	)
 	const [isAccessCodeOpen, setIsAccessCodeOpen] = useState(false)
-	const navigate = useNavigate()
+	const router = useRouter()
 
 	const { data: publicPlans } = useQuery(
 		orpc.organisation.getAllPlans.queryOptions(),
@@ -131,11 +132,9 @@ export function OnboardingForm() {
 
 	const createOrg = useMutation(
 		orpc.organisation.create.mutationOptions({
-			onSuccess: () => {
-				navigate({
-					to: '/login',
-					params: { orgSlug: organisationSlug },
-				})
+			onSuccess: async () => {
+				await refreshSessionInRouter(router)
+				await router.navigate({ to: '/admin' })
 			},
 			onError: (error) => {
 				toast.error(error.message || 'Failed to create organisation')
@@ -174,7 +173,6 @@ export function OnboardingForm() {
 
 	const organisationName = useStore(form.store, (state) => state.values.name)
 	const planId = useStore(form.store, (state) => state.values.planId)
-	const organisationSlug = useStore(form.store, (state) => state.values.slug)
 
 	const plans = useMemo(() => {
 		if (!publicPlans) return []

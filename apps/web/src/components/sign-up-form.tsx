@@ -1,9 +1,10 @@
 import { env } from '@fit/env/web'
 
 import { authClient } from '@/lib/auth-client'
+import { refreshSessionInRouter } from '@/lib/auth-session'
 
 import { useForm } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -17,9 +18,7 @@ export default function SignUpForm({
 }: {
 	onSwitchToSignIn: () => void
 }) {
-	const navigate = useNavigate({
-		from: '/',
-	})
+	const router = useRouter()
 
 	const form = useForm({
 		defaultValues: {
@@ -37,8 +36,9 @@ export default function SignUpForm({
 				},
 				{
 					onSuccess: async () => {
+						await refreshSessionInRouter(router)
+						await router.navigate({ to: '/onboard' })
 						toast.success('Sign up successful')
-						navigate({ to: '/onboard' })
 					},
 					onError: (error) => {
 						toast.error(error.error.message || error.error.statusText)

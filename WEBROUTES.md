@@ -39,7 +39,10 @@ This document summarizes the current TanStack Router setup and every route defin
   - Auth screen (defaults to sign-up view with toggle to sign-in)
 - Data/guards:
   - `beforeLoad` gets session via `getUserForce`
-  - `loader` redirects users who already have `organisationSlug` to `/$orgSlug`
+  - `loader` redirects authenticated users:
+    - to `/$orgSlug` when they already belong to an organisation
+    - to `/dictator` when they are dictator users without an organisation
+    - to `/onboard` for other authenticated users without an organisation
 
 ### `/signin`
 - File: `apps/web/src/routes/signin.tsx`
@@ -47,7 +50,10 @@ This document summarizes the current TanStack Router setup and every route defin
   - Auth screen (defaults to sign-in view with toggle to sign-up)
 - Data/guards:
   - `beforeLoad` gets session via `getUserForce`
-  - `loader` redirects users who already have `organisationSlug` to `/$orgSlug`
+  - `loader` redirects authenticated users:
+    - to `/$orgSlug` when they already belong to an organisation
+    - to `/dictator` when they are dictator users without an organisation
+    - to `/onboard` for other authenticated users without an organisation
 
 ### `/onboard`
 - File: `apps/web/src/routes/onboard.tsx`
@@ -57,6 +63,7 @@ This document summarizes the current TanStack Router setup and every route defin
   - `beforeLoad` gets session via `getUserForce`
   - Redirects to `/$orgSlug` if user already belongs to an org
   - Redirects to `/login` if no session
+  - Keeps authenticated users without an organisation on the route
 
 ### `/dashboard`
 - File: `apps/web/src/routes/dashboard.tsx`
@@ -72,8 +79,10 @@ This document summarizes the current TanStack Router setup and every route defin
 - Purpose:
   - Redirect helper route
 - Data/guards:
-  - If user has org data, redirects to `/$orgSlug`
-  - Otherwise redirects to `/`
+  - Redirects to `/login` when unauthenticated
+  - Redirects to `/$orgSlug` when the user has an organisation
+  - Redirects to `/dictator` for dictator users without an organisation
+  - Redirects to `/onboard` for other authenticated users without an organisation
 
 ## Dictator Area Routes
 

@@ -10,14 +10,15 @@ import {
 	DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { authClient } from '@/lib/auth-client'
+import { clearSessionInRouter } from '@/lib/auth-session'
 
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link, useRouter } from '@tanstack/react-router'
 
 import { Button } from './ui/button'
 
 // @ts-ignore TODO: fix any
 export function UserMenu({ session }: { session?: any }) {
-	const navigate = useNavigate()
+	const router = useRouter()
 
 	if (!session) {
 		return (
@@ -63,10 +64,9 @@ export function UserMenu({ session }: { session?: any }) {
 						onClick={() => {
 							authClient.signOut({
 								fetchOptions: {
-									onSuccess: () => {
-										navigate({
-											to: '/',
-										})
+									onSuccess: async () => {
+										await clearSessionInRouter(router)
+										await router.navigate({ to: '/' })
 									},
 								},
 							})

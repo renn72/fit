@@ -3,6 +3,7 @@ import { useState } from 'react'
 import SignInForm from '@/components/sign-in-form'
 import SignUpForm from '@/components/sign-up-form'
 import { getUserForce } from '@/functions/get-user-force'
+import { getAuthPageRedirectTarget } from '@/lib/auth-routing'
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
@@ -13,13 +14,9 @@ export const Route = createFileRoute('/signin')({
 		return { session }
 	},
 	loader: async ({ context }) => {
-		if (context?.session?.user?.organisationSlug) {
-			const slug = context.session.user.organisationSlug as string
-			redirect({
-				to: '/$orgSlug',
-				params: { orgSlug: slug },
-				throw: true,
-			})
+		const redirectTarget = getAuthPageRedirectTarget(context.session)
+		if (redirectTarget) {
+			throw redirect(redirectTarget)
 		}
 	},
 })

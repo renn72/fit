@@ -1,7 +1,8 @@
 import { authClient } from '@/lib/auth-client'
+import { refreshSessionInRouter } from '@/lib/auth-session'
 
 import { useForm } from '@tanstack/react-form'
-import { useNavigate } from '@tanstack/react-router'
+import { useRouter } from '@tanstack/react-router'
 
 import { Loader } from './loader'
 import { Button } from './ui/button'
@@ -16,9 +17,7 @@ export default function SignInForm({
 }: {
 	onSwitchToSignUp: () => void
 }) {
-	const navigate = useNavigate({
-		from: '/',
-	})
+	const router = useRouter()
 	const { isPending } = authClient.useSession()
 
 	const form = useForm({
@@ -33,10 +32,9 @@ export default function SignInForm({
 					password: value.password,
 				},
 				{
-					onSuccess: () => {
-						navigate({
-							to: '/admin',
-						})
+					onSuccess: async () => {
+						await refreshSessionInRouter(router)
+						await router.navigate({ to: '/admin' })
 						toast.success('Sign in successful')
 					},
 					onError: (error) => {
