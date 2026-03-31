@@ -4,21 +4,27 @@ import { queryClient } from '@/lib/orpc'
 import { queryOptions } from '@tanstack/react-query'
 import type { RegisteredRouter } from '@tanstack/react-router'
 
+type AuthSession = typeof authClient.$Infer.Session
+
 export type AppSession = {
-	user?: {
-		id?: string
-		name?: string | null
-		email?: string | null
-		metaTags?: string | null
-		organisationId?: string | null
-		organisationSlug?: string | null
-	} | null
+	user?: Partial<AuthSession['user']> | null
+	session?: Partial<AuthSession['session']> | null
 } | null
+
+type SessionQueryResult = Awaited<ReturnType<typeof authClient.getSession>>
+
+function extractSession(result: SessionQueryResult): AppSession {
+	if (result && typeof result === 'object' && 'data' in result) {
+		return (result.data ?? null) as AppSession
+	}
+
+	return (result ?? null) as AppSession
+}
 
 export const sessionQueryOptions = queryOptions({
 	queryKey: ['session'],
 	queryFn: async () => {
-		return (await authClient.getSession()) as AppSession
+		return extractSession(await authClient.getSession())
 	},
 	staleTime: 60_000,
 })
