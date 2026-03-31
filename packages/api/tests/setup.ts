@@ -1,9 +1,11 @@
 // Set up test environment variables before any imports
+const testDatabaseUrl = `file:${process.env.TMPDIR ?? '/tmp'}/fit-api-setup-${process.pid}-${crypto.randomUUID()}.sqlite`
+
 process.env.RESEND_API_KEY = 'test-resend-key'
 process.env.ZEN_API_KEY = 'test-zen-key'
 process.env.ZEN_MODEL = 'test-chat-model'
-process.env.DATABASE_URL = 'file::memory:'
-process.env.DATABASE_SERVER_LOG_URL = 'file::memory:'
+process.env.DATABASE_URL = testDatabaseUrl
+process.env.DATABASE_SERVER_LOG_URL = testDatabaseUrl
 process.env.BETTER_AUTH_SECRET =
 	'test-secret-key-that-is-long-enough-for-testing-purposes-only'
 process.env.BETTER_AUTH_URL = 'http://localhost:3000'
@@ -36,7 +38,7 @@ async function getMigrationSQL(): Promise<string> {
 		if (fs.existsSync(migrationFile)) {
 			const sql = fs.readFileSync(migrationFile, 'utf-8')
 			// Remove statement-breakpoint comments as they're drizzle-kit artifacts
-			combinedSQL += sql.replace(/--> statement-breakpoint\n/g, '\n') + '\n'
+			combinedSQL += `${sql.replace(/--> statement-breakpoint\n/g, '\n')}\n`
 		}
 	}
 
@@ -49,9 +51,10 @@ declare global {
 }
 
 export async function setup() {
-	// Create in-memory database
+	// Create the per-run temp SQLite test database.
 	const client = createClient({
-		url: ':memory:',
+		// A temp file keeps all client connections on the same SQLite database.
+		url: testDatabaseUrl,
 	})
 
 	// Run migrations
@@ -64,7 +67,7 @@ export async function setup() {
 	for (const statement of statements) {
 		try {
 			await client.execute(statement)
-		} catch (error) {
+		} catch (_error) {
 			// Some CREATE INDEX statements may fail if table doesn't exist yet
 			// This is expected for some migrations
 			console.warn(

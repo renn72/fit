@@ -4,8 +4,8 @@ This directory contains the test infrastructure for the FIT API package.
 
 ## Architecture
 
-### In-Memory Database
-Tests use an in-memory SQLite database (via libsql) that is:
+### Test Database
+Tests use an isolated temporary SQLite database file (via libsql) that is:
 - Created fresh for each test file (via `beforeAll`)
 - Reset between tests (via `beforeEach`)
 - Migrated with all schema changes automatically
@@ -147,7 +147,7 @@ await expect(
    - Ensures all router imports use the test DB
 
 3. **Test Database** (`tests/helpers/db.ts`):
-   - Creates in-memory libsql database
+   - Creates a temporary libsql database file per test file
    - Runs all migrations from `packages/db/src/migrations/`
    - Imports all schema modules and relations
    - Provides `resetDatabase()` to clear data between tests

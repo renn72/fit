@@ -6,6 +6,7 @@ import { drizzle } from 'drizzle-orm/libsql'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
+const testDatabaseUrl = `file:${process.env.TMPDIR ?? '/tmp'}/fit-api-helper-${process.pid}-${crypto.randomUUID()}.sqlite`
 
 let testDB: ReturnType<typeof drizzle> | null = null
 
@@ -25,7 +26,7 @@ async function getMigrationSQL(): Promise<string> {
 		const migrationFile = path.join(migrationsDir, dir, 'migration.sql')
 		if (fs.existsSync(migrationFile)) {
 			const sql = fs.readFileSync(migrationFile, 'utf-8')
-			combinedSQL += sql.replace(/--> statement-breakpoint\n/g, '\n') + '\n'
+			combinedSQL += `${sql.replace(/--> statement-breakpoint\n/g, '\n')}\n`
 		}
 	}
 
@@ -38,7 +39,8 @@ export async function initTestDB(): Promise<ReturnType<typeof drizzle>> {
 	}
 
 	const client = createClient({
-		url: ':memory:',
+		// A temp file keeps all client connections on the same SQLite database.
+		url: testDatabaseUrl,
 	})
 
 	// Run migrations
@@ -51,7 +53,7 @@ export async function initTestDB(): Promise<ReturnType<typeof drizzle>> {
 	for (const statement of statements) {
 		try {
 			await client.execute(statement)
-		} catch (error) {
+		} catch (_error) {
 			console.warn(
 				`Migration statement failed (may be expected): ${statement.slice(0, 100)}...`,
 			)
