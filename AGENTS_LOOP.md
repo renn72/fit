@@ -23,7 +23,6 @@
    - Use a descriptive branch name:
      - `bug/<short-slug>`
      - `spec/<short-slug>`
-   - Prefer `scripts/task-start.sh <task-file>` instead of doing this manually.
    - Record the task start time in the daily report using AEST.
    - Record the task file and branch name before implementation begins.
    - If the current branch is still the working branch after this step, stop immediately.
