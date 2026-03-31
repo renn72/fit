@@ -25,7 +25,7 @@ function TrainingAppRoute() {
 
 	return (
 		<AppShell session={session}>
-			{isIndexRoute ? <DashboardOverview /> : <Outlet />}
+			{isIndexRoute ? <DashboardOverview session={session} /> : <Outlet />}
 		</AppShell>
 	)
 }

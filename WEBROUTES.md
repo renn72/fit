@@ -566,25 +566,25 @@ The admin app breakdown comes first, followed by the two client-only Vite apps.
 #### `/`
 - File: `apps/nutrition-web/src/routes/index.tsx`
 - Purpose:
-  - Public landing page for the nutrition client app
-  - Shows connection status and CTA into auth or the app shell
-- Data:
-  - Uses `orpc.healthCheck` query in component
+  - Session-aware redirect entrypoint for the nutrition client app
+- Data/guards:
+  - Redirects authenticated users to `/app`
+  - Redirects signed-out users to `/auth`
 
 #### `/auth`
 - File: `apps/nutrition-web/src/routes/auth.tsx`
 - Purpose:
-  - Sign-in / sign-up entrypoint for nutrition clients
+  - Login-only entrypoint for nutrition clients
 - Data/guards:
   - Redirects authenticated users to `/app`
 
 #### `/app` (layout route)
 - File: `apps/nutrition-web/src/routes/app.tsx`
 - Purpose:
-  - Protected client shell with header, nav, and dashboard overview on the exact `/app` path
+  - Protected mobile client shell with a sticky header, centered account dock action, and dashboard overview on the exact `/app` path
 - Data/guards:
   - Redirects unauthenticated users to `/auth`
-  - Reuses root `session` context for the shell and sign-out flow
+  - Reuses root `session` context for the shell, account actions, and the current-menu overview
 
 #### `/app/menu`
 - File: `apps/nutrition-web/src/routes/app/menu.tsx`
@@ -628,25 +628,25 @@ The admin app breakdown comes first, followed by the two client-only Vite apps.
 #### `/`
 - File: `apps/training-web/src/routes/index.tsx`
 - Purpose:
-  - Public landing page for the training client app
-  - Shows connection status and CTA into auth or the app shell
-- Data:
-  - Uses `orpc.healthCheck` query in component
+  - Session-aware redirect entrypoint for the training client app
+- Data/guards:
+  - Redirects authenticated users to `/app`
+  - Redirects signed-out users to `/auth`
 
 #### `/auth`
 - File: `apps/training-web/src/routes/auth.tsx`
 - Purpose:
-  - Sign-in / sign-up entrypoint for training clients
+  - Login-only entrypoint for training clients
 - Data/guards:
   - Redirects authenticated users to `/app`
 
 #### `/app` (layout route)
 - File: `apps/training-web/src/routes/app.tsx`
 - Purpose:
-  - Protected client shell with header, nav, and dashboard overview on the exact `/app` path
+  - Protected mobile client shell with a sticky header, centered account dock action, and dashboard overview on the exact `/app` path
 - Data/guards:
   - Redirects unauthenticated users to `/auth`
-  - Reuses root `session` context for the shell and sign-out flow
+  - Reuses root `session` context for the shell, account actions, and the current-program overview
 
 #### `/app/plan`
 - File: `apps/training-web/src/routes/app/plan.tsx`
