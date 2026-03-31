@@ -88,6 +88,7 @@
     - Run the full test suite after the task appears complete.
     - Treat regressions as part of the current task.
     - Do not merge work that only passes targeted checks.
+    - review components with vitest browers mode
 
 14. **Run the review personas on the implementation diff**
     - Review the actual diff, not just the plan.

@@ -24,6 +24,7 @@ Load this file at the start of a night run and follow it literally. The goal is 
 - `AGENTS.md`: routing doc for deeper project guidance
 - Repo docs and code: the source of truth for implementation details
 - apply the `AGENTS_LOOP.md` to each bug or task
+- if numbered, complete bugs 1_*, 2_*, 3_* and then specs 1_*, 2_*, 3_*
 - once bug/spec has been finished, move the big/spec md to the the `./finished_bug/` or `./finished_spec/` dir
 
 ## Task Granularity
