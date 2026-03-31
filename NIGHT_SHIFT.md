@@ -24,7 +24,7 @@ Load this file at the start of a night run and follow it literally. The goal is 
 - `AGENTS.md`: routing doc for deeper project guidance
 - Repo docs and code: the source of truth for implementation details
 - apply the `AGENTS_LOOP.md` to each bug or task
-- if numbered, complete bugs 1_*, 2_*, 3_* and then specs 1_*, 2_*, 3_*
+- if numbered, complete bugs 1_*, 2_*, 3_* and then specs 1_*, 2_*, 3_* ect
 - once bug/spec has been finished, move the big/spec md to the the `./finished_bug/` or `./finished_spec/` dir
 
 ## Task Granularity
@@ -84,7 +84,8 @@ Stop and make a clear note in the report if:
 - the first commit is not a `test:` commit
 - baseline validations are already broken and cannot be repaired in reasonable time
 
-If hiting a stop conditions. 
+If hiting a stop conditions.
+
 1. Create a bug report in `./bugs/`
 2. Start a new AGENTS_LOOP to correct the bug
 3. If the bug has been repaired continue with the loop
