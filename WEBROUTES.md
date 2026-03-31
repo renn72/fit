@@ -202,7 +202,7 @@ The admin app breakdown comes first, followed by the two client-only Vite apps.
     - Import base ingredients
     - Generate org dummy data
     - Generate plans
-    - Per-organisation generators for recipes, exercises, warmups, workouts, block templates, users, and user menu templates
+    - Per-organisation generators for recipes, exercises, warmups, workouts, block templates, users, user menu templates, and daily logs
 - Data/guards:
   - `beforeLoad` gets session (`getUser`)
   - Uses `orpc.organisation.getAll` to populate org selector
@@ -505,6 +505,15 @@ The admin app breakdown comes first, followed by the two client-only Vite apps.
 - Purpose:
   - User block list page wrapper (passes `orgSlug` into `UserBlocksPage`)
   - Relies on selected user context retained from parent `/$orgSlug?user=...`
+- Rendering:
+  - `ssr: false`
+
+### `/$orgSlug/user-logs`
+- File: `apps/web/src/routes/$orgSlug/user-logs.tsx`
+- Purpose:
+  - User daily log page wrapper (passes `orgSlug` into `UserLogsPage`)
+  - Relies on selected user context retained from parent `/$orgSlug?user=...`
+  - Displays nested meal, workout, exercise, and set-log history for the selected user
 - Rendering:
   - `ssr: false`
 

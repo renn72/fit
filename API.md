@@ -25,9 +25,9 @@ This file summarizes the current oRPC API implementation by reading:
 - `healthCheck` (`GET /health-check`) returns `'OK'`.
 - `privateData` (`GET /private-data`) returns `{ message, user }` for authenticated users.
 - Mounted routers:
-- `organisation`, `user`, `userBlock`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `feature`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `ai`.
+- `organisation`, `user`, `userBlock`, `userMenu`, `adminSetup`, `movement`, `exercise`, `ingredient`, `feature`, `recipe`, `workout`, `warmup`, `blockTemplate`, `menuTemplate`, `subscription`, `dailyLog`, `ai`.
 
-Total procedures in router files: **133**.
+Total procedures in router files: **135**.
 
 ## Cross-Cutting Patterns
 
@@ -387,6 +387,28 @@ Total procedures in router files: **133**.
 - computes recipe and average meal macros from ingredient ratios.
 - used by `adminSetup.generateUserMenuTemplates`.
 
+## `dailyLogRouter` (`packages/api/src/routers/daily-log.ts`)
+
+### Endpoints
+| Procedure | Method | Path | Summary |
+|---|---|---|---|
+| `getByUser` | `GET` | `/daily-log/by-user` | Daily logs for one user with meals, workouts, exercises, and set logs |
+
+### Behavior Notes
+- Read access is allowed for:
+- the target user,
+- same-org `itemUpdater` admins,
+- `dictator`.
+- Cross-org requests return `FORBIDDEN`.
+- Response shape is nested and ordered:
+- `dailyLog` rows newest first,
+- `meals` by `mealIndex`,
+- `workouts` by `workoutIndex`,
+- `warmups` by `warmupIndex`,
+- `exercises` by `exerciseIndex`,
+- `sets` by `setIndex`.
+- Exercise output includes both the copied prescription fields from `userExercise` (for example `targetSets`, `reps`, `targetRpe`, tempo/rest metadata) and the logged child `sets` rows.
+
 ## `adminSetupRouter` (`packages/api/src/routers/admin-setup.ts`)
 
 ### Endpoints
@@ -402,6 +424,7 @@ Total procedures in router files: **133**.
 | `generateBlockTemplates` | `POST` | `/admin-setup/generate-block-templates` | Generate org block templates |
 | `generateUserMenuTemplates` | `POST` | `/admin-setup/generate-user-menu-templates` | Generate org user-menu templates |
 | `generateUsers` | `POST` | `/admin-setup/generate-users` | Generate users for org |
+| `generateDailyLogs` | `POST` | `/admin-setup/generate-daily-logs` | Generate recent daily logs from active user menus and blocks |
 | `generatePlans` | `POST` | `/admin-setup/generate-plans` | Generate 4 plan records |
 
 ### Behavior Notes
@@ -420,6 +443,12 @@ Total procedures in router files: **133**.
 - `generateWorkouts` creates 10-20 workouts with 4-8 linked exercises and optional warmup group.
 - `generateBlockTemplates` now seeds 10 `userBlock` templates and copies workouts, warmups, and exercises into `user_workout`, `user_warmup`, and `user_exercise`.
 - `generateUserMenuTemplates` delegates to `generateRandomUserMenuTemplatesForOrg`.
+- `generateDailyLogs` creates five recent `daily_log` rows per qualifying user and copies:
+- menu recipe totals into `daily_log_meal`,
+- assigned block workouts into `daily_log_workout`,
+- warmups into `daily_log_warmup`,
+- exercise prescriptions into `daily_log_exercise`,
+- per-set placeholders into `daily_log_set`.
 - `generatePlans` seeds Starter/Pro/Elite/Enterprise (Enterprise hidden).
 
 ## `aiRouter` (`packages/api/src/routers/ai.ts`)
