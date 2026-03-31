@@ -24,7 +24,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
 
 function RootComponent() {
 	return (
-		<ThemeProvider defaultTheme='light' storageKey='nutrition-web-theme'>
+		<ThemeProvider storageKey='nutrition-web-theme'>
 			<TooltipProvider>
 				<div className='min-h-screen text-foreground'>
 					<Outlet />

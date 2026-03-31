@@ -83,7 +83,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 	if (isPending) {
 		return (
 			<div className='space-y-4'>
-				<Card className='border-white/70 bg-white/82 shadow-sm backdrop-blur-sm'>
+				<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 					<CardHeader>
 						<CardTitle>Loading current program...</CardTitle>
 						<CardDescription>
@@ -97,7 +97,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (error) {
 		return (
-			<Card className='border-white/70 bg-white/82 shadow-sm backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 				<CardHeader>
 					<CardTitle>Current program unavailable</CardTitle>
 					<CardDescription>
@@ -110,7 +110,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (!currentBlock) {
 		return (
-			<Card className='border-white/70 bg-white/82 shadow-sm backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 				<CardHeader>
 					<CardTitle>No current program yet</CardTitle>
 					<CardDescription>
@@ -124,7 +124,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	return (
 		<div className='space-y-4'>
-			<Card className='border-white/70 bg-white/84 shadow-sm backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 				<CardHeader className='gap-4'>
 					<div className='flex flex-wrap items-center gap-2'>
 						<Badge className='rounded-full px-3 py-1'>Current program</Badge>
@@ -160,7 +160,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 			</Card>
 
 			{nextWorkout ? (
-				<Card className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'>
+				<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 					<CardHeader>
 						<CardTitle>Next session</CardTitle>
 						<CardDescription>
@@ -204,7 +204,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 				</Card>
 			) : null}
 
-			<Card className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 				<CardHeader>
 					<CardTitle>Block rhythm</CardTitle>
 					<CardDescription>

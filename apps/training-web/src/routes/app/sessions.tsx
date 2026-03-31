@@ -35,7 +35,7 @@ function TrainingSessionsPage() {
 				{upcomingSessions.map((session) => (
 					<Card
 						key={session.title}
-						className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'
+						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
 					>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center gap-2'>

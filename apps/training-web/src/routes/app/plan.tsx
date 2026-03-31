@@ -35,7 +35,7 @@ function TrainingPlanPage() {
 				{trainingPlan.map((day) => (
 					<Card
 						key={day.day}
-						className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'
+						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
 					>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center justify-between gap-3'>

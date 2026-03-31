@@ -147,8 +147,8 @@ export function AppShell({ children, session }: AppShellProps) {
 	}
 
 	return (
-		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x border-white/60 bg-white/76 shadow-[0_28px_80px_rgba(66,108,79,0.16)] backdrop-blur-xl'>
-			<header className='shrink-0 border-b border-white/70 bg-background/88 backdrop-blur-xl'>
+		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x border-border/70 bg-card/80 shadow-[0_28px_80px_rgba(66,108,79,0.16)] backdrop-blur-xl'>
+			<header className='shrink-0 border-b border-border/70 bg-background/88 backdrop-blur-xl'>
 				<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 pb-3 pt-4'>
 					<div className='min-w-0'>
 						<p className='text-[0.65rem] uppercase tracking-[0.24em] text-muted-foreground'>
@@ -168,7 +168,7 @@ export function AppShell({ children, session }: AppShellProps) {
 					</div>
 
 					<div className='justify-self-end'>
-						<div className='flex items-center gap-2 rounded-full border border-white/70 bg-white/82 px-2 py-1.5 shadow-sm'>
+						<div className='flex items-center gap-2 rounded-full border border-border/70 bg-card/80 px-2 py-1.5 shadow-sm'>
 							<Avatar className='size-8'>
 								<AvatarFallback>{initials || 'C'}</AvatarFallback>
 							</Avatar>
@@ -184,7 +184,7 @@ export function AppShell({ children, session }: AppShellProps) {
 				{children}
 			</main>
 
-			<footer className='shrink-0 border-t border-white/70 bg-background/94 px-3 py-3 backdrop-blur-xl'>
+			<footer className='shrink-0 border-t border-border/70 bg-background/94 px-3 py-3 backdrop-blur-xl'>
 				<nav className='grid grid-cols-5 items-end gap-1'>
 					{navLeft.map((item) => (
 						<MobileNavLink key={item.to} item={item} />
@@ -390,10 +390,10 @@ function MobileNavLink({ item }: { item: NavItem }) {
 			}}
 			inactiveProps={{
 				className:
-					'bg-white/72 text-muted-foreground hover:bg-white hover:text-foreground',
+					'bg-card/80 text-muted-foreground hover:bg-background hover:text-foreground',
 			}}
 			className={cn(
-				'flex min-h-14 flex-col items-center justify-center gap-1 rounded-3xl border border-white/70 px-2 text-[0.68rem] font-medium transition-all',
+				'flex min-h-14 flex-col items-center justify-center gap-1 rounded-3xl border border-border/70 px-2 text-[0.68rem] font-medium transition-all',
 			)}
 		>
 			<Icon className='size-4' />

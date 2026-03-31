@@ -56,7 +56,7 @@ export function AuthPanel() {
 		<div className='mx-auto grid w-full max-w-4xl gap-6 md:grid-cols-[1.05fr_0.95fr] md:items-center'>
 			<section className='space-y-5'>
 				<div className='flex items-center justify-center md:justify-start'>
-					<div className='inline-flex items-center gap-3 rounded-full border border-white/60 bg-white/78 px-4 py-2 shadow-sm backdrop-blur-sm'>
+					<div className='inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/80 px-4 py-2 shadow-sm backdrop-blur-sm'>
 						<BrandMark className='size-10 rounded-2xl text-base' />
 						<div>
 							<p className='text-[0.7rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground'>
@@ -83,21 +83,21 @@ export function AuthPanel() {
 				</div>
 
 				<div className='grid gap-3 sm:grid-cols-3'>
-					<div className='rounded-3xl border border-white/70 bg-white/72 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
 						<Leaf className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Current menu first</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
 							Open the plan you should follow today without extra admin layers.
 						</p>
 					</div>
-					<div className='rounded-3xl border border-white/70 bg-white/72 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
 						<LockKeyhole className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Login only</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
 							An admin creates the client login before you arrive.
 						</p>
 					</div>
-					<div className='rounded-3xl border border-white/70 bg-white/72 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
 						<ArrowRight className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Made for mobile</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
@@ -107,7 +107,7 @@ export function AuthPanel() {
 				</div>
 			</section>
 
-			<Card className='border-white/70 bg-white/84 shadow-[0_32px_90px_rgba(77,121,91,0.18)] backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-[0_32px_90px_rgba(77,121,91,0.18)] backdrop-blur-sm'>
 				<CardHeader className='space-y-2 text-center md:text-left'>
 					<CardTitle>Open Forma | Nutrition</CardTitle>
 					<CardDescription>

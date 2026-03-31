@@ -39,7 +39,7 @@ function TrainingRecoveryPage() {
 				{recoveryMetrics.map((metric) => (
 					<Card
 						key={metric.label}
-						className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'
+						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
 					>
 						<CardHeader>
 							<CardDescription>{metric.label}</CardDescription>
@@ -62,7 +62,7 @@ function TrainingRecoveryPage() {
 				))}
 			</div>
 
-			<Card className='border-white/70 bg-white/80 shadow-sm backdrop-blur-sm'>
+			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
 				<CardHeader>
 					<CardTitle>Coach prompts</CardTitle>
 					<CardDescription>

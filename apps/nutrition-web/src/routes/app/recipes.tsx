@@ -35,7 +35,7 @@ function NutritionRecipesPage() {
 				{recipeLibrary.map((recipe) => (
 					<Card
 						key={recipe.name}
-						className='border-white/70 bg-white/78 shadow-sm backdrop-blur-sm'
+						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
 					>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center gap-2'>
