@@ -14,7 +14,6 @@
    - Look in `./bugs` first.
    - If no actionable bug exists, look in `./spec`.
    - Ignore `draft-*` files in both directories.
-   - Pick the smallest clear, actionable item.
    - Pick exactly one task file.
    - If a task is unclear or blocked, record that in the report and skip it rather than guessing.
 
