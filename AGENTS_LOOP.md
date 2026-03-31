@@ -103,9 +103,7 @@
 16. **Wrap up the task**
     - Update any relevant docs or changelog entries.
     - Ensure the branch history is reviewable and complete.
-    - Run `scripts/task-verify.sh` before merge-back.
     - Merge the task branch back into the working branch without squashing commits. Prefer fast-forward merge.
-    - Prefer `scripts/task-finish.sh --validate "<cmd>" ...` instead of doing this manually.
     - If merge fails cleanly, stop and record the blocker rather than improvising a risky history rewrite.
     - Record the finish time in AEST and list the commits in the daily report.
 

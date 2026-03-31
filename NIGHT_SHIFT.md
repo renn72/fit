@@ -75,7 +75,7 @@ Validation:
 
 ## Stop Conditions
 
-Stop and leave a clear note in the report if:
+Stop and make a clear note in the report if:
 
 - the task spec or bug report is too incomplete to implement safely
 - the working tree cannot be protected safely
@@ -83,3 +83,9 @@ Stop and leave a clear note in the report if:
 - the report entry for the current branch does not exist before implementation starts
 - the first commit is not a `test:` commit
 - baseline validations are already broken and cannot be repaired in reasonable time
+
+If hiting a stop conditions. 
+1. Create a bug report in `./bugs/`
+2. Start a new AGENTS_LOOP to correct the bug
+3. If the bug has been repaired continue with the loop
+4. If the bug fails to be repaired. Stop the loop, Stop the Night Shift, and write a report
