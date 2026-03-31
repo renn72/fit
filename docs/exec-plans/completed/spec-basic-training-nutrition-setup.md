@@ -12,10 +12,10 @@ After this change, an unauthenticated user lands directly in a login-only flow, 
 ## Progress
 
 - [x] (2026-03-31 09:58Z) Create the task scaffolding and confirm baseline validations.
-- [ ] Add test-first coverage for the auth flow and mobile shell expectations.
-- [ ] Implement the training client updates.
-- [ ] Implement the nutrition client updates.
-- [ ] Validate, review, document, merge, and archive the spec.
+- [x] (2026-03-31 10:05Z) Add test-first coverage for the auth flow and mobile shell expectations.
+- [x] (2026-03-31 10:11Z) Implement the training client updates.
+- [x] (2026-03-31 10:12Z) Implement the nutrition client updates.
+- [x] (2026-03-31 10:17Z) Validate, review, document, merge, and archive the spec.
 
 ## Surprises & Discoveries
 
@@ -24,15 +24,21 @@ After this change, an unauthenticated user lands directly in a login-only flow, 
 - `scripts/task-start.sh`, `scripts/task-finish.sh`, and `scripts/task-verify.sh` do not exist in this repo.
 - Both client apps already have separate route trees and shells, which means the work can stay app-local without changing shared admin routes.
 - Adding app-local Vitest harnesses required a `pnpm install` refresh before the runner could resolve the new test dependencies from each client app.
+- Repo-wide `pnpm check-types` is currently blocked by an unrelated server failure in `apps/server/src/utils/logger-stream.ts`.
+- Repo-wide `pnpm -r --if-present test` is currently blocked by unrelated API test fixture failures that hit `SQLITE_ERROR: no such table: user`.
 
 ## Decision Log
 
 - Use app-local Vitest harnesses so the first task-branch commit can be a real `test:` commit that proves client-specific behavior.
 - Keep the first red test set focused on three observable gaps per app: root entry redirect, login-only auth panel, and account-first mobile shell controls.
+- Keep the current `/app` dashboards read-only and driven by real assigned data rather than adding placeholder editing controls.
+- Capture unrelated repo failures as draft bugs instead of fixing them inside this spec branch.
 
 ## Outcomes & Retrospective
 
-(fill when complete)
+The task shipped the intended login-first mobile experience in both client apps. Signed-out users now land directly in `/auth`, both auth panels are login-only and coach-access oriented, both shells use a sticky header plus bottom dock with a centered account action, and the `/app` route shows real current program or menu data instead of a generic marketing landing page.
+
+The main remaining gap is outside the scope of this spec: repo-wide validation is not fully green because the existing server typecheck and API test failures are unrelated to this client branch. Those were captured as draft bugs so the next session can address them directly without muddying this branch.
 
 ## Context and Orientation
 
