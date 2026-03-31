@@ -11,7 +11,7 @@ export async function createUserFixture(
 	const userData = {
 		id: data.id || `user-${crypto.randomUUID()}`,
 		name: data.name || 'Test User',
-		email: data.email || `test-${Date.now()}@example.com`,
+		email: data.email || `test-${crypto.randomUUID()}@example.com`,
 		emailVerified: data.emailVerified ?? true,
 		metaTags: data.metaTags || '',
 		organisationId: data.organisationId || null,

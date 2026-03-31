@@ -32,6 +32,7 @@ import { Route as OrgSlugWorkoutsRouteImport } from './routes/$orgSlug/workouts'
 import { Route as OrgSlugWarmupsRouteImport } from './routes/$orgSlug/warmups'
 import { Route as OrgSlugUserMenusRouteImport } from './routes/$orgSlug/user-menus'
 import { Route as OrgSlugUserMenuCreateRouteImport } from './routes/$orgSlug/user-menu-create'
+import { Route as OrgSlugUserLogsRouteImport } from './routes/$orgSlug/user-logs'
 import { Route as OrgSlugUserBlocksRouteImport } from './routes/$orgSlug/user-blocks'
 import { Route as OrgSlugUserBlockCreateRouteImport } from './routes/$orgSlug/user-block-create'
 import { Route as OrgSlugRecipesRouteImport } from './routes/$orgSlug/recipes'
@@ -175,6 +176,11 @@ const OrgSlugUserMenusRoute = OrgSlugUserMenusRouteImport.update({
 const OrgSlugUserMenuCreateRoute = OrgSlugUserMenuCreateRouteImport.update({
   id: '/user-menu-create',
   path: '/user-menu-create',
+  getParentRoute: () => OrgSlugRoute,
+} as any)
+const OrgSlugUserLogsRoute = OrgSlugUserLogsRouteImport.update({
+  id: '/user-logs',
+  path: '/user-logs',
   getParentRoute: () => OrgSlugRoute,
 } as any)
 const OrgSlugUserBlocksRoute = OrgSlugUserBlocksRouteImport.update({
@@ -354,6 +360,7 @@ export interface FileRoutesByFullPath {
   '/$orgSlug/recipes': typeof OrgSlugRecipesRoute
   '/$orgSlug/user-block-create': typeof OrgSlugUserBlockCreateRoute
   '/$orgSlug/user-blocks': typeof OrgSlugUserBlocksRoute
+  '/$orgSlug/user-logs': typeof OrgSlugUserLogsRoute
   '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
@@ -408,6 +415,7 @@ export interface FileRoutesByTo {
   '/$orgSlug/recipes': typeof OrgSlugRecipesRoute
   '/$orgSlug/user-block-create': typeof OrgSlugUserBlockCreateRoute
   '/$orgSlug/user-blocks': typeof OrgSlugUserBlocksRoute
+  '/$orgSlug/user-logs': typeof OrgSlugUserLogsRoute
   '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
@@ -463,6 +471,7 @@ export interface FileRoutesById {
   '/$orgSlug/recipes': typeof OrgSlugRecipesRoute
   '/$orgSlug/user-block-create': typeof OrgSlugUserBlockCreateRoute
   '/$orgSlug/user-blocks': typeof OrgSlugUserBlocksRoute
+  '/$orgSlug/user-logs': typeof OrgSlugUserLogsRoute
   '/$orgSlug/user-menu-create': typeof OrgSlugUserMenuCreateRoute
   '/$orgSlug/user-menus': typeof OrgSlugUserMenusRoute
   '/$orgSlug/warmups': typeof OrgSlugWarmupsRoute
@@ -519,6 +528,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/recipes'
     | '/$orgSlug/user-block-create'
     | '/$orgSlug/user-blocks'
+    | '/$orgSlug/user-logs'
     | '/$orgSlug/user-menu-create'
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
@@ -573,6 +583,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/recipes'
     | '/$orgSlug/user-block-create'
     | '/$orgSlug/user-blocks'
+    | '/$orgSlug/user-logs'
     | '/$orgSlug/user-menu-create'
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
@@ -627,6 +638,7 @@ export interface FileRouteTypes {
     | '/$orgSlug/recipes'
     | '/$orgSlug/user-block-create'
     | '/$orgSlug/user-blocks'
+    | '/$orgSlug/user-logs'
     | '/$orgSlug/user-menu-create'
     | '/$orgSlug/user-menus'
     | '/$orgSlug/warmups'
@@ -836,6 +848,13 @@ declare module '@tanstack/react-router' {
       path: '/user-menu-create'
       fullPath: '/$orgSlug/user-menu-create'
       preLoaderRoute: typeof OrgSlugUserMenuCreateRouteImport
+      parentRoute: typeof OrgSlugRoute
+    }
+    '/$orgSlug/user-logs': {
+      id: '/$orgSlug/user-logs'
+      path: '/user-logs'
+      fullPath: '/$orgSlug/user-logs'
+      preLoaderRoute: typeof OrgSlugUserLogsRouteImport
       parentRoute: typeof OrgSlugRoute
     }
     '/$orgSlug/user-blocks': {
@@ -1054,6 +1073,7 @@ interface OrgSlugRouteChildren {
   OrgSlugRecipesRoute: typeof OrgSlugRecipesRoute
   OrgSlugUserBlockCreateRoute: typeof OrgSlugUserBlockCreateRoute
   OrgSlugUserBlocksRoute: typeof OrgSlugUserBlocksRoute
+  OrgSlugUserLogsRoute: typeof OrgSlugUserLogsRoute
   OrgSlugUserMenuCreateRoute: typeof OrgSlugUserMenuCreateRoute
   OrgSlugUserMenusRoute: typeof OrgSlugUserMenusRoute
   OrgSlugWarmupsRoute: typeof OrgSlugWarmupsRoute
@@ -1090,6 +1110,7 @@ const OrgSlugRouteChildren: OrgSlugRouteChildren = {
   OrgSlugRecipesRoute: OrgSlugRecipesRoute,
   OrgSlugUserBlockCreateRoute: OrgSlugUserBlockCreateRoute,
   OrgSlugUserBlocksRoute: OrgSlugUserBlocksRoute,
+  OrgSlugUserLogsRoute: OrgSlugUserLogsRoute,
   OrgSlugUserMenuCreateRoute: OrgSlugUserMenuCreateRoute,
   OrgSlugUserMenusRoute: OrgSlugUserMenusRoute,
   OrgSlugWarmupsRoute: OrgSlugWarmupsRoute,

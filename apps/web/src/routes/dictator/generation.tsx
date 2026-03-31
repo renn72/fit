@@ -39,6 +39,7 @@ function RouteComponent() {
 		useState(false)
 	const [isGeneratingPlans, setIsGeneratingPlans] = useState(false)
 	const [isGeneratingUsers, setIsGeneratingUsers] = useState(false)
+	const [isGeneratingDailyLogs, setIsGeneratingDailyLogs] = useState(false)
 	const [selectedOrgId, setSelectedOrgId] = useState<string>('')
 
 	const { data: organisations } = useQuery(
@@ -140,6 +141,18 @@ function RouteComponent() {
 			onMutate: () => setIsGeneratingUsers(true),
 			onSettled: () => setIsGeneratingUsers(false),
 			onSuccess: () => toast.success('5 users generated successfully'),
+			onError: (err) => toast.error(err.message),
+		}),
+	)
+
+	const generateDailyLogs = useMutation(
+		orpc.adminSetup.generateDailyLogs.mutationOptions({
+			onMutate: () => setIsGeneratingDailyLogs(true),
+			onSettled: () => setIsGeneratingDailyLogs(false),
+			onSuccess: (result) =>
+				toast.success(
+					`${result.logsCreated} daily logs generated for ${result.usersProcessed} users`,
+				),
 			onError: (err) => toast.error(err.message),
 		}),
 	)
@@ -498,6 +511,52 @@ function RouteComponent() {
 						}}
 					>
 						Generate 10 User Menu Templates
+					</LoadingButton>
+				</div>
+			</div>
+
+			<div className='pt-6 w-full max-w-md border-t'>
+				<h2 className='mb-4 text-xl font-semibold'>Generate Daily Logs</h2>
+				<p className='mb-4 text-sm text-muted-foreground'>
+					Select an organization to generate five recent daily logs for users
+					with an active menu or block assignment.
+				</p>
+
+				<div className='flex flex-col gap-4'>
+					<div className='flex flex-col gap-2'>
+						<label
+							htmlFor='org-select-daily-logs'
+							className='text-sm font-medium'
+						>
+							Select Organization
+						</label>
+						<select
+							id='org-select-daily-logs'
+							value={selectedOrgId}
+							onChange={(e) => setSelectedOrgId(e.target.value)}
+							className='flex py-2 px-3 w-full h-10 text-sm rounded-md border focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:opacity-50 disabled:cursor-not-allowed border-input bg-background ring-offset-background focus-visible:ring-ring'
+						>
+							<option value=''>Select an organization...</option>
+							{organisations?.map((org) => (
+								<option key={org.id} value={org.id}>
+									{org.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					<LoadingButton
+						variant='default'
+						loading={isGeneratingDailyLogs}
+						disabled={!selectedOrgId}
+						className='w-full cursor-pointer'
+						onClick={() => {
+							if (selectedOrgId) {
+								generateDailyLogs.mutate({ organisationId: selectedOrgId })
+							}
+						}}
+					>
+						Generate 5 Daily Logs Per User
 					</LoadingButton>
 				</div>
 			</div>

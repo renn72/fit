@@ -1,5 +1,13 @@
 import { db } from '@fit/db'
 import { user } from '@fit/db/schema/auth'
+import {
+	dailyLog,
+	dailyLogExercise,
+	dailyLogMeal,
+	dailyLogSet,
+	dailyLogWarmup,
+	dailyLogWorkout,
+} from '@fit/db/schema/daily-log'
 import { exercise } from '@fit/db/schema/exercise'
 import { ingredient } from '@fit/db/schema/ingredient'
 import { movement } from '@fit/db/schema/movement'
@@ -71,6 +79,58 @@ function splitCsvLines(content: string): string[] {
 		lines.push(current)
 	}
 	return lines
+}
+
+function calculateUserRecipeTotals({
+	recipe,
+	ingredients,
+}: {
+	recipe: {
+		id: string
+		mealIndex: number
+		recipeIndex: number
+	}
+	ingredients: Array<{
+		mealIndex: number
+		recipeIndex: number
+		serveSize: number
+		ingredient: {
+			calories: number
+			protein: number
+			fat: number
+			carbohydrate: number
+			serveSize: number
+		} | null
+	}>
+}) {
+	return ingredients
+		.filter(
+			(ingredientRow) =>
+				ingredientRow.mealIndex === recipe.mealIndex &&
+				ingredientRow.recipeIndex === recipe.recipeIndex,
+		)
+		.reduce(
+			(totals, ingredientRow) => {
+				const baseIngredient = ingredientRow.ingredient
+				if (!baseIngredient?.serveSize || baseIngredient.serveSize <= 0) {
+					return totals
+				}
+
+				const ratio = ingredientRow.serveSize / baseIngredient.serveSize
+				return {
+					calories: totals.calories + baseIngredient.calories * ratio,
+					protein: totals.protein + baseIngredient.protein * ratio,
+					fat: totals.fat + baseIngredient.fat * ratio,
+					carbohydrate:
+						totals.carbohydrate + baseIngredient.carbohydrate * ratio,
+				}
+			},
+			{ calories: 0, protein: 0, fat: 0, carbohydrate: 0 },
+		)
+}
+
+function randomEnergyLevel() {
+	return ['a', 'b', 'c', 'd'][Math.floor(Math.random() * 4)]!
 }
 
 export const adminSetupRouter = {
@@ -1262,6 +1322,256 @@ export const adminSetupRouter = {
 			})
 
 			return { message: '5 users generated successfully' }
+		}),
+
+	generateDailyLogs: protectedProcedure
+		.route({
+			method: 'POST',
+			path: '/admin-setup/generate-daily-logs',
+			summary: 'Generate daily logs for an org (Dictator only)',
+			tags: ['Admin Setup'],
+		})
+		.input(
+			z.object({
+				organisationId: z.string().min(1),
+			}),
+		)
+		.handler(async ({ input, context }) => {
+			const metaTags = context.session.user.metaTags?.split(',') ?? []
+			if (!metaTags.includes('dictator')) {
+				throw new ORPCError('FORBIDDEN', {
+					message: 'You do not have permission to generate daily logs',
+				})
+			}
+
+			const org = await db.query.organisation.findFirst({
+				where: { id: input.organisationId },
+			})
+
+			if (!org) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'Organisation not found',
+				})
+			}
+
+			const orgUsers = await db.query.user.findMany({
+				where: { organisationId: input.organisationId },
+				columns: {
+					id: true,
+				},
+			})
+
+			if (orgUsers.length === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message: 'No users found in this organisation',
+				})
+			}
+
+			let logsCreated = 0
+			let usersProcessed = 0
+
+			await db.transaction(async (tx) => {
+				for (const orgUser of orgUsers) {
+					const activeMenu = await tx.query.userMenu.findFirst({
+						where: {
+							userId: orgUser.id,
+							isActive: true,
+							isTemplate: false,
+						},
+						with: {
+							recipes: {
+								orderBy: (recipeRow, { asc }) => [
+									asc(recipeRow.mealIndex),
+									asc(recipeRow.recipeIndex),
+								],
+							},
+							ingredients: {
+								with: {
+									ingredient: {
+										columns: {
+											calories: true,
+											protein: true,
+											fat: true,
+											carbohydrate: true,
+											serveSize: true,
+										},
+									},
+								},
+							},
+						},
+						orderBy: (menuRow, { desc }) => [desc(menuRow.updatedAt)],
+					})
+
+					const activeBlock = await tx.query.userBlock.findFirst({
+						where: {
+							userId: orgUser.id,
+							isActive: true,
+							isTemplate: false,
+						},
+						with: {
+							workouts: {
+								orderBy: (workoutRow, { asc }) => [
+									asc(workoutRow.dayIndex),
+									asc(workoutRow.workoutIndex),
+								],
+								with: {
+									warmups: {
+										orderBy: (warmupRow, { asc }) => [
+											asc(warmupRow.warmupIndex),
+										],
+									},
+									exercises: {
+										orderBy: (exerciseRow, { asc }) => [
+											asc(exerciseRow.exerciseIndex),
+										],
+									},
+								},
+							},
+						},
+						orderBy: (blockRow, { desc }) => [desc(blockRow.updatedAt)],
+					})
+
+					if (!activeMenu && !activeBlock) {
+						continue
+					}
+
+					usersProcessed += 1
+
+					for (let dayOffset = 0; dayOffset < 5; dayOffset++) {
+						const logDate = new Date()
+						logDate.setHours(7, 0, 0, 0)
+						logDate.setDate(logDate.getDate() - dayOffset)
+
+						const [createdLog] = await tx
+							.insert(dailyLog)
+							.values({
+								userId: orgUser.id,
+								organisationId: input.organisationId,
+								createdAt: logDate,
+								updatedAt: logDate,
+							})
+							.returning()
+
+						if (!createdLog) {
+							throw new ORPCError('INTERNAL_SERVER_ERROR', {
+								message: 'Failed to create daily log',
+							})
+						}
+
+						logsCreated += 1
+
+						if (activeMenu) {
+							for (const recipeRow of activeMenu.recipes) {
+								const totals = calculateUserRecipeTotals({
+									recipe: recipeRow,
+									ingredients: activeMenu.ingredients,
+								})
+
+								await tx.insert(dailyLogMeal).values({
+									dailyLogId: createdLog.id,
+									mealIndex: recipeRow.mealIndex,
+									name: recipeRow.name,
+									recipeId: recipeRow.id,
+									calories: totals.calories,
+									protein: totals.protein,
+									fat: totals.fat,
+									carbohydrate: totals.carbohydrate,
+								})
+							}
+						}
+
+						if (activeBlock) {
+							for (const workoutRow of activeBlock.workouts) {
+								const [createdWorkout] = await tx
+									.insert(dailyLogWorkout)
+									.values({
+										dailyLogId: createdLog.id,
+										workoutIndex: workoutRow.workoutIndex,
+										userWorkoutId: workoutRow.id,
+										name: workoutRow.name,
+										energyLevel: randomEnergyLevel(),
+									})
+									.returning()
+
+								if (!createdWorkout) {
+									throw new ORPCError('INTERNAL_SERVER_ERROR', {
+										message: 'Failed to create daily log workout',
+									})
+								}
+
+								for (const warmupRow of workoutRow.warmups) {
+									await tx.insert(dailyLogWarmup).values({
+										dailyLogWorkoutId: createdWorkout.id,
+										warmupIndex: warmupRow.warmupIndex,
+										name: warmupRow.name,
+										sourceWarmupId: warmupRow.sourceWarmupId,
+									})
+								}
+
+								for (const exerciseRow of workoutRow.exercises) {
+									const [createdExercise] = await tx
+										.insert(dailyLogExercise)
+										.values({
+											dailyLogWorkoutId: createdWorkout.id,
+											sourceExerciseId: exerciseRow.sourceExerciseId,
+											movementId: exerciseRow.movementId,
+											exerciseIndex: exerciseRow.exerciseIndex,
+											superSetGroup: exerciseRow.superSetGroup,
+											superSetOrder: exerciseRow.superSetOrder,
+											label: exerciseRow.label,
+											targetSets: exerciseRow.sets,
+											reps: exerciseRow.reps,
+											repUnit: exerciseRow.repUnit,
+											ormPercent: exerciseRow.ormPercent,
+											targetRpe: exerciseRow.targetRpe,
+											restTime: exerciseRow.restTime,
+											restUnit: exerciseRow.restUnit,
+											tempoDown: exerciseRow.tempoDown,
+											tempoPause: exerciseRow.tempoPause,
+											tempoUp: exerciseRow.tempoUp,
+											notes: exerciseRow.notes,
+										})
+										.returning()
+
+									if (!createdExercise) {
+										throw new ORPCError('INTERNAL_SERVER_ERROR', {
+											message: 'Failed to create daily log exercise',
+										})
+									}
+
+									for (
+										let setIndex = 0;
+										setIndex < (exerciseRow.sets ?? 0);
+										setIndex++
+									) {
+										await tx.insert(dailyLogSet).values({
+											dailyLogExerciseId: createdExercise.id,
+											setIndex,
+											reps: exerciseRow.reps ?? 0,
+											weight: null,
+											rpe: exerciseRow.targetRpe ?? null,
+											notes: setIndex === 0 ? exerciseRow.notes : null,
+										})
+									}
+								}
+							}
+						}
+					}
+				}
+			})
+
+			if (logsCreated === 0) {
+				throw new ORPCError('BAD_REQUEST', {
+					message:
+						'No active user menus or blocks found for users in this organisation',
+				})
+			}
+
+			return {
+				message: `${logsCreated} daily logs generated successfully`,
+				logsCreated,
+				usersProcessed,
+			}
 		}),
 
 	generatePlans: protectedProcedure

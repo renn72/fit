@@ -127,6 +127,18 @@ const data = {
 				},
 			],
 		},
+		{
+			title: 'Tracking',
+			url: '#',
+			icon: <ChartPieIcon />,
+			isActive: true,
+			items: [
+				{
+					title: 'User Logs',
+					url: '/$orgSlug/user-logs',
+				},
+			],
+		},
 	],
 }
 

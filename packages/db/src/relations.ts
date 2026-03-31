@@ -186,6 +186,10 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.movement.id,
 			to: r.userExercise.movementId,
 		}),
+		dailyLogExercises: r.many.dailyLogExercise({
+			from: r.movement.id,
+			to: r.dailyLogExercise.movementId,
+		}),
 	},
 
 	// ***************** Exercise *******************
@@ -579,6 +583,14 @@ export const relations = defineRelations(schema, (r) => ({
 			from: r.dailyLog.id,
 			to: r.dailyLogStat.dailyLogId,
 		}),
+		meals: r.many.dailyLogMeal({
+			from: r.dailyLog.id,
+			to: r.dailyLogMeal.dailyLogId,
+		}),
+		workouts: r.many.dailyLogWorkout({
+			from: r.dailyLog.id,
+			to: r.dailyLogWorkout.dailyLogId,
+		}),
 	},
 
 	// ***************** Daily Log Weight *******************
@@ -594,6 +606,62 @@ export const relations = defineRelations(schema, (r) => ({
 		dailyLog: r.one.dailyLog({
 			from: r.dailyLogStat.dailyLogId,
 			to: r.dailyLog.id,
+		}),
+	},
+
+	// ***************** Daily Log Meal *******************
+	dailyLogMeal: {
+		dailyLog: r.one.dailyLog({
+			from: r.dailyLogMeal.dailyLogId,
+			to: r.dailyLog.id,
+		}),
+	},
+
+	// ***************** Daily Log Workout *******************
+	dailyLogWorkout: {
+		dailyLog: r.one.dailyLog({
+			from: r.dailyLogWorkout.dailyLogId,
+			to: r.dailyLog.id,
+		}),
+		warmups: r.many.dailyLogWarmup({
+			from: r.dailyLogWorkout.id,
+			to: r.dailyLogWarmup.dailyLogWorkoutId,
+		}),
+		exercises: r.many.dailyLogExercise({
+			from: r.dailyLogWorkout.id,
+			to: r.dailyLogExercise.dailyLogWorkoutId,
+		}),
+	},
+
+	// ***************** Daily Log Warmup *******************
+	dailyLogWarmup: {
+		workout: r.one.dailyLogWorkout({
+			from: r.dailyLogWarmup.dailyLogWorkoutId,
+			to: r.dailyLogWorkout.id,
+		}),
+	},
+
+	// ***************** Daily Log Exercise *******************
+	dailyLogExercise: {
+		workout: r.one.dailyLogWorkout({
+			from: r.dailyLogExercise.dailyLogWorkoutId,
+			to: r.dailyLogWorkout.id,
+		}),
+		movement: r.one.movement({
+			from: r.dailyLogExercise.movementId,
+			to: r.movement.id,
+		}),
+		sets: r.many.dailyLogSet({
+			from: r.dailyLogExercise.id,
+			to: r.dailyLogSet.dailyLogExerciseId,
+		}),
+	},
+
+	// ***************** Daily Log Set *******************
+	dailyLogSet: {
+		exercise: r.one.dailyLogExercise({
+			from: r.dailyLogSet.dailyLogExerciseId,
+			to: r.dailyLogExercise.id,
 		}),
 	},
 

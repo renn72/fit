@@ -202,7 +202,7 @@ describe('Daily Log Router', () => {
 		expect(createdExercises[0]).toMatchObject({
 			exerciseIndex: 0,
 			label: 'Working Set',
-			sets: 3,
+			targetSets: 3,
 		})
 
 		const createdSets = await db.query.dailyLogSet.findMany({
@@ -218,6 +218,8 @@ describe('Daily Log Router', () => {
 	it('returns user logs for org admins and rejects cross-org access', async () => {
 		const owner = await createItemUpdater()
 		const org = await createOrgFixture(owner)
+		owner.organisationId = org.id
+		owner.organisationSlug = org.slug
 		const trainee = await createRegularUser({
 			organisationId: org.id,
 			organisationSlug: org.slug,
