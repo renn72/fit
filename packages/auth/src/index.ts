@@ -14,7 +14,7 @@ export const auth = betterAuth({
 		provider: 'sqlite',
 		schema: schema,
 	}),
-	trustedOrigins: [env.CORS_ORIGIN, 'mybettertapp://', 'exp://'],
+	trustedOrigins: [...env.CORS_ORIGIN.split(','), 'mybettertapp://', 'exp://'],
 	emailVerification: {
 		sendVerificationEmail: async ({ user, url }) => {
 			void sendEmail({

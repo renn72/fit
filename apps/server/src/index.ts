@@ -16,7 +16,7 @@ import { ZodToJsonSchemaConverter } from '@orpc/zod/zod4'
 import Fastify from 'fastify'
 
 const baseCorsConfig = {
-	origin: env.CORS_ORIGIN,
+	origin: env.CORS_ORIGIN.split(','),
 	methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 	allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 	credentials: true,
@@ -26,7 +26,7 @@ const baseCorsConfig = {
 const rpcHandler = new RPCHandler(appRouter, {
 	plugins: [
 		new CORSPlugin({
-			origin: env.CORS_ORIGIN,
+			origin: env.CORS_ORIGIN.split(','),
 			credentials: true,
 			allowHeaders: ['Content-Type', 'Authorization'],
 		}),
