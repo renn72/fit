@@ -15,7 +15,7 @@ import {
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 
 import { NuqsAdapter } from 'nuqs/adapters/tanstack-router'
-import appCss from '@fit/components/styles.css?url'
+import appCss from '../styles.css?url'
 export interface RouterAppContext {
 	orpc: typeof orpc
 	queryClient: QueryClient

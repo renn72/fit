@@ -1,0 +1,4 @@
+@import "@fit/components/styles.css";
+
+/* apps/web is auto-detected; shared UI package source is not */
+@source "../../../packages/components/src";
