@@ -14,7 +14,7 @@ import { clearSessionInRouter } from '@/lib/auth-session'
 
 import { Link, useRouter } from '@tanstack/react-router'
 
-import { Button } from '/components/ui/button'
+import { Button } from '@fit/components/ui/button'
 
 // @ts-ignore TODO: fix any
 export function UserMenu({ session }: { session?: any }) {

@@ -6,9 +6,9 @@ import { refreshSessionInRouter } from '@/lib/auth-session'
 import { useForm } from '@tanstack/react-form'
 import { useRouter } from '@tanstack/react-router'
 
-import { Button } from '/components/ui/button'
-import { Input } from '/components/ui/input'
-import { Label } from '/components/ui/label'
+import { Button } from '@fit/components/ui/button'
+import { Input } from '@fit/components/ui/input'
+import { Label } from '@fit/components/ui/label'
 
 import { toast } from 'sonner'
 import z from 'zod'
