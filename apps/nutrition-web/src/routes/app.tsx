@@ -10,6 +10,7 @@ import {
 
 export const Route = createFileRoute('/app')({
 	beforeLoad: ({ context }) => {
+		console.log('app', context)
 		if (!context.session?.user) {
 			throw redirect({ to: '/auth' })
 		}
