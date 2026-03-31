@@ -3,7 +3,7 @@
 | Field | Value |
 |-------|-------|
 | Author | Codex architecture pass |
-| Last Updated | 2026-03-30 |
+| Last Updated | 2026-04-01 |
 | Status | Current |
 
 FIT is a `pnpm` + Turborepo monorepo for a multi-tenant coaching platform. The operational center of the system is `apps/server`: all browser and mobile clients talk to it, it owns auth and DB access, and the shared packages under `packages/` define the contract, persistence, and environment boundaries.
@@ -13,6 +13,7 @@ Read this with:
 - `SOUL.md` for repo intent and operating rules
 - `API.md` for router and endpoint detail
 - `WEBROUTES.md` for the web route map
+- `guides/` for workspace-specific change guidance
 
 ## High-Level Architecture
 
@@ -89,6 +90,7 @@ fit-mono/
     data/         Import/seed datasets, especially exercise data
     docs/         Loose technical reference notes
   db/             Local DB artifacts, not architecture source of truth
+  guides/         Workspace-specific operating guides for apps and packages
   SOUL.md         Stable operating guide
   API.md          Router and contract summary
   WEBROUTES.md    Web route summary
