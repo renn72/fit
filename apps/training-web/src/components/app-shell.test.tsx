@@ -36,7 +36,7 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 describe('training app shell', () => {
-	test('exposes a dedicated account button in the mobile dock', () => {
+	test('matches the new quick-access header and centered dock layout', () => {
 		render(
 			<ThemeProvider storageKey='training-web-theme-test'>
 				<AppShell
@@ -53,7 +53,18 @@ describe('training app shell', () => {
 			</ThemeProvider>,
 		)
 
-		expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: /open training plan/i }),
+		).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: /open training recovery/i }),
+		).toBeTruthy()
+		expect(screen.getByRole('button', { name: /account/i }).textContent).toContain(
+			'CC',
+		)
+		expect(
+			screen.queryByText(/sticky dock for quick mobile navigation/i),
+		).toBeNull()
 		expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull()
 		expect(screen.getByText(/Forma \| Training/i)).toBeTruthy()
 	})

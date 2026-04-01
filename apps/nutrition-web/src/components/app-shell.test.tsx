@@ -36,7 +36,7 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 describe('nutrition app shell', () => {
-	test('exposes a dedicated account button in the mobile dock', () => {
+	test('matches the new quick-access header and centered dock layout', () => {
 		render(
 			<ThemeProvider storageKey='nutrition-web-theme-test'>
 				<AppShell
@@ -53,7 +53,18 @@ describe('nutrition app shell', () => {
 			</ThemeProvider>,
 		)
 
-		expect(screen.getByRole('button', { name: /account/i })).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: /open nutrition menu/i }),
+		).toBeTruthy()
+		expect(
+			screen.getByRole('link', { name: /open nutrition check-in/i }),
+		).toBeTruthy()
+		expect(screen.getByRole('button', { name: /account/i }).textContent).toContain(
+			'CC',
+		)
+		expect(
+			screen.queryByText(/sticky dock for quick mobile navigation/i),
+		).toBeNull()
 		expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull()
 		expect(screen.getByText(/Forma \| Nutrition/i)).toBeTruthy()
 	})
