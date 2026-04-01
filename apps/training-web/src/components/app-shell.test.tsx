@@ -53,15 +53,11 @@ describe('training app shell', () => {
 			</ThemeProvider>,
 		)
 
+		expect(screen.getByLabelText(/open training plan/i)).toBeTruthy()
+		expect(screen.getByLabelText(/open training recovery/i)).toBeTruthy()
 		expect(
-			screen.getByRole('link', { name: /open training plan/i }),
-		).toBeTruthy()
-		expect(
-			screen.getByRole('link', { name: /open training recovery/i }),
-		).toBeTruthy()
-		expect(screen.getByRole('button', { name: /account/i }).textContent).toContain(
-			'CC',
-		)
+			screen.getByRole('button', { name: /account/i }).textContent,
+		).toContain('CC')
 		expect(
 			screen.queryByText(/sticky dock for quick mobile navigation/i),
 		).toBeNull()

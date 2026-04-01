@@ -1,7 +1,6 @@
 import { useState } from 'react'
 
 import { cn } from '@fit/components'
-import { Avatar, AvatarFallback } from '@fit/components/ui/avatar'
 import { Button } from '@fit/components/ui/button'
 import {
 	Dialog,
@@ -55,11 +54,33 @@ type NavItem = {
 	icon: typeof Leaf
 }
 
+type QuickLinkItem = {
+	to: '/app/menu' | '/app/check-in'
+	label: string
+	icon: typeof Leaf
+	ariaLabel: string
+}
+
 const navigation: NavItem[] = [
 	{ to: '/app', label: 'Today', icon: Leaf },
 	{ to: '/app/menu', label: 'Menu', icon: Soup },
 	{ to: '/app/recipes', label: 'Recipes', icon: SwatchBook },
 	{ to: '/app/check-in', label: 'Check-in', icon: TrendingUp },
+]
+
+const quickLinks: QuickLinkItem[] = [
+	{
+		to: '/app/menu',
+		label: 'Menu',
+		icon: Soup,
+		ariaLabel: 'Open nutrition menu',
+	},
+	{
+		to: '/app/check-in',
+		label: 'Check-in',
+		icon: TrendingUp,
+		ariaLabel: 'Open nutrition check-in',
+	},
 ]
 
 function getErrorMessage(error: unknown): string {
@@ -87,8 +108,10 @@ export function AppShell({ children, session }: AppShellProps) {
 		.slice(0, 2)
 		.map((part) => part[0]?.toUpperCase())
 		.join('')
+	const accountInitials = initials || 'C'
 	const navLeft = navigation.slice(0, 2)
 	const navRight = navigation.slice(2)
+	const [primaryQuickLink, secondaryQuickLink] = quickLinks
 
 	async function handleSignOut() {
 		await authClient.signOut({
@@ -147,19 +170,16 @@ export function AppShell({ children, session }: AppShellProps) {
 	}
 
 	return (
-		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x border-border/70 bg-card/80 shadow-[0_28px_80px_rgba(66,108,79,0.16)] backdrop-blur-xl'>
-			<header className='shrink-0 border-b border-border/70 bg-background/88 backdrop-blur-xl'>
-				<div className='grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-4 pb-3 pt-4'>
-					<div className='min-w-0'>
-						<p className='text-[0.65rem] uppercase tracking-[0.24em] text-muted-foreground'>
-							Signed in
-						</p>
-						<p className='truncate text-sm font-medium'>{displayName}</p>
-					</div>
+		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x border-border/60 bg-background shadow-[0_28px_80px_rgba(24,55,35,0.18)]'>
+			<header className='shrink-0 border-b border-border/60 bg-background/95 px-3 pb-4 pt-3 backdrop-blur-xl'>
+				<div className='grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3'>
+					<HeaderQuickLink item={primaryQuickLink} />
 
-					<div className='flex flex-col items-center gap-1 text-center'>
-						<BrandMark className='size-10 rounded-2xl text-base' />
-						<div>
+					<div className='flex min-w-0 flex-col items-center gap-2 pt-0.5 text-center'>
+						<div className='rounded-full border border-border/60 bg-card/75 p-1 shadow-[0_14px_32px_rgba(24,55,35,0.16)]'>
+							<BrandMark className='size-12 rounded-full text-lg shadow-none' />
+						</div>
+						<div className='space-y-0.5'>
 							<p className='text-[0.62rem] uppercase tracking-[0.28em] text-muted-foreground'>
 								Forma
 							</p>
@@ -167,25 +187,17 @@ export function AppShell({ children, session }: AppShellProps) {
 						</div>
 					</div>
 
-					<div className='justify-self-end'>
-						<div className='flex items-center gap-2 rounded-full border border-border/70 bg-card/80 px-2 py-1.5 shadow-sm'>
-							<Avatar className='size-8'>
-								<AvatarFallback>{initials || 'C'}</AvatarFallback>
-							</Avatar>
-							<p className='hidden text-xs font-medium text-muted-foreground sm:block'>
-								Coach-built
-							</p>
-						</div>
-					</div>
+					<HeaderQuickLink item={secondaryQuickLink} align='end' />
 				</div>
+				<p className='sr-only'>Signed in as {displayName}</p>
 			</header>
 
-			<main className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
+			<main className='min-h-0 flex-1 overflow-y-auto px-3 py-3'>
 				{children}
 			</main>
 
-			<footer className='shrink-0 border-t border-border/70 bg-background/94 px-3 py-3 backdrop-blur-xl'>
-				<nav className='grid grid-cols-5 items-end gap-1'>
+			<footer className='shrink-0 border-t border-border/60 bg-background/96 px-3 pb-4 pt-2 backdrop-blur-xl'>
+				<nav className='grid grid-cols-5 items-end gap-1 pt-4'>
 					{navLeft.map((item) => (
 						<MobileNavLink key={item.to} item={item} />
 					))}
@@ -194,10 +206,12 @@ export function AppShell({ children, session }: AppShellProps) {
 						<DropdownMenu>
 							<DropdownMenuTrigger
 								render={
-									<Button className='h-14 w-14 rounded-full shadow-[0_16px_36px_rgba(24,55,35,0.22)]' />
+									<Button className='h-14 w-14 rounded-full border border-border/60 bg-foreground px-0 text-background shadow-[0_16px_36px_rgba(24,55,35,0.22)] hover:bg-foreground/90' />
 								}
 							>
-								<UserRound className='size-5' />
+								<span className='text-sm font-semibold tracking-[0.02em]'>
+									{accountInitials}
+								</span>
 								<span className='sr-only'>Account</span>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
@@ -253,9 +267,6 @@ export function AppShell({ children, session }: AppShellProps) {
 						<MobileNavLink key={item.to} item={item} />
 					))}
 				</nav>
-				<p className='mt-2 text-center text-[0.68rem] text-muted-foreground'>
-					Sticky dock for quick mobile navigation.
-				</p>
 			</footer>
 
 			<Dialog
@@ -378,6 +389,32 @@ export function AppShell({ children, session }: AppShellProps) {
 	)
 }
 
+function HeaderQuickLink({
+	item,
+	align = 'start',
+}: {
+	item: QuickLinkItem
+	align?: 'start' | 'end'
+}) {
+	const Icon = item.icon
+
+	return (
+		<Link
+			to={item.to}
+			aria-label={item.ariaLabel}
+			className={cn(
+				'flex min-w-0 flex-col items-center gap-2 text-center text-[0.78rem] font-medium text-muted-foreground transition-colors hover:text-foreground',
+				align === 'end' ? 'justify-self-end' : 'justify-self-start',
+			)}
+		>
+			<span className='flex size-11 items-center justify-center rounded-[1.15rem] border border-border/60 bg-card/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'>
+				<Icon className='size-5' />
+			</span>
+			<span>{item.label}</span>
+		</Link>
+	)
+}
+
 function MobileNavLink({ item }: { item: NavItem }) {
 	const Icon = item.icon
 
@@ -386,17 +423,18 @@ function MobileNavLink({ item }: { item: NavItem }) {
 			to={item.to}
 			activeProps={{
 				className:
-					'bg-foreground text-background shadow-[0_12px_30px_rgba(24,55,35,0.18)]',
+					'text-foreground [&_.nav-icon]:border-foreground [&_.nav-icon]:bg-foreground [&_.nav-icon]:text-background [&_.nav-icon]:shadow-[0_12px_30px_rgba(24,55,35,0.18)]',
 			}}
 			inactiveProps={{
-				className:
-					'bg-card/80 text-muted-foreground hover:bg-background hover:text-foreground',
+				className: 'text-muted-foreground hover:text-foreground',
 			}}
 			className={cn(
-				'flex min-h-14 flex-col items-center justify-center gap-1 rounded-3xl border border-border/70 px-2 text-[0.68rem] font-medium transition-all',
+				'flex min-h-14 flex-col items-center justify-end gap-1 rounded-3xl px-1 pb-1 pt-2 text-[0.68rem] font-medium transition-all',
 			)}
 		>
-			<Icon className='size-4' />
+			<span className='nav-icon flex size-9 items-center justify-center rounded-full border border-border/60 bg-card/75 text-current transition-all'>
+				<Icon className='size-4' />
+			</span>
 			<span>{item.label}</span>
 		</Link>
 	)

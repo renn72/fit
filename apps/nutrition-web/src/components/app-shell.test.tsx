@@ -53,15 +53,11 @@ describe('nutrition app shell', () => {
 			</ThemeProvider>,
 		)
 
+		expect(screen.getByLabelText(/open nutrition menu/i)).toBeTruthy()
+		expect(screen.getByLabelText(/open nutrition check-in/i)).toBeTruthy()
 		expect(
-			screen.getByRole('link', { name: /open nutrition menu/i }),
-		).toBeTruthy()
-		expect(
-			screen.getByRole('link', { name: /open nutrition check-in/i }),
-		).toBeTruthy()
-		expect(screen.getByRole('button', { name: /account/i }).textContent).toContain(
-			'CC',
-		)
+			screen.getByRole('button', { name: /account/i }).textContent,
+		).toContain('CC')
 		expect(
 			screen.queryByText(/sticky dock for quick mobile navigation/i),
 		).toBeNull()
