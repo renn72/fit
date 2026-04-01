@@ -56,7 +56,7 @@ export function AuthPanel() {
 		<div className='mx-auto grid w-full max-w-4xl gap-6 md:grid-cols-[1.05fr_0.95fr] md:items-center'>
 			<section className='space-y-5'>
 				<div className='flex items-center justify-center md:justify-start'>
-					<div className='inline-flex items-center gap-3 rounded-full border border-border/70 bg-card/80 px-4 py-2 shadow-sm backdrop-blur-sm'>
+					<div className='inline-flex items-center gap-3 rounded-full border bg-background px-4 py-2'>
 						<BrandMark className='size-10 rounded-2xl text-base' />
 						<div>
 							<p className='text-[0.7rem] font-semibold uppercase tracking-[0.26em] text-muted-foreground'>
@@ -68,7 +68,7 @@ export function AuthPanel() {
 				</div>
 
 				<div className='space-y-3 text-center md:text-left'>
-					<Badge variant='secondary' className='gap-1.5 rounded-full px-3 py-1'>
+					<Badge variant='secondary'>
 						<ShieldCheck className='size-3.5' />
 						Coach-managed access
 					</Badge>
@@ -83,21 +83,21 @@ export function AuthPanel() {
 				</div>
 
 				<div className='grid gap-3 sm:grid-cols-3'>
-					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-xl border bg-muted p-4'>
 						<Sparkles className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Current block first</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
 							No admin clutter, just the active training cycle.
 						</p>
 					</div>
-					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-xl border bg-muted p-4'>
 						<LockKeyhole className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Login only</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
 							Your admin creates access before you arrive here.
 						</p>
 					</div>
-					<div className='rounded-3xl border border-border/70 bg-card/80 p-4 shadow-sm backdrop-blur-sm'>
+					<div className='rounded-xl border bg-muted p-4'>
 						<ArrowRight className='mb-3 size-4 text-primary' />
 						<p className='font-medium'>Built for mobile</p>
 						<p className='mt-1 text-sm text-muted-foreground'>
@@ -107,7 +107,7 @@ export function AuthPanel() {
 				</div>
 			</section>
 
-			<Card className='border-border/70 bg-card/80 shadow-[0_32px_90px_rgba(71,92,173,0.16)] backdrop-blur-sm'>
+			<Card>
 				<CardHeader className='space-y-2 text-center md:text-left'>
 					<CardTitle>Open Forma | Training</CardTitle>
 					<CardDescription>
@@ -143,7 +143,7 @@ export function AuthPanel() {
 						</Button>
 					</form>
 
-					<div className='rounded-2xl border border-border/70 bg-background/70 p-4 text-sm text-muted-foreground'>
+					<div className='rounded-xl border bg-muted p-4 text-sm text-muted-foreground'>
 						<p className='font-medium text-foreground'>Need access?</p>
 						<p className='mt-1'>
 							An admin creates the account first. If you still need access,
@@ -152,7 +152,7 @@ export function AuthPanel() {
 					</div>
 
 					{error ? (
-						<p className='rounded-lg border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive'>
+						<p className='rounded-lg border border-destructive px-3 py-2 text-sm text-destructive'>
 							{error}
 						</p>
 					) : null}

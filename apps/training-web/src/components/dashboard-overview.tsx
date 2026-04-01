@@ -83,7 +83,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 	if (isPending) {
 		return (
 			<div className='space-y-4'>
-				<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+				<Card>
 					<CardHeader>
 						<CardTitle>Loading current program...</CardTitle>
 						<CardDescription>
@@ -97,7 +97,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (error) {
 		return (
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>Current program unavailable</CardTitle>
 					<CardDescription>
@@ -110,7 +110,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (!currentBlock) {
 		return (
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>No current program yet</CardTitle>
 					<CardDescription>
@@ -124,11 +124,11 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	return (
 		<div className='space-y-4'>
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader className='gap-4'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<Badge className='rounded-full px-3 py-1'>Current program</Badge>
-						<Badge variant='secondary' className='rounded-full px-3 py-1'>
+						<Badge>Current program</Badge>
+						<Badge variant='secondary'>
 							{currentBlock.isActive ? 'Active' : 'Assigned'}
 						</Badge>
 					</div>
@@ -160,7 +160,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 			</Card>
 
 			{nextWorkout ? (
-				<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+				<Card>
 					<CardHeader>
 						<CardTitle>Next session</CardTitle>
 						<CardDescription>
@@ -169,7 +169,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 						</CardDescription>
 					</CardHeader>
 					<CardContent className='space-y-3'>
-						<div className='rounded-3xl border border-border/70 bg-background/82 p-4'>
+						<div className='rounded-xl border bg-muted p-4'>
 							<div className='flex items-center justify-between gap-3'>
 								<div>
 									<p className='text-sm font-medium'>{nextWorkout.name}</p>
@@ -177,13 +177,11 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 										{nextWorkout.description || 'No session note attached.'}
 									</p>
 								</div>
-								<Badge variant='outline' className='rounded-full px-3 py-1'>
-									Day {nextWorkout.dayIndex + 1}
-								</Badge>
+								<Badge variant='outline'>Day {nextWorkout.dayIndex + 1}</Badge>
 							</div>
 						</div>
 						<div className='grid gap-3 sm:grid-cols-2'>
-							<div className='rounded-3xl border border-border/70 bg-background/82 p-4'>
+							<div className='rounded-xl border bg-muted p-4'>
 								<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 									Warm-ups
 								</p>
@@ -191,7 +189,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 									{nextWorkout.warmups?.length ?? 0}
 								</p>
 							</div>
-							<div className='rounded-3xl border border-border/70 bg-background/82 p-4'>
+							<div className='rounded-xl border bg-muted p-4'>
 								<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 									Exercises
 								</p>
@@ -204,7 +202,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 				</Card>
 			) : null}
 
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>Block rhythm</CardTitle>
 					<CardDescription>
@@ -217,7 +215,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 						(workout) => (
 							<div
 								key={workout.id}
-								className='flex items-center justify-between gap-3 rounded-3xl border border-border/70 bg-background/82 p-4'
+								className='flex items-center justify-between gap-3 rounded-xl border bg-muted p-4'
 							>
 								<div>
 									<p className='text-sm font-medium'>{workout.name}</p>
@@ -225,9 +223,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 										{workout.exercises?.length ?? 0} exercises
 									</p>
 								</div>
-								<Badge variant='outline' className='rounded-full px-3 py-1'>
-									Day {workout.dayIndex + 1}
-								</Badge>
+								<Badge variant='outline'>Day {workout.dayIndex + 1}</Badge>
 							</div>
 						),
 					)}
@@ -247,9 +243,9 @@ function SummaryTile({
 	value: string
 }) {
 	return (
-		<div className='rounded-3xl border border-border/70 bg-background/82 p-4'>
+		<div className='rounded-xl border bg-muted p-4'>
 			<div className='flex items-center gap-3'>
-				<div className='rounded-2xl bg-primary/12 p-2 text-primary'>
+				<div className='rounded-lg bg-primary p-2 text-primary-foreground'>
 					<Icon className='size-4' />
 				</div>
 				<div>

@@ -33,19 +33,16 @@ function TrainingSessionsPage() {
 
 			<div className='grid gap-4'>
 				{upcomingSessions.map((session) => (
-					<Card
-						key={session.title}
-						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
-					>
+					<Card key={session.title}>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center gap-2'>
-								<Badge className='rounded-full px-3 py-1'>{session.time}</Badge>
+								<Badge>{session.time}</Badge>
 							</div>
 							<CardTitle>{session.title}</CardTitle>
 							<CardDescription>{session.note}</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className='rounded-2xl border border-border/70 bg-background/84 px-4 py-3 text-sm text-muted-foreground'>
+							<div className='rounded-xl border bg-muted p-4 text-sm text-muted-foreground'>
 								Review the coaching note before the warm-up starts so intensity
 								and intent stay aligned from set one.
 							</div>

@@ -33,27 +33,19 @@ function NutritionMenuPage() {
 
 			<div className='grid gap-4 xl:grid-cols-2'>
 				{weeklyMenu.map((day) => (
-					<Card
-						key={day.day}
-						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
-					>
+					<Card key={day.day}>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center justify-between gap-3'>
 								<div>
 									<CardTitle>{day.day}</CardTitle>
 									<CardDescription>{day.focus}</CardDescription>
 								</div>
-								<Badge variant='outline' className='rounded-full px-3 py-1'>
-									{day.calories}
-								</Badge>
+								<Badge variant='outline'>{day.calories}</Badge>
 							</div>
 						</CardHeader>
 						<CardContent className='grid gap-3'>
 							{day.meals.map((meal, index) => (
-								<div
-									key={meal}
-									className='rounded-2xl border border-border/70 bg-background/82 px-4 py-3'
-								>
+								<div key={meal} className='rounded-xl border bg-muted p-4'>
 									<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 										Meal {index + 1}
 									</p>

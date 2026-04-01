@@ -52,7 +52,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 	if (isPending) {
 		return (
 			<div className='space-y-4'>
-				<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+				<Card>
 					<CardHeader>
 						<CardTitle>Loading current menu...</CardTitle>
 						<CardDescription>
@@ -66,7 +66,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (error) {
 		return (
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>Current menu unavailable</CardTitle>
 					<CardDescription>
@@ -79,7 +79,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	if (!currentMenu) {
 		return (
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>No current menu yet</CardTitle>
 					<CardDescription>
@@ -97,11 +97,11 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 
 	return (
 		<div className='space-y-4'>
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader className='gap-4'>
 					<div className='flex flex-wrap items-center gap-2'>
-						<Badge className='rounded-full px-3 py-1'>Current menu</Badge>
-						<Badge variant='secondary' className='rounded-full px-3 py-1'>
+						<Badge>Current menu</Badge>
+						<Badge variant='secondary'>
 							{currentMenu.isActive ? 'Active' : 'Assigned'}
 						</Badge>
 					</div>
@@ -128,7 +128,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 				</CardContent>
 			</Card>
 
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>Meal flow</CardTitle>
 					<CardDescription>
@@ -144,10 +144,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 							).length ?? 0
 
 						return (
-							<div
-								key={meal.id}
-								className='rounded-3xl border border-border/70 bg-background/84 p-4'
-							>
+							<div key={meal.id} className='rounded-xl border bg-muted p-4'>
 								<div className='flex items-start justify-between gap-3'>
 									<div>
 										<p className='text-sm font-medium'>
@@ -157,9 +154,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 											{recipeCount} recipes in this slot
 										</p>
 									</div>
-									<Badge variant='outline' className='rounded-full px-3 py-1'>
-										Meal {meal.mealIndex + 1}
-									</Badge>
+									<Badge variant='outline'>Meal {meal.mealIndex + 1}</Badge>
 								</div>
 								<div className='mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4'>
 									<MacroPill
@@ -182,7 +177,7 @@ export function DashboardOverview({ session }: DashboardOverviewProps) {
 				</CardContent>
 			</Card>
 
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle className='flex items-center gap-2'>
 						<Sparkles className='size-4 text-primary' />
@@ -208,9 +203,9 @@ function SummaryTile({
 	value: string
 }) {
 	return (
-		<div className='rounded-3xl border border-border/70 bg-background/84 p-4'>
+		<div className='rounded-xl border bg-muted p-4'>
 			<div className='flex items-center gap-3'>
-				<div className='rounded-2xl bg-primary/12 p-2 text-primary'>
+				<div className='rounded-lg bg-primary p-2 text-primary-foreground'>
 					<Icon className='size-4' />
 				</div>
 				<div>
@@ -226,7 +221,7 @@ function SummaryTile({
 
 function MacroPill({ label, value }: { label: string; value: string }) {
 	return (
-		<div className='rounded-2xl border border-border/70 bg-card/80 px-3 py-2'>
+		<div className='rounded-lg border bg-background px-3 py-2'>
 			<p className='text-[0.68rem] uppercase tracking-[0.18em] text-muted-foreground'>
 				{label}
 			</p>

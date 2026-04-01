@@ -33,24 +33,17 @@ function NutritionRecipesPage() {
 
 			<div className='grid gap-4 xl:grid-cols-2'>
 				{recipeLibrary.map((recipe) => (
-					<Card
-						key={recipe.name}
-						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
-					>
+					<Card key={recipe.name}>
 						<CardHeader className='gap-3'>
 							<div className='flex flex-wrap items-center gap-2'>
-								<Badge className='rounded-full px-3 py-1'>
-									{recipe.timing}
-								</Badge>
-								<Badge variant='outline' className='rounded-full px-3 py-1'>
-									{recipe.macros}
-								</Badge>
+								<Badge>{recipe.timing}</Badge>
+								<Badge variant='outline'>{recipe.macros}</Badge>
 							</div>
 							<CardTitle>{recipe.name}</CardTitle>
 							<CardDescription>{recipe.note}</CardDescription>
 						</CardHeader>
 						<CardContent>
-							<div className='rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm text-muted-foreground'>
+							<div className='rounded-xl border bg-muted p-4 text-sm text-muted-foreground'>
 								Use this as a fast default when you want plan accuracy without
 								rethinking the full day.
 							</div>

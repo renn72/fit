@@ -37,10 +37,7 @@ function NutritionCheckInPage() {
 
 			<div className='grid gap-4 lg:grid-cols-3'>
 				{checkInMetrics.map((metric) => (
-					<Card
-						key={metric.label}
-						className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'
-					>
+					<Card key={metric.label}>
 						<CardHeader>
 							<CardDescription>{metric.label}</CardDescription>
 							<CardTitle className='text-2xl'>{metric.value}%</CardTitle>
@@ -62,7 +59,7 @@ function NutritionCheckInPage() {
 				))}
 			</div>
 
-			<Card className='border-border/70 bg-card/80 shadow-sm backdrop-blur-sm'>
+			<Card>
 				<CardHeader>
 					<CardTitle>Next adjustments</CardTitle>
 					<CardDescription>
@@ -73,7 +70,7 @@ function NutritionCheckInPage() {
 					{coachNotes.map((note) => (
 						<div
 							key={note}
-							className='rounded-2xl border border-border/70 bg-background/82 px-4 py-3 text-sm leading-7'
+							className='rounded-xl border bg-muted p-4 text-sm leading-7'
 						>
 							{note}
 						</div>

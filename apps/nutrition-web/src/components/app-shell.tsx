@@ -171,17 +171,15 @@ export function AppShell({ children, session }: AppShellProps) {
 	}
 
 	return (
-		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x border-border/60 bg-background shadow-[0_28px_80px_rgba(24,55,35,0.18)]'>
-			<header className='shrink-0 border-b border-border/60 bg-background/95 px-3 pb-4 pt-3 backdrop-blur-xl'>
-				<div className='grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3'>
+		<div className='flex overflow-hidden flex-col mx-auto w-full h-[100dvh] max-w-[430px] border-x bg-background'>
+			<header className='py-3 px-4 border-b shrink-0 bg-background'>
+				<div className='grid gap-3 items-start grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'>
 					<HeaderQuickLink item={primaryQuickLink} />
 
-					<div className='flex min-w-0 flex-col items-center gap-2 pt-0.5 text-center'>
-						<div className='rounded-full border border-border/60 bg-card/75 p-1 shadow-[0_14px_32px_rgba(24,55,35,0.16)]'>
-							<BrandMark className='size-12 rounded-full text-lg shadow-none' />
-						</div>
+					<div className='flex flex-col gap-2 items-center min-w-0 text-center'>
+						<BrandMark className='text-lg rounded-full size-12' />
 						<div className='space-y-0.5'>
-							<p className='text-[0.62rem] uppercase tracking-[0.28em] text-muted-foreground'>
+							<p className='uppercase text-[0.62rem] tracking-[0.28em] text-muted-foreground'>
 								Forma
 							</p>
 							<p className='text-sm font-semibold'>Forma | Nutrition</p>
@@ -193,12 +191,12 @@ export function AppShell({ children, session }: AppShellProps) {
 				<p className='sr-only'>Signed in as {displayName}</p>
 			</header>
 
-			<main className='min-h-0 flex-1 overflow-y-auto px-3 py-3'>
+			<main className='overflow-y-auto flex-1 py-4 px-4 min-h-0'>
 				{children}
 			</main>
 
-			<footer className='shrink-0 border-t border-border/60 bg-background/96 px-3 pb-4 pt-2 backdrop-blur-xl'>
-				<nav className='grid grid-cols-5 items-end gap-1 pt-4'>
+			<footer className='py-3 px-3 border-t shrink-0 bg-background'>
+				<nav className='grid grid-cols-5 gap-1 items-end'>
 					{navLeft.map((item) => (
 						<MobileNavLink key={item.to} item={item} />
 					))}
@@ -207,7 +205,11 @@ export function AppShell({ children, session }: AppShellProps) {
 						<DropdownMenu>
 							<DropdownMenuTrigger
 								render={
-									<Button className='h-14 w-14 rounded-full border border-border/60 bg-foreground px-0 text-background shadow-[0_16px_36px_rgba(24,55,35,0.22)] hover:bg-foreground/90' />
+									<Button
+										variant='outline'
+										size='icon-lg'
+										className='rounded-full'
+									/>
 								}
 							>
 								<span className='text-sm font-semibold tracking-[0.02em]'>
@@ -215,19 +217,14 @@ export function AppShell({ children, session }: AppShellProps) {
 								</span>
 								<span className='sr-only'>Account</span>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								align='center'
-								side='top'
-								sideOffset={14}
-								className='w-60'
-							>
+							<DropdownMenuContent align='center' side='top' className='hi'>
 								<DropdownMenuGroup>
 									<DropdownMenuLabel>
 										<div className='space-y-1'>
 											<p className='font-medium text-foreground'>
 												{displayName}
 											</p>
-											<p className='truncate text-xs'>{session?.user?.email}</p>
+											<p className='text-xs truncate'>{session?.user?.email}</p>
 										</div>
 									</DropdownMenuLabel>
 								</DropdownMenuGroup>
@@ -290,13 +287,13 @@ export function AppShell({ children, session }: AppShellProps) {
 						</DialogDescription>
 					</DialogHeader>
 					<div className='space-y-3'>
-						<div className='rounded-2xl border border-border/70 bg-muted/40 p-4'>
+						<div className='p-4 rounded-xl border bg-muted'>
 							<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 								Name
 							</p>
 							<p className='mt-2 font-medium'>{displayName}</p>
 						</div>
-						<div className='rounded-2xl border border-border/70 bg-muted/40 p-4'>
+						<div className='p-4 rounded-xl border bg-muted'>
 							<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 								Email
 							</p>
@@ -412,7 +409,7 @@ function HeaderQuickLink({
 				align === 'end' ? 'justify-self-end' : 'justify-self-start',
 			)}
 		>
-			<span className='flex size-11 items-center justify-center rounded-[1.15rem] border border-border/60 bg-card/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]'>
+			<span className='flex justify-center items-center rounded-lg border size-10 bg-muted'>
 				<Icon className='size-5' />
 			</span>
 			<span>{item.label}</span>
@@ -428,7 +425,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
 			to={item.to}
 			activeProps={{
 				className:
-					'text-foreground [&_.nav-icon]:border-foreground [&_.nav-icon]:bg-foreground [&_.nav-icon]:text-background [&_.nav-icon]:shadow-[0_12px_30px_rgba(24,55,35,0.18)]',
+					'text-foreground [&_.nav-icon]:border-primary [&_.nav-icon]:bg-primary [&_.nav-icon]:text-primary-foreground',
 			}}
 			inactiveProps={{
 				className: 'text-muted-foreground hover:text-foreground',
@@ -437,7 +434,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
 				'flex min-h-14 flex-col items-center justify-end gap-1 rounded-3xl px-1 pb-1 pt-2 text-[0.68rem] font-medium transition-all',
 			)}
 		>
-			<span className='nav-icon flex size-9 items-center justify-center rounded-full border border-border/60 bg-card/75 text-current transition-all'>
+			<span className='flex justify-center items-center text-current rounded-full border transition-all nav-icon size-9 bg-background'>
 				<Icon className='size-4' />
 			</span>
 			<span>{item.label}</span>
