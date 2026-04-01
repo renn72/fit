@@ -3,7 +3,7 @@ import type { ComponentProps } from 'react'
 import { AppShell } from './app-shell'
 import { ThemeProvider } from './theme-provider'
 
-import { render, screen } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 
 vi.mock('@/lib/auth-client', () => ({
@@ -63,5 +63,28 @@ describe('training app shell', () => {
 		).toBeNull()
 		expect(screen.queryByRole('button', { name: /sign out/i })).toBeNull()
 		expect(screen.getByText(/Forma \| Training/i)).toBeTruthy()
+	})
+
+	test('opens the account dropdown without crashing', () => {
+		render(
+			<ThemeProvider storageKey='training-web-theme-test'>
+				<AppShell
+					session={{
+						user: {
+							id: 'user-1',
+							name: 'Casey Client',
+							email: 'casey@example.com',
+						},
+					}}
+				>
+					<div>Body</div>
+				</AppShell>
+			</ThemeProvider>,
+		)
+
+		fireEvent.click(screen.getByRole('button', { name: /account/i }))
+
+		expect(screen.getByText('casey@example.com')).toBeTruthy()
+		expect(screen.getByText(/profile/i)).toBeTruthy()
 	})
 })
