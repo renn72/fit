@@ -13,6 +13,7 @@ import {
 import {
 	DropdownMenu,
 	DropdownMenuContent,
+	DropdownMenuGroup,
 	DropdownMenuItem,
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
@@ -220,12 +221,16 @@ export function AppShell({ children, session }: AppShellProps) {
 								sideOffset={14}
 								className='w-60'
 							>
-								<DropdownMenuLabel>
-									<div className='space-y-1'>
-										<p className='font-medium text-foreground'>{displayName}</p>
-										<p className='truncate text-xs'>{session?.user?.email}</p>
-									</div>
-								</DropdownMenuLabel>
+								<DropdownMenuGroup>
+									<DropdownMenuLabel>
+										<div className='space-y-1'>
+											<p className='font-medium text-foreground'>
+												{displayName}
+											</p>
+											<p className='truncate text-xs'>{session?.user?.email}</p>
+										</div>
+									</DropdownMenuLabel>
+								</DropdownMenuGroup>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onClick={() => setAccountDialog('profile')}>
 									<UserRound className='size-4' />
