@@ -12,6 +12,7 @@ import {
 } from '@fit/components/ui/dialog'
 import {
 	DropdownMenu,
+	DropdownMenuCheckboxItem,
 	DropdownMenuContent,
 	DropdownMenuGroup,
 	DropdownMenuItem,
@@ -110,6 +111,7 @@ export function AppShell({ children, session }: AppShellProps) {
 		.map((part) => part[0]?.toUpperCase())
 		.join('')
 	const accountInitials = initials || 'C'
+	const isDarkTheme = theme === 'dark'
 	const navLeft = navigation.slice(0, 2)
 	const navRight = navigation.slice(2)
 	const [primaryQuickLink, secondaryQuickLink] = quickLinks
@@ -233,20 +235,15 @@ export function AppShell({ children, session }: AppShellProps) {
 									<UserRound className='size-4' />
 									Profile
 								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => setTheme('light')}>
-									<Leaf className='size-4' />
-									Light theme
-									<span className='ml-auto text-xs text-muted-foreground'>
-										{theme === 'light' ? 'On' : ''}
-									</span>
-								</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => setTheme('dark')}>
+								<DropdownMenuCheckboxItem
+									checked={isDarkTheme}
+									onCheckedChange={(checked) =>
+										setTheme(checked === true ? 'dark' : 'light')
+									}
+								>
 									<Moon className='size-4' />
 									Dark theme
-									<span className='ml-auto text-xs text-muted-foreground'>
-										{theme === 'dark' ? 'On' : ''}
-									</span>
-								</DropdownMenuItem>
+								</DropdownMenuCheckboxItem>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem onClick={() => setAccountDialog('email')}>
 									<Mail className='size-4' />

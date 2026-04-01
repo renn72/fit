@@ -120,7 +120,7 @@ describe('training app shell', () => {
 		})
 
 		expect(screen.queryByRole('menuitem', { name: /light theme/i })).toBeNull()
-		expect(darkThemeToggle).toHaveAttribute('aria-checked', 'true')
+		expect(darkThemeToggle.getAttribute('aria-checked')).toBe('true')
 
 		fireEvent.click(darkThemeToggle)
 
@@ -128,9 +128,12 @@ describe('training app shell', () => {
 			expect(document.documentElement.classList.contains('light')).toBe(true)
 		})
 
-		fireEvent.click(screen.getByRole('button', { name: /account/i }))
-		expect(
-			screen.getByRole('menuitemcheckbox', { name: /dark theme/i }),
-		).toHaveAttribute('aria-checked', 'false')
+		await waitFor(() => {
+			expect(
+				screen
+					.getByRole('menuitemcheckbox', { name: /dark theme/i })
+					.getAttribute('aria-checked'),
+			).toBe('false')
+		})
 	})
 })
