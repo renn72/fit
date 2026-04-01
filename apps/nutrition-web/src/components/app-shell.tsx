@@ -217,7 +217,7 @@ export function AppShell({ children, session }: AppShellProps) {
 								</span>
 								<span className='sr-only'>Account</span>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align='center' side='top' className='hi'>
+							<DropdownMenuContent align='center' side='top' className=''>
 								<DropdownMenuGroup>
 									<DropdownMenuLabel>
 										<div className='space-y-1'>

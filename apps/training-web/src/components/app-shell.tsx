@@ -172,15 +172,15 @@ export function AppShell({ children, session }: AppShellProps) {
 	}
 
 	return (
-		<div className='mx-auto flex h-[100dvh] w-full max-w-[430px] flex-col overflow-hidden border-x bg-background'>
-			<header className='shrink-0 border-b bg-background px-4 py-3'>
-				<div className='grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-3'>
+		<div className='flex overflow-hidden flex-col mx-auto w-full h-[100dvh] max-w-[430px] border-x bg-background'>
+			<header className='py-3 px-4 border-b shrink-0 bg-background'>
+				<div className='grid gap-3 items-start grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)]'>
 					<HeaderQuickLink item={primaryQuickLink} />
 
-					<div className='flex min-w-0 flex-col items-center gap-2 text-center'>
-						<BrandMark className='size-12 rounded-full text-lg' />
+					<div className='flex flex-col gap-2 items-center min-w-0 text-center'>
+						<BrandMark className='text-lg rounded-full size-12' />
 						<div className='space-y-0.5'>
-							<p className='text-[0.62rem] uppercase tracking-[0.28em] text-muted-foreground'>
+							<p className='uppercase text-[0.62rem] tracking-[0.28em] text-muted-foreground'>
 								Forma
 							</p>
 							<p className='text-sm font-semibold'>Forma | Training</p>
@@ -192,12 +192,12 @@ export function AppShell({ children, session }: AppShellProps) {
 				<p className='sr-only'>Signed in as {displayName}</p>
 			</header>
 
-			<main className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
+			<main className='overflow-y-auto flex-1 py-4 px-4 min-h-0'>
 				{children}
 			</main>
 
-			<footer className='shrink-0 border-t bg-background px-3 py-3'>
-				<nav className='grid grid-cols-5 items-end gap-1'>
+			<footer className='py-3 px-3 border-t shrink-0 bg-background'>
+				<nav className='grid grid-cols-5 gap-1 items-end'>
 					{navLeft.map((item) => (
 						<MobileNavLink key={item.to} item={item} />
 					))}
@@ -218,14 +218,14 @@ export function AppShell({ children, session }: AppShellProps) {
 								</span>
 								<span className='sr-only'>Account</span>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent align='center' side='top'>
+							<DropdownMenuContent align='center' side='top' className=''>
 								<DropdownMenuGroup>
 									<DropdownMenuLabel>
 										<div className='space-y-1'>
 											<p className='font-medium text-foreground'>
 												{displayName}
 											</p>
-											<p className='truncate text-xs'>{session?.user?.email}</p>
+											<p className='text-xs truncate'>{session?.user?.email}</p>
 										</div>
 									</DropdownMenuLabel>
 								</DropdownMenuGroup>
@@ -288,13 +288,13 @@ export function AppShell({ children, session }: AppShellProps) {
 						</DialogDescription>
 					</DialogHeader>
 					<div className='space-y-3'>
-						<div className='rounded-xl border bg-muted p-4'>
+						<div className='p-4 rounded-xl border bg-muted'>
 							<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 								Name
 							</p>
 							<p className='mt-2 font-medium'>{displayName}</p>
 						</div>
-						<div className='rounded-xl border bg-muted p-4'>
+						<div className='p-4 rounded-xl border bg-muted'>
 							<p className='text-xs uppercase tracking-[0.22em] text-muted-foreground'>
 								Email
 							</p>
@@ -410,7 +410,7 @@ function HeaderQuickLink({
 				align === 'end' ? 'justify-self-end' : 'justify-self-start',
 			)}
 		>
-			<span className='flex size-10 items-center justify-center rounded-lg border bg-muted'>
+			<span className='flex justify-center items-center rounded-lg border size-10 bg-muted'>
 				<Icon className='size-5' />
 			</span>
 			<span>{item.label}</span>
@@ -435,7 +435,7 @@ function MobileNavLink({ item }: { item: NavItem }) {
 				'flex min-h-14 flex-col items-center justify-end gap-1 rounded-3xl px-1 pb-1 pt-2 text-[0.68rem] font-medium transition-all',
 			)}
 		>
-			<span className='nav-icon flex size-9 items-center justify-center rounded-full border bg-background text-current transition-all'>
+			<span className='flex justify-center items-center text-current rounded-full border transition-all nav-icon size-9 bg-background'>
 				<Icon className='size-4' />
 			</span>
 			<span>{item.label}</span>
