@@ -76,9 +76,9 @@
    - The human does not need to read this plan, but the plan must be real.
 
 10. **Run the review personas on the plan**
-   - Use all six personas from `REVIEW_PERSONAS.md`.
-   - Ask them to review the plan against the task, docs, tests, and likely failure modes.
-   - Require concrete objections, not vague commentary.
+    - Use all six personas from `REVIEW_PERSONAS.md`.
+    - Ask them to review the plan against the task, docs, tests, and likely failure modes.
+    - Require concrete objections, not vague commentary.
 
 11. **Adapt the plan until the personas are green**
     - Revise the plan based on reviewer feedback.
