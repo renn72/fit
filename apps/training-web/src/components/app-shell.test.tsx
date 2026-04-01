@@ -84,7 +84,15 @@ describe('training app shell', () => {
 
 		fireEvent.click(screen.getByRole('button', { name: /account/i }))
 
+		const accountTrigger = screen.getByRole('button', { name: /account/i })
+		const dropdownContent = screen
+			.getByText('casey@example.com')
+			.closest('[data-slot="dropdown-menu-content"]')
+
 		expect(screen.getByText('casey@example.com')).toBeTruthy()
 		expect(screen.getByText(/profile/i)).toBeTruthy()
+		expect(accountTrigger.className).not.toContain('shadow-[')
+		expect(accountTrigger.className).not.toContain('bg-foreground')
+		expect(dropdownContent?.className).not.toContain('w-60')
 	})
 })
