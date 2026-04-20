@@ -12,7 +12,7 @@ After this change, each workspace in the monorepo should be on the newest practi
 - [x] (2026-04-20 08:22Z) Audit outdated dependencies across the root workspace, each app, and each shared package.
 - [x] (2026-04-20 08:27Z) Apply safe dependency updates, keeping Drizzle on the v1 beta release line.
 - [x] (2026-04-20 08:27Z) Validate the affected workspaces, fix any breakages caused by dependency bumps, and update docs if needed.
-- [ ] Commit the finished dependency refresh and move this plan to completed if the whole update lands in this session.
+- [x] (2026-04-20 08:28Z) Commit the finished dependency refresh and move this plan to completed if the whole update lands in this session.
 
 ## Surprises & Discoveries
 
@@ -41,7 +41,26 @@ After this change, each workspace in the monorepo should be on the newest practi
 
 ## Outcomes & Retrospective
 
-(fill when complete)
+The dependency refresh landed successfully for the root workspace, the shared catalog, the admin web app, the two client web apps, the server app, and the shared auth/components/env packages. The Drizzle line was upgraded from `1.0.0-beta.15-859cf75` to `1.0.0-beta.22-ec7b61d`, which keeps the repo on the requested v1 beta channel instead of moving to the stable mainline release.
+
+Validated workspaces stayed green after the refresh:
+
+- `pnpm --filter web build`
+- `pnpm --filter nutrition-web build`
+- `pnpm --filter training-web build`
+- `pnpm --filter server check-types`
+- `pnpm --filter @fit/api test`
+- `pnpm --filter docs build`
+- `pnpm --filter marketing build`
+
+The main remaining gaps are intentionally deferred, not failed upgrades:
+
+- `apps/native` remains on the Expo 54 lane and still reports the same pre-existing Expo compatibility mismatch for React and some RN packages.
+- `apps/native` still fails `tsc --noEmit` against unchanged `heroui-native` exports.
+- `apps/docs` and `apps/marketing` were not moved to Astro 6 because that is a framework migration rather than a safe dependency refresh.
+- The repo still has deferred higher-risk majors such as `vite@8`, `typescript@6`, `lucide-react@1`, `recharts@3`, `shadcn@4`, and multiple Expo / React Native upgrades.
+
+The practical result is that the actively used web/server/shared dependency set is materially fresher and validated, while the remaining migration-sized work is isolated for a later pass instead of being mixed into this dependency sweep.
 
 ## Context and Orientation
 
