@@ -16,7 +16,7 @@
 		"@fit/env": "workspace:*",
 		"better-auth": "catalog:",
 		"dotenv": "catalog:",
-		"resend": "^6.9.1",
+		"resend": "^6.12.0",
 		"zod": "catalog:"
 	},
 	"devDependencies": {

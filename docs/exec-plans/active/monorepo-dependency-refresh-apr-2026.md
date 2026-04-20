@@ -8,10 +8,10 @@ After this change, each workspace in the monorepo should be on the newest practi
 
 ## Progress
 
-- [ ] Create the planning scaffold, capture the current dependency baseline, and commit the plan.
-- [ ] Audit outdated dependencies across the root workspace, each app, and each shared package.
-- [ ] Apply safe dependency updates, keeping Drizzle on the v1 beta release line.
-- [ ] Validate the affected workspaces, fix any breakages caused by dependency bumps, and update docs if needed.
+- [x] (2026-04-20 08:15Z) Create the planning scaffold, capture the current dependency baseline, and commit the plan.
+- [x] (2026-04-20 08:22Z) Audit outdated dependencies across the root workspace, each app, and each shared package.
+- [x] (2026-04-20 08:27Z) Apply safe dependency updates, keeping Drizzle on the v1 beta release line.
+- [x] (2026-04-20 08:27Z) Validate the affected workspaces, fix any breakages caused by dependency bumps, and update docs if needed.
 - [ ] Commit the finished dependency refresh and move this plan to completed if the whole update lands in this session.
 
 ## Surprises & Discoveries
@@ -19,12 +19,25 @@ After this change, each workspace in the monorepo should be on the newest practi
 - `docs/PLANS.md` is missing in this repo, so this plan follows the required exec-plan sections directly.
 - `pnpm-workspace.yaml` uses a shared `catalog:` block, which means many upgrades will be made centrally rather than one package at a time.
 - `drizzle-kit` and `drizzle-orm` are intentionally pinned to `1.0.0-beta.15-859cf75`, and that constraint must remain on the beta line.
+- The latest published Drizzle beta currently available on npm is `1.0.0-beta.22-ec7b61d` for both `drizzle-orm` and `drizzle-kit`.
+- Baseline validation is green for `apps/web`, `apps/nutrition-web`, `apps/training-web`, `apps/server`, `apps/docs`, `apps/marketing`, and `packages/api` before dependency edits.
+- `apps/native` is already outside Expo SDK 54's recommended package set; `expo install --check` currently expects `react@19.1.0`, `react-dom@19.1.0`, `react-native-gesture-handler@~2.28.0`, and `@types/react@~19.1.10`.
+- `apps/docs` cannot take the latest `@astrojs/starlight` without also taking Astro 6, because the current latest Starlight peer-depends on `astro@^6.0.0`.
+- `pnpm install` reports three peer warnings after the upgrade:
+  - `better-auth` still declares support for `drizzle-orm@^0.45.2`, so the warning persists even though the repo intentionally uses Drizzle v1 beta.
+  - `@tanstack/zod-adapter@1.166.9` still declares a Zod 3 peer even though the web build passes with Zod 4.
+  - the newer TanStack router plugin stack pulls a `crossws` peer warning through `h3`, but the affected web builds still pass.
+- `apps/native` still fails `tsc --noEmit`, but the errors point at unchanged `heroui-native` exports rather than any dependency changed in this sweep.
 
 ## Decision Log
 
 - Keep dependency work split into two buckets: shared catalog upgrades first, then workspace-local upgrades that are not centralized in the catalog.
 - Treat TanStack and other routing/build tool upgrades as higher risk than patch-level utility updates, so validation must be per-app rather than assuming root success means every app is safe.
 - Preserve the existing Drizzle beta strategy unless a newer beta build is available and compatible; do not migrate to the non-beta mainline release.
+- Defer major ecosystem migrations in this sweep when they imply a framework migration rather than a dependency refresh, specifically Expo 55, Astro 6, Vite 8, TypeScript 6, React Native 0.85, and other tied upgrades around them.
+- Keep the native app on its current Expo 54 lane during this pass and avoid broad native package churn beyond shared non-Expo JS libraries that come from the root catalog.
+- Accept peer-metadata warnings that are already structurally unavoidable in this repo when runtime validation passes, specifically the Better Auth + Drizzle beta warning and the current TanStack Zod adapter warning.
+- Do not touch `apps/docs` or `apps/marketing` package versions in this sweep unless the change stays inside their current Astro major line.
 
 ## Outcomes & Retrospective
 
